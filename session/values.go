@@ -25,11 +25,12 @@ func GetString(r *http.Request, key string) (string, error) {
 	if exists == false {
 		return "", ErrKeyNotFound
 	}
-	// todo: should I use a type switch pattern instead?
+
 	str, ok := v.(string)
 	if ok == false {
 		return "", ErrTypeAssertionFailed
 	}
+
 	return str, nil
 }
 
@@ -66,10 +67,12 @@ func PopString(r *http.Request, key string) (string, error) {
 	if exists == false {
 		return "", ErrKeyNotFound
 	}
+
 	str, ok := v.(string)
 	if ok == false {
 		return "", ErrTypeAssertionFailed
 	}
+
 	delete(s.values, key)
 	s.modified = true
 	return str, nil
@@ -88,10 +91,12 @@ func GetBool(r *http.Request, key string) (bool, error) {
 	if exists == false {
 		return false, ErrKeyNotFound
 	}
+
 	b, ok := v.(bool)
 	if ok == false {
 		return false, ErrTypeAssertionFailed
 	}
+
 	return b, nil
 }
 
@@ -128,10 +133,12 @@ func PopBool(r *http.Request, key string) (bool, error) {
 	if exists == false {
 		return false, ErrKeyNotFound
 	}
+
 	b, ok := v.(bool)
 	if ok == false {
 		return false, ErrTypeAssertionFailed
 	}
+
 	delete(s.values, key)
 	s.modified = true
 	return b, nil

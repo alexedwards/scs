@@ -56,6 +56,31 @@ func TestBool(t *testing.T) {
 	}
 }
 
+func TestInt(t *testing.T) {
+	m := Manage(engine.New())
+	h := m(testServeMux)
+
+	_, body, cookie := testRequest(t, h, "/PutInt", "")
+	if body != "OK" {
+		t.Fatalf("got %q: expected %q", body, "OK")
+	}
+
+	_, body, _ = testRequest(t, h, "/GetInt", cookie)
+	if body != "12345" {
+		t.Fatalf("got %q: expected %q", body, "12345")
+	}
+
+	_, body, cookie = testRequest(t, h, "/PopInt", cookie)
+	if body != "12345" {
+		t.Fatalf("got %q: expected %q", body, "12345")
+	}
+
+	_, body, _ = testRequest(t, h, "/GetInt", cookie)
+	if body != ErrKeyNotFound.Error() {
+		t.Fatalf("got %q: expected %q", body, ErrKeyNotFound.Error())
+	}
+}
+
 func TestRemove(t *testing.T) {
 	m := Manage(engine.New())
 	h := m(testServeMux)

@@ -1,8 +1,10 @@
 package session
 
 import (
+	"encoding/json"
 	"errors"
 	"net/http"
+	"strconv"
 )
 
 var (
@@ -133,6 +135,82 @@ func PopBool(r *http.Request, key string) (bool, error) {
 	delete(s.values, key)
 	s.modified = true
 	return b, nil
+}
+
+func GetInt(r *http.Request, key string) (int, error) {
+	s, err := sessionFromContext(r)
+	if err != nil {
+		return 0, err
+	}
+
+	s.mu.RLock()
+	defer s.mu.RUnlock()
+
+	v, exists := s.values[key]
+	if exists == false {
+		return 0, ErrKeyNotFound
+	}
+
+	switch v := v.(type) {
+	case int:
+		return v, nil
+	case json.Number:
+		return strconv.Atoi(v.String())
+	}
+
+	return 0, ErrTypeAssertionFailed
+}
+
+func PutInt(r *http.Request, key string, val int) error {
+	s, err := sessionFromContext(r)
+	if err != nil {
+		return err
+	}
+
+	s.mu.Lock()
+	defer s.mu.Unlock()
+
+	if s.written == true {
+		return ErrAlreadyWritten
+	}
+	s.values[key] = val
+	s.modified = true
+	return nil
+}
+
+func PopInt(r *http.Request, key string) (int, error) {
+	s, err := sessionFromContext(r)
+	if err != nil {
+		return 0, err
+	}
+
+	s.mu.RLock()
+	defer s.mu.RUnlock()
+
+	if s.written == true {
+		return 0, ErrAlreadyWritten
+	}
+	v, exists := s.values[key]
+	if exists == false {
+		return 0, ErrKeyNotFound
+	}
+
+	var i int
+	switch v := v.(type) {
+	case int:
+		i = v
+	case json.Number:
+		i, err = strconv.Atoi(v.String())
+		if err != nil {
+			return 0, err
+		}
+	default:
+		return 0, ErrTypeAssertionFailed
+	}
+
+	delete(s.values, key)
+	s.modified = true
+	return i, nil
 }
 
 func Remove(r *http.Request, key string) error {

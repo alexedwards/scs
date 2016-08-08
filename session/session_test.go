@@ -71,6 +71,33 @@ func init() {
 		fmt.Fprintf(w, "%v", b)
 	})
 
+	testServeMux.HandleFunc("/PutInt", func(w http.ResponseWriter, r *http.Request) {
+		err := PutInt(r, "test_int", 12345)
+		if err != nil {
+			io.WriteString(w, err.Error())
+			return
+		}
+		io.WriteString(w, "OK")
+	})
+
+	testServeMux.HandleFunc("/GetInt", func(w http.ResponseWriter, r *http.Request) {
+		i, err := GetInt(r, "test_int")
+		if err != nil {
+			io.WriteString(w, err.Error())
+			return
+		}
+		fmt.Fprintf(w, "%d", i)
+	})
+
+	testServeMux.HandleFunc("/PopInt", func(w http.ResponseWriter, r *http.Request) {
+		i, err := PopInt(r, "test_int")
+		if err != nil {
+			io.WriteString(w, err.Error())
+			return
+		}
+		fmt.Fprintf(w, "%d", i)
+	})
+
 	testServeMux.HandleFunc("/RemoveString", func(w http.ResponseWriter, r *http.Request) {
 		err := Remove(r, "test_string")
 		if err != nil {

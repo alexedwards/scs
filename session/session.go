@@ -1,6 +1,7 @@
 package session
 
 import (
+	"bytes"
 	"context"
 	"crypto/rand"
 	"encoding/base64"
@@ -252,7 +253,9 @@ func encodeValues(values map[string]interface{}) ([]byte, error) {
 
 func decodeValues(b []byte) (map[string]interface{}, error) {
 	values := make(map[string]interface{})
-	err := json.Unmarshal(b, &values)
+	dec := json.NewDecoder(bytes.NewReader(b))
+	dec.UseNumber()
+	err := dec.Decode(&values)
 	if err != nil {
 		return nil, err
 	}

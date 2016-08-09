@@ -1,6 +1,7 @@
 package session
 
 import (
+	"net/http"
 	"testing"
 
 	"github.com/alexedwards/scs/mem/engine"
@@ -78,6 +79,14 @@ func TestInt(t *testing.T) {
 	_, body, _ = testRequest(t, h, "/GetInt", cookie)
 	if body != ErrKeyNotFound.Error() {
 		t.Fatalf("got %q: expected %q", body, ErrKeyNotFound.Error())
+	}
+
+	r := requestWithSession(new(http.Request), &session{values: make(map[string]interface{})})
+
+	_ = PutInt(r, "test_int", 12345)
+	i, _ := GetInt(r, "test_int")
+	if i != 12345 {
+		t.Fatalf("got %d: expected %d", i, 12345)
 	}
 }
 

@@ -59,8 +59,11 @@ func TestFindBadData(t *testing.T) {
 
 func TestExpiry(t *testing.T) {
 	e := New()
-	e.Cache.Set("test_session_token", []byte("encoded_data"), 100*time.Millisecond)
 
+	err := e.Save("test_session_token", []byte("encoded_data"), time.Now().Add(100*time.Millisecond))
+	if err != nil {
+		t.Fatalf("got %v: expected %v", err, nil)
+	}
 	_, found, _ := e.FindValues("test_session_token")
 	if found != true {
 		t.Fatalf("got %v: expected %v", found, true)
@@ -75,7 +78,7 @@ func TestExpiry(t *testing.T) {
 func TestSave(t *testing.T) {
 	e := New()
 
-	err := e.Save("test_session_token", []byte("encoded_data"), time.Minute)
+	err := e.Save("test_session_token", []byte("encoded_data"), time.Now().Add(time.Minute))
 	if err != nil {
 		t.Fatalf("got %v: expected %v", err, nil)
 	}

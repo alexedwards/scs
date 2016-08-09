@@ -110,7 +110,7 @@ func write(w http.ResponseWriter, r *http.Request) error {
 		return err
 	}
 
-	err = s.engine.Save(s.token, j, s.opts.maxAge)
+	err = s.engine.Save(s.token, j, s.opts.lifetime)
 	if err != nil {
 		return err
 	}
@@ -124,8 +124,8 @@ func write(w http.ResponseWriter, r *http.Request) error {
 		HttpOnly: s.opts.httpOnly,
 	}
 	if s.opts.persist == true {
-		cookie.Expires = time.Now().Add(s.opts.maxAge)
-		cookie.MaxAge = int(s.opts.maxAge.Seconds())
+		cookie.Expires = time.Now().Add(s.opts.lifetime)
+		cookie.MaxAge = int(s.opts.lifetime.Seconds())
 	}
 	http.SetCookie(w, cookie)
 	s.written = true

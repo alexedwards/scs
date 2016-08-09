@@ -34,8 +34,8 @@ func (e *engine) FindValues(token string) ([]byte, bool, error) {
 	return b, exists, nil
 }
 
-func (e *engine) Save(token string, b []byte, maxAge time.Duration) error {
-	e.Cache.Set(token, b, maxAge)
+func (e *engine) Save(token string, b []byte, lifetime time.Duration) error {
+	e.Cache.Set(token, b, lifetime)
 	return nil
 }
 

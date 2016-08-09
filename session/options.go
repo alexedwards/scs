@@ -13,7 +13,7 @@ var (
 		domain:     "",
 		errorFunc:  defaultErrorFunc,
 		httpOnly:   true,
-		maxAge:     24 * time.Hour,
+		lifetime:   24 * time.Hour,
 		path:       "/",
 		persist:    false,
 		secure:     false,
@@ -25,7 +25,7 @@ type options struct {
 	domain     string
 	errorFunc  func(http.ResponseWriter, *http.Request, error)
 	httpOnly   bool
-	maxAge     time.Duration
+	lifetime   time.Duration
 	path       string
 	persist    bool
 	secure     bool
@@ -57,9 +57,9 @@ func HttpOnly(b bool) Option {
 	}
 }
 
-func MaxAge(t time.Duration) Option {
+func Lifetime(t time.Duration) Option {
 	return func(opts *options) {
-		opts.maxAge = t
+		opts.lifetime = t
 	}
 }
 

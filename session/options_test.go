@@ -30,7 +30,7 @@ func TestCookieOptions(t *testing.T) {
 		t.Fatalf("got %q: expected to contain %q", cookie, "HttpOnly")
 	}
 
-	m = Manage(engine.New(), Path("/foo"), Domain("example.org"), Secure(true), HttpOnly(false), Persist(true), MaxAge(time.Hour))
+	m = Manage(engine.New(), Path("/foo"), Domain("example.org"), Secure(true), HttpOnly(false), Lifetime(time.Hour), Persist(true))
 	h = m(testServeMux)
 
 	_, _, cookie = testRequest(t, h, "/PutString", "")
@@ -53,7 +53,7 @@ func TestCookieOptions(t *testing.T) {
 		t.Fatalf("got %q: expected to contain %q:", cookie, "Expires")
 	}
 
-	m = Manage(engine.New(), MaxAge(time.Hour))
+	m = Manage(engine.New(), Lifetime(time.Hour))
 	h = m(testServeMux)
 
 	_, _, cookie = testRequest(t, h, "/PutString", "")
@@ -81,9 +81,9 @@ func TestAlwaysSave(t *testing.T) {
 	}
 }
 
-func TestMaxAge(t *testing.T) {
+func TestLifetime(t *testing.T) {
 	e := engine.New()
-	m := Manage(e, MaxAge(100*time.Millisecond), AlwaysSave(true))
+	m := Manage(e, AlwaysSave(true), Lifetime(100*time.Millisecond))
 	h := m(testServeMux)
 
 	_, _, cookie := testRequest(t, h, "/PutString", "")

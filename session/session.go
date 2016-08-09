@@ -65,7 +65,7 @@ func load(r *http.Request, engine scs.Engine, opts *options) (*http.Request, err
 	}
 	token := cookie.Value
 
-	b, found, err := engine.FindValues(token)
+	j, found, err := engine.FindValues(token)
 	if err != nil {
 		return nil, err
 	}
@@ -73,7 +73,7 @@ func load(r *http.Request, engine scs.Engine, opts *options) (*http.Request, err
 		return newSession(r, engine, opts)
 	}
 
-	values, err := decodeValues(b)
+	values, err := decodeValuesFromJSON(j)
 	if err != nil {
 		return nil, err
 	}
@@ -105,12 +105,12 @@ func write(w http.ResponseWriter, r *http.Request) error {
 		return nil
 	}
 
-	b, err := encodeValues(s.values)
+	j, err := encodeValuesToJSON(s.values)
 	if err != nil {
 		return err
 	}
 
-	err = s.engine.Save(s.token, b, s.opts.maxAge)
+	err = s.engine.Save(s.token, j, s.opts.maxAge)
 	if err != nil {
 		return err
 	}
@@ -247,13 +247,13 @@ func requestWithSession(r *http.Request, s *session) *http.Request {
 	return r.WithContext(ctx)
 }
 
-func encodeValues(values map[string]interface{}) ([]byte, error) {
+func encodeValuesToJSON(values map[string]interface{}) ([]byte, error) {
 	return json.Marshal(values)
 }
 
-func decodeValues(b []byte) (map[string]interface{}, error) {
+func decodeValuesFromJSON(j []byte) (map[string]interface{}, error) {
 	values := make(map[string]interface{})
-	dec := json.NewDecoder(bytes.NewReader(b))
+	dec := json.NewDecoder(bytes.NewReader(j))
 	dec.UseNumber()
 	err := dec.Decode(&values)
 	if err != nil {

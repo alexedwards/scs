@@ -222,7 +222,7 @@ func TestDestroy(t *testing.T) {
 	if strings.Contains(cookie, "Max-Age=0") == false {
 		t.Fatalf("got %q: expected to contain %q", cookie, "Max-Age=0")
 	}
-	_, found, _ := e.FindValues(oldToken)
+	_, found, _ := e.Find(oldToken)
 	if found != false {
 		t.Fatalf("got %v: expected %v", found, false)
 	}
@@ -244,7 +244,7 @@ func TestRegenerateToken(t *testing.T) {
 	if newToken == oldToken {
 		t.Fatalf("expected a difference", newToken)
 	}
-	_, found, _ := e.FindValues(oldToken)
+	_, found, _ := e.Find(oldToken)
 	if found != false {
 		t.Fatalf("got %v: expected %v", found, false)
 	}
@@ -271,7 +271,7 @@ func TestRenew(t *testing.T) {
 	if newToken == oldToken {
 		t.Fatalf("expected a difference", newToken)
 	}
-	_, found, _ := e.FindValues(oldToken)
+	_, found, _ := e.Find(oldToken)
 	if found != false {
 		t.Fatalf("got %v: expected %v", found, false)
 	}

@@ -22,6 +22,7 @@ var (
 type session struct {
 	token    string
 	values   map[string]interface{}
+	deadline time.Time
 	engine   scs.Engine
 	opts     *options
 	modified bool
@@ -44,10 +45,11 @@ func newSession(r *http.Request, engine scs.Engine, opts *options) (*http.Reques
 		return nil, err
 	}
 	s := &session{
-		token:  token,
-		values: make(map[string]interface{}),
-		engine: engine,
-		opts:   opts,
+		token:    token,
+		values:   make(map[string]interface{}),
+		deadline: time.Now().Add(opts.lifetime),
+		engine:   engine,
+		opts:     opts,
 	}
 	return requestWithSession(r, s), nil
 }
@@ -65,7 +67,7 @@ func load(r *http.Request, engine scs.Engine, opts *options) (*http.Request, err
 	}
 	token := cookie.Value
 
-	j, found, err := engine.FindValues(token)
+	j, found, err := engine.Find(token)
 	if err != nil {
 		return nil, err
 	}
@@ -73,16 +75,17 @@ func load(r *http.Request, engine scs.Engine, opts *options) (*http.Request, err
 		return newSession(r, engine, opts)
 	}
 
-	values, err := decodeValuesFromJSON(j)
+	values, deadline, err := decodeDataFromJSON(j)
 	if err != nil {
 		return nil, err
 	}
 
 	s := &session{
-		token:  token,
-		values: values,
-		engine: engine,
-		opts:   opts,
+		token:    token,
+		values:   values,
+		deadline: deadline,
+		engine:   engine,
+		opts:     opts,
 	}
 
 	return requestWithSession(r, s), nil
@@ -101,18 +104,16 @@ func write(w http.ResponseWriter, r *http.Request) error {
 		return nil
 	}
 
-	if s.modified == false && s.opts.alwaysSave == false {
+	if s.modified == false {
 		return nil
 	}
 
-	j, err := encodeValuesToJSON(s.values)
+	j, err := encodeDataToJSON(s.values, s.deadline)
 	if err != nil {
 		return err
 	}
 
-	expires := time.Now().Add(s.opts.lifetime)
-
-	err = s.engine.Save(s.token, j, expires)
+	err = s.engine.Save(s.token, j, s.deadline)
 	if err != nil {
 		return err
 	}
@@ -126,10 +127,10 @@ func write(w http.ResponseWriter, r *http.Request) error {
 		HttpOnly: s.opts.httpOnly,
 	}
 	if s.opts.persist == true {
-		cookie.Expires = expires
+		cookie.Expires = s.deadline
 		// The addition of 0.5 means MaxAge is correctly rounded to the nearest
 		// second instead of being floored.
-		cookie.MaxAge = int(expires.Sub(time.Now()).Seconds() + 0.5)
+		cookie.MaxAge = int(s.deadline.Sub(time.Now()).Seconds() + 0.5)
 	}
 	http.SetCookie(w, cookie)
 	s.written = true
@@ -161,6 +162,7 @@ func RegenerateToken(r *http.Request) error {
 	}
 
 	s.token = token
+	s.deadline = time.Now().Add(s.opts.lifetime)
 	s.modified = true
 
 	return nil
@@ -193,6 +195,7 @@ func Renew(r *http.Request) error {
 	for key := range s.values {
 		delete(s.values, key)
 	}
+	s.deadline = time.Now().Add(s.opts.lifetime)
 	s.modified = true
 
 	return nil
@@ -251,17 +254,27 @@ func requestWithSession(r *http.Request, s *session) *http.Request {
 	return r.WithContext(ctx)
 }
 
-func encodeValuesToJSON(values map[string]interface{}) ([]byte, error) {
-	return json.Marshal(values)
+func encodeDataToJSON(values map[string]interface{}, deadline time.Time) ([]byte, error) {
+	return json.Marshal(&struct {
+		Values   map[string]interface{} `json:"values"`
+		Deadline time.Time              `json:"deadline"`
+	}{
+		Values:   values,
+		Deadline: deadline,
+	})
 }
 
-func decodeValuesFromJSON(j []byte) (map[string]interface{}, error) {
-	values := make(map[string]interface{})
+func decodeDataFromJSON(j []byte) (map[string]interface{}, time.Time, error) {
+	var aux = struct {
+		Values   map[string]interface{} `json:"values"`
+		Deadline time.Time              `json:"deadline"`
+	}{}
+
 	dec := json.NewDecoder(bytes.NewReader(j))
 	dec.UseNumber()
-	err := dec.Decode(&values)
+	err := dec.Decode(&aux)
 	if err != nil {
-		return nil, err
+		return nil, time.Time{}, err
 	}
-	return values, nil
+	return aux.Values, aux.Deadline, nil
 }

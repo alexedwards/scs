@@ -9,35 +9,27 @@ var (
 	ContextDataName = "session.data"
 	CookieName      = "session.cookie"
 	defaultOptions  = &options{
-		alwaysSave: false,
-		domain:     "",
-		errorFunc:  defaultErrorFunc,
-		httpOnly:   true,
-		lifetime:   24 * time.Hour,
-		path:       "/",
-		persist:    false,
-		secure:     false,
+		domain:    "",
+		errorFunc: defaultErrorFunc,
+		httpOnly:  true,
+		lifetime:  24 * time.Hour,
+		path:      "/",
+		persist:   false,
+		secure:    false,
 	}
 )
 
 type options struct {
-	alwaysSave bool
-	domain     string
-	errorFunc  func(http.ResponseWriter, *http.Request, error)
-	httpOnly   bool
-	lifetime   time.Duration
-	path       string
-	persist    bool
-	secure     bool
+	domain    string
+	errorFunc func(http.ResponseWriter, *http.Request, error)
+	httpOnly  bool
+	lifetime  time.Duration
+	path      string
+	persist   bool
+	secure    bool
 }
 
 type Option func(*options)
-
-func AlwaysSave(b bool) Option {
-	return func(opts *options) {
-		opts.alwaysSave = b
-	}
-}
 
 func Domain(s string) Option {
 	return func(opts *options) {

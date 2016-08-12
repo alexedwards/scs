@@ -20,7 +20,7 @@ type engine struct {
 	*cache.Cache
 }
 
-func (e *engine) FindValues(token string) ([]byte, bool, error) {
+func (e *engine) Find(token string) ([]byte, bool, error) {
 	v, exists := e.Cache.Get(token)
 	if exists == false {
 		return nil, exists, nil
@@ -34,8 +34,8 @@ func (e *engine) FindValues(token string) ([]byte, bool, error) {
 	return b, exists, nil
 }
 
-func (e *engine) Save(token string, b []byte, expires time.Time) error {
-	e.Cache.Set(token, b, expires.Sub(time.Now()))
+func (e *engine) Save(token string, b []byte, expiry time.Time) error {
+	e.Cache.Set(token, b, expiry.Sub(time.Now()))
 	return nil
 }
 

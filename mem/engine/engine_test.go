@@ -20,11 +20,11 @@ func TestNew(t *testing.T) {
 	}
 }
 
-func TestFindValues(t *testing.T) {
+func TestFind(t *testing.T) {
 	e := New()
 	e.Cache.Set("test_session_token", []byte("encoded_data"), 0)
 
-	b, found, err := e.FindValues("test_session_token")
+	b, found, err := e.Find("test_session_token")
 	if err != nil {
 		t.Fatalf("got %v: expected %v", err, nil)
 	}
@@ -35,7 +35,7 @@ func TestFindValues(t *testing.T) {
 		t.Fatalf("got %v: expected %v", b, []byte("encoded_data"))
 	}
 
-	b, found, err = e.FindValues("missing_session_token")
+	b, found, err = e.Find("missing_session_token")
 	if err != nil {
 		t.Fatalf("got %v: expected %v", err, nil)
 	}
@@ -51,7 +51,7 @@ func TestFindBadData(t *testing.T) {
 	e := New()
 	e.Cache.Set("test_session_token", "not_a_byte_slice", 0)
 
-	_, _, err := e.FindValues("test_session_token")
+	_, _, err := e.Find("test_session_token")
 	if err != ErrTypeAssertionFailed {
 		t.Fatalf("got %v: expected %v", err, ErrTypeAssertionFailed)
 	}
@@ -64,12 +64,12 @@ func TestExpiry(t *testing.T) {
 	if err != nil {
 		t.Fatalf("got %v: expected %v", err, nil)
 	}
-	_, found, _ := e.FindValues("test_session_token")
+	_, found, _ := e.Find("test_session_token")
 	if found != true {
 		t.Fatalf("got %v: expected %v", found, true)
 	}
 	time.Sleep(100 * time.Millisecond)
-	_, found, _ = e.FindValues("test_session_token")
+	_, found, _ = e.Find("test_session_token")
 	if found != false {
 		t.Fatalf("got %v: expected %v", found, false)
 	}

@@ -64,45 +64,26 @@ func TestCookieOptions(t *testing.T) {
 		t.Fatalf("got %q: expected not to contain %q:", cookie, "Expires")
 	}
 }
-
-func TestAlwaysSave(t *testing.T) {
-	e := engine.New()
-	m := Manage(e, AlwaysSave(true))
-	h := m(testServeMux)
-
-	_, _, cookie := testRequest(t, h, "/GetString", "")
-	if cookie == "" {
-		t.Fatalf("got %q: expected session cookie", cookie)
-	}
-	token := extractTokenFromCookie(cookie)
-	_, found, _ := e.FindValues(token)
-	if found != true {
-		t.Fatalf("got %v: expected %v", found, true)
-	}
-}
-
 func TestLifetime(t *testing.T) {
 	e := engine.New()
-	m := Manage(e, AlwaysSave(true), Lifetime(100*time.Millisecond))
+	m := Manage(e, Lifetime(200*time.Millisecond))
 	h := m(testServeMux)
 
 	_, _, cookie := testRequest(t, h, "/PutString", "")
 	oldToken := extractTokenFromCookie(cookie)
-
-	_, body, _ := testRequest(t, h, "/GetString", cookie)
-	if body != "lorem ipsum" {
-		t.Fatalf("got %q: expected %q", body, "lorem ipsum")
-	}
-
 	time.Sleep(100 * time.Millisecond)
 
-	_, body, cookie = testRequest(t, h, "/GetString", cookie)
+	_, _, cookie = testRequest(t, h, "/PutString", cookie)
+	time.Sleep(100 * time.Millisecond)
+
+	_, body, _ := testRequest(t, h, "/GetString", cookie)
 	if body != ErrKeyNotFound.Error() {
 		t.Fatalf("got %q: expected %q", body, ErrKeyNotFound.Error())
 	}
+	_, _, cookie = testRequest(t, h, "/PutString", cookie)
 	newToken := extractTokenFromCookie(cookie)
 	if newToken == oldToken {
-		t.Fatalf("expected a difference", newToken)
+		t.Fatalf("expected a difference")
 	}
 }
 

@@ -14,10 +14,9 @@ import (
 	"github.com/alexedwards/scs"
 )
 
-var (
-	ErrAlreadyWritten     = errors.New("session already written to the engine and http.ResponseWriter")
-	ErrNoSessionInContext = errors.New("request.Context does not contain a *session value")
-)
+// ErrAlreadyWritten is returned by operations that attempt to modify the
+// session data after it has already been sent to the engine and client.
+var ErrAlreadyWritten = errors.New("session already written to the engine and http.ResponseWriter")
 
 type session struct {
 	token    string
@@ -146,6 +145,31 @@ func write(w http.ResponseWriter, r *http.Request) error {
 	return nil
 }
 
+// RegenerateToken creates a new session token while retaining the current session
+// data. The session lifetime is also reset. The old session token will be deleted
+// from the storage engine.
+//
+// To mitigate the risk of session fixation attacks, it's important that you call
+// RegenerateToken before making any changes to privilege levels (e.g. login and
+// logout operations). See https://www.owasp.org/index.php/Session_fixation for
+// additional information.
+//
+// Usage:
+//
+//	func login(w http.ResponseWriter, r *http.Request) {
+//		…
+//		userID := 123
+//		err := session.RegenerateToken(r)
+//		if err != nil {
+//			http.Error(w, err.Error(), 500)
+//			return
+//		}
+//		if err := session.PutInt(r, "user.id", userID); err != nil {
+//			http.Error(w, err.Error(), 500)
+//			return
+//		}
+//		…
+//	}
 func RegenerateToken(r *http.Request) error {
 	s, err := sessionFromContext(r)
 	if err != nil {
@@ -176,6 +200,12 @@ func RegenerateToken(r *http.Request) error {
 	return nil
 }
 
+// Renew creates a new session token and deletes all keys and values stored in
+// the current session. The session lifetime is also reset. The old session token
+// (and any accompanying data) will also be deleted from the storage engine.
+//
+// The Renew function is essentially a concurrency-safe amalgamation of the
+// RegenerateToken and Clear functions.
 func Renew(r *http.Request) error {
 	s, err := sessionFromContext(r)
 	if err != nil {
@@ -209,6 +239,12 @@ func Renew(r *http.Request) error {
 	return nil
 }
 
+// Destroy deletes all information in the storage engine related to the current
+// session and instructs clients to delete the session cookie.
+//
+// Destroy operations are effective immediately, and any future operations on
+// the session within the same request cycle will return a ErrAlreadyWritten error
+// (if you see this error, chances are you probably want to use the Renew function instead).
 func Destroy(w http.ResponseWriter, r *http.Request) error {
 	s, err := sessionFromContext(r)
 	if err != nil {
@@ -252,7 +288,7 @@ func Destroy(w http.ResponseWriter, r *http.Request) error {
 func sessionFromContext(r *http.Request) (*session, error) {
 	s, ok := r.Context().Value(ContextDataName).(*session)
 	if ok == false {
-		return nil, ErrNoSessionInContext
+		return nil, errors.New("request.Context does not contain a *session value")
 	}
 	return s, nil
 }

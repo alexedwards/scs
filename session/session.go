@@ -257,17 +257,17 @@ func requestWithSession(r *http.Request, s *session) *http.Request {
 func encodeDataToJSON(values map[string]interface{}, deadline time.Time) ([]byte, error) {
 	return json.Marshal(&struct {
 		Values   map[string]interface{} `json:"values"`
-		Deadline time.Time              `json:"deadline"`
+		Deadline int64                  `json:"deadline"`
 	}{
 		Values:   values,
-		Deadline: deadline,
+		Deadline: deadline.UnixNano(),
 	})
 }
 
 func decodeDataFromJSON(j []byte) (map[string]interface{}, time.Time, error) {
-	var aux = struct {
+	aux := struct {
 		Values   map[string]interface{} `json:"values"`
-		Deadline time.Time              `json:"deadline"`
+		Deadline int64                  `json:"deadline"`
 	}{}
 
 	dec := json.NewDecoder(bytes.NewReader(j))
@@ -276,5 +276,5 @@ func decodeDataFromJSON(j []byte) (map[string]interface{}, time.Time, error) {
 	if err != nil {
 		return nil, time.Time{}, err
 	}
-	return aux.Values, aux.Deadline, nil
+	return aux.Values, time.Unix(0, aux.Deadline), nil
 }

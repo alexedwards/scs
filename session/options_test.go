@@ -64,6 +64,7 @@ func TestCookieOptions(t *testing.T) {
 		t.Fatalf("got %q: expected not to contain %q:", cookie, "Expires")
 	}
 }
+
 func TestLifetime(t *testing.T) {
 	e := engine.New()
 	m := Manage(e, Lifetime(200*time.Millisecond))
@@ -84,6 +85,43 @@ func TestLifetime(t *testing.T) {
 	newToken := extractTokenFromCookie(cookie)
 	if newToken == oldToken {
 		t.Fatalf("expected a difference")
+	}
+}
+
+func TestIdleTimeout(t *testing.T) {
+	e := engine.New()
+	m := Manage(e, IdleTimeout(100*time.Millisecond), Lifetime(500*time.Millisecond))
+	h := m(testServeMux)
+
+	_, _, cookie := testRequest(t, h, "/PutString", "")
+	oldToken := extractTokenFromCookie(cookie)
+	time.Sleep(150 * time.Millisecond)
+
+	_, body, _ := testRequest(t, h, "/GetString", cookie)
+	if body != ErrKeyNotFound.Error() {
+		t.Fatalf("got %q: expected %q", body, ErrKeyNotFound.Error())
+	}
+	_, _, cookie = testRequest(t, h, "/PutString", cookie)
+	newToken := extractTokenFromCookie(cookie)
+	if newToken == oldToken {
+		t.Fatalf("expected a difference")
+	}
+
+	_, _, cookie = testRequest(t, h, "/PutString", "")
+	oldToken = extractTokenFromCookie(cookie)
+	time.Sleep(75 * time.Millisecond)
+
+	_, _, cookie = testRequest(t, h, "/GetString", cookie)
+	time.Sleep(75 * time.Millisecond)
+
+	_, body, cookie = testRequest(t, h, "/GetString", cookie)
+	if body != "lorem ipsum" {
+		t.Fatalf("got %q: expected %q", body, ErrKeyNotFound.Error())
+	}
+	_, _, cookie = testRequest(t, h, "/PutString", cookie)
+	newToken = extractTokenFromCookie(cookie)
+	if newToken != oldToken {
+		t.Fatalf("expected the same")
 	}
 }
 
@@ -119,6 +157,17 @@ func TestErrorFunc(t *testing.T) {
 	}
 	if string(rr.Body.Bytes()) != http.StatusText(418) {
 		t.Fatalf("got %q: expected %q", string(rr.Body.Bytes()), http.StatusText(418))
+	}
+}
+
+func TestPersist(t *testing.T) {
+	e := engine.New()
+	m := Manage(e, IdleTimeout(5*time.Minute), Persist(true))
+	h := m(testServeMux)
+
+	_, _, cookie := testRequest(t, h, "/PutString", "")
+	if strings.Contains(cookie, "Max-Age=300") == false {
+		t.Fatalf("got %q: expected to contain %q:", cookie, "Max-Age=300")
 	}
 }
 

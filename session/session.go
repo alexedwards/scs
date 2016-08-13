@@ -104,7 +104,7 @@ func write(w http.ResponseWriter, r *http.Request) error {
 		return nil
 	}
 
-	if s.modified == false {
+	if s.modified == false && s.opts.idleTimeout == 0 {
 		return nil
 	}
 
@@ -113,7 +113,15 @@ func write(w http.ResponseWriter, r *http.Request) error {
 		return err
 	}
 
-	err = s.engine.Save(s.token, j, s.deadline)
+	expiry := s.deadline
+	if s.opts.idleTimeout > 0 {
+		ie := time.Now().Add(s.opts.idleTimeout)
+		if ie.Before(expiry) {
+			expiry = ie
+		}
+	}
+
+	err = s.engine.Save(s.token, j, expiry)
 	if err != nil {
 		return err
 	}
@@ -127,10 +135,10 @@ func write(w http.ResponseWriter, r *http.Request) error {
 		HttpOnly: s.opts.httpOnly,
 	}
 	if s.opts.persist == true {
-		cookie.Expires = s.deadline
+		cookie.Expires = expiry
 		// The addition of 0.5 means MaxAge is correctly rounded to the nearest
 		// second instead of being floored.
-		cookie.MaxAge = int(s.deadline.Sub(time.Now()).Seconds() + 0.5)
+		cookie.MaxAge = int(expiry.Sub(time.Now()).Seconds() + 0.5)
 	}
 	http.SetCookie(w, cookie)
 	s.written = true

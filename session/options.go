@@ -9,24 +9,26 @@ var (
 	ContextDataName = "session.data"
 	CookieName      = "session.cookie"
 	defaultOptions  = &options{
-		domain:    "",
-		errorFunc: defaultErrorFunc,
-		httpOnly:  true,
-		lifetime:  24 * time.Hour,
-		path:      "/",
-		persist:   false,
-		secure:    false,
+		domain:      "",
+		errorFunc:   defaultErrorFunc,
+		httpOnly:    true,
+		idleTimeout: 0,
+		lifetime:    24 * time.Hour,
+		path:        "/",
+		persist:     false,
+		secure:      false,
 	}
 )
 
 type options struct {
-	domain    string
-	errorFunc func(http.ResponseWriter, *http.Request, error)
-	httpOnly  bool
-	lifetime  time.Duration
-	path      string
-	persist   bool
-	secure    bool
+	domain      string
+	errorFunc   func(http.ResponseWriter, *http.Request, error)
+	httpOnly    bool
+	idleTimeout time.Duration
+	lifetime    time.Duration
+	path        string
+	persist     bool
+	secure      bool
 }
 
 type Option func(*options)
@@ -46,6 +48,12 @@ func ErrorFunc(f func(http.ResponseWriter, *http.Request, error)) Option {
 func HttpOnly(b bool) Option {
 	return func(opts *options) {
 		opts.httpOnly = b
+	}
+}
+
+func IdleTimeout(t time.Duration) Option {
+	return func(opts *options) {
+		opts.idleTimeout = t
 	}
 }
 

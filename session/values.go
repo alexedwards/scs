@@ -251,6 +251,91 @@ func PopInt(r *http.Request, key string) (int, error) {
 	return i, nil
 }
 
+// GetFloat returns the float64 value for a given key from the session. If the key is
+// not present a ErrKeyNotFound error is returned. If the value could not be type
+// asserted or converted to a float64 then a ErrTypeAssertionFailed error is returned.
+func GetFloat(r *http.Request, key string) (float64, error) {
+	s, err := sessionFromContext(r)
+	if err != nil {
+		return 0, err
+	}
+
+	s.mu.RLock()
+	defer s.mu.RUnlock()
+
+	v, exists := s.values[key]
+	if exists == false {
+		return 0, ErrKeyNotFound
+	}
+
+	switch v := v.(type) {
+	case float64:
+		return v, nil
+	case json.Number:
+		return v.Float64()
+	}
+
+	return 0, ErrTypeAssertionFailed
+}
+
+// PutFloat adds an float64 value and corresponding key to the session. Any existing
+// values for the key will be replaced.
+func PutFloat(r *http.Request, key string, val float64) error {
+	s, err := sessionFromContext(r)
+	if err != nil {
+		return err
+	}
+
+	s.mu.Lock()
+	defer s.mu.Unlock()
+
+	if s.written == true {
+		return ErrAlreadyWritten
+	}
+	s.values[key] = val
+	s.modified = true
+	return nil
+}
+
+// PopFloat returns the float64 value for a given key, and removes both the key
+// and value from the session. If the key is not present a ErrKeyNotFound error
+// is returned. If the value could not be converted to an float64 then a
+// ErrTypeAssertionFailed error is returned and the data is not removed.
+func PopFloat(r *http.Request, key string) (float64, error) {
+	s, err := sessionFromContext(r)
+	if err != nil {
+		return 0, err
+	}
+
+	s.mu.RLock()
+	defer s.mu.RUnlock()
+
+	if s.written == true {
+		return 0, ErrAlreadyWritten
+	}
+	v, exists := s.values[key]
+	if exists == false {
+		return 0, ErrKeyNotFound
+	}
+
+	var f float64
+	switch v := v.(type) {
+	case float64:
+		f = v
+	case json.Number:
+		f, err = v.Float64()
+		if err != nil {
+			return 0, err
+		}
+	default:
+		return 0, ErrTypeAssertionFailed
+	}
+
+	delete(s.values, key)
+	s.modified = true
+	return f, nil
+}
+
 // Remove deletes the given key and corresponding value from the session.
 // If the key is not present this operation is a no-op.
 func Remove(r *http.Request, key string) error {

@@ -98,6 +98,33 @@ func init() {
 		fmt.Fprintf(w, "%d", i)
 	})
 
+	testServeMux.HandleFunc("/PutFloat", func(w http.ResponseWriter, r *http.Request) {
+		err := PutFloat(r, "test_float", 12.345)
+		if err != nil {
+			io.WriteString(w, err.Error())
+			return
+		}
+		io.WriteString(w, "OK")
+	})
+
+	testServeMux.HandleFunc("/GetFloat", func(w http.ResponseWriter, r *http.Request) {
+		f, err := GetFloat(r, "test_float")
+		if err != nil {
+			io.WriteString(w, err.Error())
+			return
+		}
+		fmt.Fprintf(w, "%.3f", f)
+	})
+
+	testServeMux.HandleFunc("/PopFloat", func(w http.ResponseWriter, r *http.Request) {
+		f, err := PopFloat(r, "test_float")
+		if err != nil {
+			io.WriteString(w, err.Error())
+			return
+		}
+		fmt.Fprintf(w, "%.3f", f)
+	})
+
 	testServeMux.HandleFunc("/RemoveString", func(w http.ResponseWriter, r *http.Request) {
 		err := Remove(r, "test_string")
 		if err != nil {

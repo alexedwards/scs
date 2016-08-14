@@ -8,6 +8,7 @@ import (
 	"regexp"
 	"strings"
 	"testing"
+	"time"
 
 	"github.com/alexedwards/scs/mem/engine"
 )
@@ -123,6 +124,33 @@ func init() {
 			return
 		}
 		fmt.Fprintf(w, "%.3f", f)
+	})
+
+	testServeMux.HandleFunc("/PutTime", func(w http.ResponseWriter, r *http.Request) {
+		err := PutTime(r, "test_time", time.Date(2009, time.November, 10, 23, 0, 0, 0, time.UTC))
+		if err != nil {
+			io.WriteString(w, err.Error())
+			return
+		}
+		io.WriteString(w, "OK")
+	})
+
+	testServeMux.HandleFunc("/GetTime", func(w http.ResponseWriter, r *http.Request) {
+		t, err := GetTime(r, "test_time")
+		if err != nil {
+			io.WriteString(w, err.Error())
+			return
+		}
+		io.WriteString(w, t.Format(time.RFC822))
+	})
+
+	testServeMux.HandleFunc("/PopTime", func(w http.ResponseWriter, r *http.Request) {
+		t, err := PopTime(r, "test_time")
+		if err != nil {
+			io.WriteString(w, err.Error())
+			return
+		}
+		io.WriteString(w, t.Format(time.RFC822))
 	})
 
 	testServeMux.HandleFunc("/RemoveString", func(w http.ResponseWriter, r *http.Request) {

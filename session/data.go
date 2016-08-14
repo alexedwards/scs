@@ -5,6 +5,7 @@ import (
 	"errors"
 	"net/http"
 	"strconv"
+	"time"
 )
 
 // ErrKeyNotFound is returned by operations on session data when the given
@@ -335,6 +336,92 @@ func PopFloat(r *http.Request, key string) (float64, error) {
 	delete(s.data, key)
 	s.modified = true
 	return f, nil
+}
+
+// GetTime returns the time.Time value for a given key from the session data. An
+// ErrKeyNotFound error is returned if the key does not exist. An ErrTypeAssertionFailed
+// error is returned if the value could not be type asserted or converted to a
+// time.Time.
+func GetTime(r *http.Request, key string) (time.Time, error) {
+	s, err := sessionFromContext(r)
+	if err != nil {
+		return time.Time{}, err
+	}
+
+	s.mu.RLock()
+	defer s.mu.RUnlock()
+
+	v, exists := s.data[key]
+	if exists == false {
+		return time.Time{}, ErrKeyNotFound
+	}
+
+	switch v := v.(type) {
+	case time.Time:
+		return v, nil
+	case string:
+		return time.Parse(time.RFC3339, v)
+	}
+
+	return time.Time{}, ErrTypeAssertionFailed
+}
+
+// PutTime adds an time.Time value and corresponding key to the session data. Any
+// existing value for the key will be replaced.
+func PutTime(r *http.Request, key string, val time.Time) error {
+	s, err := sessionFromContext(r)
+	if err != nil {
+		return err
+	}
+
+	s.mu.Lock()
+	defer s.mu.Unlock()
+
+	if s.written == true {
+		return ErrAlreadyWritten
+	}
+	s.data[key] = val
+	s.modified = true
+	return nil
+}
+
+// PopTime returns the time.Time value for a given key from the session data
+// and then removes it (both the key and value). An ErrKeyNotFound error is returned
+// if the key does not exist. An ErrTypeAssertionFailed error is returned if the
+// value could not be type asserted or converted to a time.Time.
+func PopTime(r *http.Request, key string) (time.Time, error) {
+	s, err := sessionFromContext(r)
+	if err != nil {
+		return time.Time{}, err
+	}
+
+	s.mu.RLock()
+	defer s.mu.RUnlock()
+
+	if s.written == true {
+		return time.Time{}, ErrAlreadyWritten
+	}
+	v, exists := s.data[key]
+	if exists == false {
+		return time.Time{}, ErrKeyNotFound
+	}
+
+	var t time.Time
+	switch v := v.(type) {
+	case time.Time:
+		t = v
+	case string:
+		t, err = time.Parse(time.RFC3339, v)
+		if err != nil {
+			return time.Time{}, err
+		}
+	default:
+		return time.Time{}, ErrTypeAssertionFailed
+	}
+
+	delete(s.data, key)
+	s.modified = true
+	return t, nil
 }
 
 // Remove deletes the given key and corresponding value from the session data.

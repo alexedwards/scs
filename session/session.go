@@ -20,7 +20,7 @@ var ErrAlreadyWritten = errors.New("session already written to the engine and ht
 
 type session struct {
 	token    string
-	values   map[string]interface{}
+	data     map[string]interface{}
 	deadline time.Time
 	engine   scs.Engine
 	opts     *options
@@ -45,7 +45,7 @@ func newSession(r *http.Request, engine scs.Engine, opts *options) (*http.Reques
 	}
 	s := &session{
 		token:    token,
-		values:   make(map[string]interface{}),
+		data:     make(map[string]interface{}),
 		deadline: time.Now().Add(opts.lifetime),
 		engine:   engine,
 		opts:     opts,
@@ -74,14 +74,14 @@ func load(r *http.Request, engine scs.Engine, opts *options) (*http.Request, err
 		return newSession(r, engine, opts)
 	}
 
-	values, deadline, err := decodeDataFromJSON(j)
+	data, deadline, err := decodeFromJSON(j)
 	if err != nil {
 		return nil, err
 	}
 
 	s := &session{
 		token:    token,
-		values:   values,
+		data:     data,
 		deadline: deadline,
 		engine:   engine,
 		opts:     opts,
@@ -107,7 +107,7 @@ func write(w http.ResponseWriter, r *http.Request) error {
 		return nil
 	}
 
-	j, err := encodeDataToJSON(s.values, s.deadline)
+	j, err := encodeToJSON(s.data, s.deadline)
 	if err != nil {
 		return err
 	}
@@ -232,8 +232,8 @@ func Renew(r *http.Request) error {
 	}
 
 	s.token = token
-	for key := range s.values {
-		delete(s.values, key)
+	for key := range s.data {
+		delete(s.data, key)
 	}
 	s.deadline = time.Now().Add(s.opts.lifetime)
 	s.modified = true
@@ -270,8 +270,8 @@ func Destroy(w http.ResponseWriter, r *http.Request) error {
 	}
 
 	s.token = ""
-	for key := range s.values {
-		delete(s.values, key)
+	for key := range s.data {
+		delete(s.data, key)
 	}
 	s.modified = true
 
@@ -292,7 +292,7 @@ func Destroy(w http.ResponseWriter, r *http.Request) error {
 }
 
 func sessionFromContext(r *http.Request) (*session, error) {
-	s, ok := r.Context().Value(ContextDataName).(*session)
+	s, ok := r.Context().Value(ContextName).(*session)
 	if ok == false {
 		return nil, errors.New("request.Context does not contain a *session value")
 	}
@@ -300,23 +300,23 @@ func sessionFromContext(r *http.Request) (*session, error) {
 }
 
 func requestWithSession(r *http.Request, s *session) *http.Request {
-	ctx := context.WithValue(r.Context(), ContextDataName, s)
+	ctx := context.WithValue(r.Context(), ContextName, s)
 	return r.WithContext(ctx)
 }
 
-func encodeDataToJSON(values map[string]interface{}, deadline time.Time) ([]byte, error) {
+func encodeToJSON(data map[string]interface{}, deadline time.Time) ([]byte, error) {
 	return json.Marshal(&struct {
-		Values   map[string]interface{} `json:"values"`
+		Data     map[string]interface{} `json:"data"`
 		Deadline int64                  `json:"deadline"`
 	}{
-		Values:   values,
+		Data:     data,
 		Deadline: deadline.UnixNano(),
 	})
 }
 
-func decodeDataFromJSON(j []byte) (map[string]interface{}, time.Time, error) {
+func decodeFromJSON(j []byte) (map[string]interface{}, time.Time, error) {
 	aux := struct {
-		Values   map[string]interface{} `json:"values"`
+		Data     map[string]interface{} `json:"data"`
 		Deadline int64                  `json:"deadline"`
 	}{}
 
@@ -326,5 +326,5 @@ func decodeDataFromJSON(j []byte) (map[string]interface{}, time.Time, error) {
 	if err != nil {
 		return nil, time.Time{}, err
 	}
-	return aux.Values, time.Unix(0, aux.Deadline), nil
+	return aux.Data, time.Unix(0, aux.Deadline), nil
 }

@@ -192,8 +192,8 @@ func TestCookieName(t *testing.T) {
 }
 
 func TestContextDataName(t *testing.T) {
-	oldContextDataName := ContextDataName
-	ContextDataName = "custom_context_name"
+	oldContextName := ContextName
+	ContextName = "custom_context_name"
 
 	m := Manage(engine.New())
 	h := m(testServeMux)
@@ -208,5 +208,5 @@ func TestContextDataName(t *testing.T) {
 		t.Fatalf("got %q: expected %q", body, "lorem ipsum")
 	}
 
-	ContextDataName = oldContextDataName
+	ContextName = oldContextName
 }

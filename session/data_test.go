@@ -81,7 +81,7 @@ func TestInt(t *testing.T) {
 		t.Fatalf("got %q: expected %q", body, ErrKeyNotFound.Error())
 	}
 
-	r := requestWithSession(new(http.Request), &session{values: make(map[string]interface{})})
+	r := requestWithSession(new(http.Request), &session{data: make(map[string]interface{})})
 
 	_ = PutInt(r, "test_int", 12345)
 	i, _ := GetInt(r, "test_int")
@@ -114,7 +114,7 @@ func TestFloat(t *testing.T) {
 		t.Fatalf("got %q: expected %q", body, ErrKeyNotFound.Error())
 	}
 
-	r := requestWithSession(new(http.Request), &session{values: make(map[string]interface{})})
+	r := requestWithSession(new(http.Request), &session{data: make(map[string]interface{})})
 
 	_ = PutFloat(r, "test_float", 12.345)
 	i, _ := GetFloat(r, "test_float")

@@ -9,7 +9,7 @@ import (
 
 // ErrKeyNotFound is returned by operations on session data when the given
 // key does not exist.
-var ErrKeyNotFound = errors.New("key not found in session values")
+var ErrKeyNotFound = errors.New("key not found in session data")
 
 // ErrTypeAssertionFailed is returned by operations on session data where the
 // received value could not be type asserted or converted into the required type.
@@ -28,7 +28,7 @@ func GetString(r *http.Request, key string) (string, error) {
 	s.mu.RLock()
 	defer s.mu.RUnlock()
 
-	v, exists := s.values[key]
+	v, exists := s.data[key]
 	if exists == false {
 		return "", ErrKeyNotFound
 	}
@@ -55,7 +55,7 @@ func PutString(r *http.Request, key string, val string) error {
 	if s.written == true {
 		return ErrAlreadyWritten
 	}
-	s.values[key] = val
+	s.data[key] = val
 	s.modified = true
 	return nil
 }
@@ -76,7 +76,7 @@ func PopString(r *http.Request, key string) (string, error) {
 	if s.written == true {
 		return "", ErrAlreadyWritten
 	}
-	v, exists := s.values[key]
+	v, exists := s.data[key]
 	if exists == false {
 		return "", ErrKeyNotFound
 	}
@@ -86,7 +86,7 @@ func PopString(r *http.Request, key string) (string, error) {
 		return "", ErrTypeAssertionFailed
 	}
 
-	delete(s.values, key)
+	delete(s.data, key)
 	s.modified = true
 	return str, nil
 }
@@ -103,7 +103,7 @@ func GetBool(r *http.Request, key string) (bool, error) {
 	s.mu.RLock()
 	defer s.mu.RUnlock()
 
-	v, exists := s.values[key]
+	v, exists := s.data[key]
 	if exists == false {
 		return false, ErrKeyNotFound
 	}
@@ -130,7 +130,7 @@ func PutBool(r *http.Request, key string, val bool) error {
 	if s.written == true {
 		return ErrAlreadyWritten
 	}
-	s.values[key] = val
+	s.data[key] = val
 	s.modified = true
 	return nil
 }
@@ -151,7 +151,7 @@ func PopBool(r *http.Request, key string) (bool, error) {
 	if s.written == true {
 		return false, ErrAlreadyWritten
 	}
-	v, exists := s.values[key]
+	v, exists := s.data[key]
 	if exists == false {
 		return false, ErrKeyNotFound
 	}
@@ -161,7 +161,7 @@ func PopBool(r *http.Request, key string) (bool, error) {
 		return false, ErrTypeAssertionFailed
 	}
 
-	delete(s.values, key)
+	delete(s.data, key)
 	s.modified = true
 	return b, nil
 }
@@ -178,7 +178,7 @@ func GetInt(r *http.Request, key string) (int, error) {
 	s.mu.RLock()
 	defer s.mu.RUnlock()
 
-	v, exists := s.values[key]
+	v, exists := s.data[key]
 	if exists == false {
 		return 0, ErrKeyNotFound
 	}
@@ -207,7 +207,7 @@ func PutInt(r *http.Request, key string, val int) error {
 	if s.written == true {
 		return ErrAlreadyWritten
 	}
-	s.values[key] = val
+	s.data[key] = val
 	s.modified = true
 	return nil
 }
@@ -228,7 +228,7 @@ func PopInt(r *http.Request, key string) (int, error) {
 	if s.written == true {
 		return 0, ErrAlreadyWritten
 	}
-	v, exists := s.values[key]
+	v, exists := s.data[key]
 	if exists == false {
 		return 0, ErrKeyNotFound
 	}
@@ -246,7 +246,7 @@ func PopInt(r *http.Request, key string) (int, error) {
 		return 0, ErrTypeAssertionFailed
 	}
 
-	delete(s.values, key)
+	delete(s.data, key)
 	s.modified = true
 	return i, nil
 }
@@ -264,7 +264,7 @@ func GetFloat(r *http.Request, key string) (float64, error) {
 	s.mu.RLock()
 	defer s.mu.RUnlock()
 
-	v, exists := s.values[key]
+	v, exists := s.data[key]
 	if exists == false {
 		return 0, ErrKeyNotFound
 	}
@@ -293,7 +293,7 @@ func PutFloat(r *http.Request, key string, val float64) error {
 	if s.written == true {
 		return ErrAlreadyWritten
 	}
-	s.values[key] = val
+	s.data[key] = val
 	s.modified = true
 	return nil
 }
@@ -314,7 +314,7 @@ func PopFloat(r *http.Request, key string) (float64, error) {
 	if s.written == true {
 		return 0, ErrAlreadyWritten
 	}
-	v, exists := s.values[key]
+	v, exists := s.data[key]
 	if exists == false {
 		return 0, ErrKeyNotFound
 	}
@@ -332,7 +332,7 @@ func PopFloat(r *http.Request, key string) (float64, error) {
 		return 0, ErrTypeAssertionFailed
 	}
 
-	delete(s.values, key)
+	delete(s.data, key)
 	s.modified = true
 	return f, nil
 }
@@ -351,7 +351,7 @@ func Remove(r *http.Request, key string) error {
 	if s.written == true {
 		return ErrAlreadyWritten
 	}
-	delete(s.values, key)
+	delete(s.data, key)
 	s.modified = true
 	return nil
 }
@@ -370,8 +370,8 @@ func Clear(r *http.Request) error {
 	if s.written == true {
 		return ErrAlreadyWritten
 	}
-	for key := range s.values {
-		delete(s.values, key)
+	for key := range s.data {
+		delete(s.data, key)
 	}
 	s.modified = true
 	return nil

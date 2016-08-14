@@ -8,12 +8,12 @@ import (
 // ContextDataName changes the value of the (string) key used to store the session
 // information in Request.Context. You should only need to change this if there is
 // a naming clash.
-var ContextDataName = "session.data"
+var ContextName = "scs.session"
 
 // CookieName changes the name of the session cookie issued to clients. Note that
 // cookie names should not contain whitespace, commas, semicolons, backslashes
 // or control characters as per RFC6265.
-var CookieName = "session.cookie"
+var CookieName = "scs.session.cookie"
 
 var defaultOptions = &options{
 	domain:      "",

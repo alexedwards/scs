@@ -1,6 +1,7 @@
 package session
 
 import (
+	"bytes"
 	"net/http"
 	"testing"
 	"time"
@@ -155,6 +156,44 @@ func TestTime(t *testing.T) {
 	tm, _ := GetTime(r, "test_time")
 	if tm != tt {
 		t.Fatalf("got %v: expected %v", t, tt)
+	}
+}
+
+func TestBytes(t *testing.T) {
+	m := Manage(engine.New())
+	h := m(testServeMux)
+
+	_, body, cookie := testRequest(t, h, "/PutBytes", "")
+	if body != "OK" {
+		t.Fatalf("got %q: expected %q", body, "OK")
+	}
+
+	_, body, _ = testRequest(t, h, "/GetBytes", cookie)
+	if body != "lorem ipsum" {
+		t.Fatalf("got %q: expected %q", body, "lorem ipsum")
+	}
+
+	_, body, cookie = testRequest(t, h, "/PopBytes", cookie)
+	if body != "lorem ipsum" {
+		t.Fatalf("got %q: expected %q", body, "lorem ipsum")
+	}
+
+	_, body, _ = testRequest(t, h, "/GetBytes", cookie)
+	if body != ErrKeyNotFound.Error() {
+		t.Fatalf("got %q: expected %q", body, ErrKeyNotFound.Error())
+	}
+
+	r := requestWithSession(new(http.Request), &session{data: make(map[string]interface{})})
+
+	_ = PutBytes(r, "test_bytes", []byte("lorem ipsum"))
+	b, _ := GetBytes(r, "test_bytes")
+	if bytes.Equal(b, []byte("lorem ipsum")) == false {
+		t.Fatalf("got %v: expected %v", b, []byte("lorem ipsum"))
+	}
+
+	err := PutBytes(r, "test_bytes", nil)
+	if err == nil {
+		t.Fatalf("expected an error")
 	}
 }
 

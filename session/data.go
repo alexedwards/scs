@@ -1,6 +1,7 @@
 package session
 
 import (
+	"encoding/base64"
 	"encoding/json"
 	"errors"
 	"net/http"
@@ -422,6 +423,96 @@ func PopTime(r *http.Request, key string) (time.Time, error) {
 	delete(s.data, key)
 	s.modified = true
 	return t, nil
+}
+
+// GetBytes returns the byte slice ([]byte) value for a given key from the session
+// data. An ErrKeyNotFound error is returned if the key does not exist. An ErrTypeAssertionFailed
+// error is returned if the value could not be type asserted or converted to
+// []byte.
+func GetBytes(r *http.Request, key string) ([]byte, error) {
+	s, err := sessionFromContext(r)
+	if err != nil {
+		return nil, err
+	}
+
+	s.mu.RLock()
+	defer s.mu.RUnlock()
+
+	v, exists := s.data[key]
+	if exists == false {
+		return nil, ErrKeyNotFound
+	}
+
+	switch v := v.(type) {
+	case []byte:
+		return v, nil
+	case string:
+		return base64.StdEncoding.DecodeString(v)
+	}
+
+	return nil, ErrTypeAssertionFailed
+}
+
+// PutBytes adds a byte slice ([]byte) value and corresponding key to the the
+// session data. Any existing value for the key will be replaced.
+func PutBytes(r *http.Request, key string, val []byte) error {
+	if val == nil {
+		return errors.New("value must not be nil")
+	}
+
+	s, err := sessionFromContext(r)
+	if err != nil {
+		return err
+	}
+
+	s.mu.Lock()
+	defer s.mu.Unlock()
+
+	if s.written == true {
+		return ErrAlreadyWritten
+	}
+	s.data[key] = val
+	s.modified = true
+	return nil
+}
+
+// PopBytes returns the byte slice ([]byte) value for a given key from the session
+// data and then removes it (both the key and value). An ErrKeyNotFound error is
+// returned if the key does not exist. An ErrTypeAssertionFailed error is returned
+// if the value could not be type asserted or converted to a []byte.
+func PopBytes(r *http.Request, key string) ([]byte, error) {
+	s, err := sessionFromContext(r)
+	if err != nil {
+		return nil, err
+	}
+
+	s.mu.RLock()
+	defer s.mu.RUnlock()
+
+	if s.written == true {
+		return nil, ErrAlreadyWritten
+	}
+	v, exists := s.data[key]
+	if exists == false {
+		return nil, ErrKeyNotFound
+	}
+
+	var b []byte
+	switch v := v.(type) {
+	case []byte:
+		b = v
+	case string:
+		b, err = base64.StdEncoding.DecodeString(v)
+		if err != nil {
+			return nil, err
+		}
+	default:
+		return nil, ErrTypeAssertionFailed
+	}
+
+	delete(s.data, key)
+	s.modified = true
+	return b, nil
 }
 
 // Remove deletes the given key and corresponding value from the session data.

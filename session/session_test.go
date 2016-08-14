@@ -153,6 +153,33 @@ func init() {
 		io.WriteString(w, t.Format(time.RFC822))
 	})
 
+	testServeMux.HandleFunc("/PutBytes", func(w http.ResponseWriter, r *http.Request) {
+		err := PutBytes(r, "test_bytes", []byte("lorem ipsum"))
+		if err != nil {
+			io.WriteString(w, err.Error())
+			return
+		}
+		io.WriteString(w, "OK")
+	})
+
+	testServeMux.HandleFunc("/GetBytes", func(w http.ResponseWriter, r *http.Request) {
+		b, err := GetBytes(r, "test_bytes")
+		if err != nil {
+			io.WriteString(w, err.Error())
+			return
+		}
+		fmt.Fprintf(w, "%s", b)
+	})
+
+	testServeMux.HandleFunc("/PopBytes", func(w http.ResponseWriter, r *http.Request) {
+		b, err := PopBytes(r, "test_bytes")
+		if err != nil {
+			io.WriteString(w, err.Error())
+			return
+		}
+		fmt.Fprintf(w, "%s", b)
+	})
+
 	testServeMux.HandleFunc("/RemoveString", func(w http.ResponseWriter, r *http.Request) {
 		err := Remove(r, "test_string")
 		if err != nil {

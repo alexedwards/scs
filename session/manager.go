@@ -7,7 +7,9 @@ import (
 	"github.com/alexedwards/scs"
 )
 
-func Manage(engine scs.Engine, opts ...Option) func(next http.Handler) http.Handler {
+type Middleware func(h http.Handler) http.Handler
+
+func Manage(engine scs.Engine, opts ...Option) Middleware {
 	return func(h http.Handler) http.Handler {
 		do := *defaultOptions
 

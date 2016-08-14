@@ -6,7 +6,7 @@ import (
 )
 
 // ContextDataName changes the value of the (string) key used to store the session
-// data in Request.Context. You should only need to change this if there is
+// information in Request.Context. You should only need to change this if there is
 // a naming clash.
 var ContextDataName = "session.data"
 
@@ -69,9 +69,9 @@ func HttpOnly(b bool) Option {
 }
 
 // IdleTimeout sets the maximum length of time a session can be inactive before it
-// expires. Some applications may wish to set this so there is a timeout after
-// (for example) 20 minutes of inactivity. Any client request which includes the
-// session cookie and is handled by the session middleware is classed as 'activity'.
+// expires. For example, some applications may wish to set this so there is a timeout after
+// 20 minutes of inactivity. Any client request which includes the
+// session cookie and is handled by the session middleware is classed as activity.s
 //
 // By default IdleTimeout is not set and there is no inactivity timeout.
 func IdleTimeout(t time.Duration) Option {
@@ -80,7 +80,7 @@ func IdleTimeout(t time.Duration) Option {
 	}
 }
 
-// Lifetime sets a maximum length of time that a session is valid for before
+// Lifetime sets the maximum length of time that a session is valid for before
 // it expires. The default value is 24 hours. This is an 'absolute expiry' which
 // is set when the session is first created and does not change.
 func Lifetime(t time.Duration) Option {
@@ -104,7 +104,7 @@ func Path(s string) Option {
 // The default value is false, which means that the session cookie will be destroyed
 // when the user closes their browser. If set to true, explicit 'Expires' and
 // 'MaxAge' values will be added to the cookie and it will be retained by the
-// user's browser until the expiry time is reached.
+// user's browser until the given expiry time is reached.
 func Persist(b bool) Option {
 	return func(opts *options) {
 		opts.persist = b

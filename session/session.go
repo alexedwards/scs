@@ -15,7 +15,7 @@ import (
 )
 
 // ErrAlreadyWritten is returned by operations that attempt to modify the
-// session data after it has already been sent to the engine and client.
+// session data after it has already been sent to the storage engine and client.
 var ErrAlreadyWritten = errors.New("session already written to the engine and http.ResponseWriter")
 
 type session struct {
@@ -146,8 +146,9 @@ func write(w http.ResponseWriter, r *http.Request) error {
 }
 
 // RegenerateToken creates a new session token while retaining the current session
-// data. The session lifetime is also reset. The old session token will be deleted
-// from the storage engine.
+// data. The session lifetime is also reset.
+//
+// The old session token (and accompanying data) is deleted from the storage engine.
 //
 // To mitigate the risk of session fixation attacks, it's important that you call
 // RegenerateToken before making any changes to privilege levels (e.g. login and
@@ -200,9 +201,10 @@ func RegenerateToken(r *http.Request) error {
 	return nil
 }
 
-// Renew creates a new session token and deletes all keys and values stored in
-// the current session. The session lifetime is also reset. The old session token
-// (and any accompanying data) will also be deleted from the storage engine.
+// Renew creates a new session token and removes all data for the session. The
+// session lifetime is also reset.
+//
+// The old session token (and accompanying data) is deleted from the storage engine.
 //
 // The Renew function is essentially a concurrency-safe amalgamation of the
 // RegenerateToken and Clear functions.
@@ -239,12 +241,16 @@ func Renew(r *http.Request) error {
 	return nil
 }
 
-// Destroy deletes all information in the storage engine related to the current
-// session and instructs clients to delete the session cookie.
+// Destroy deletes the current session. The session token (and any accompanying
+// data) is deleted from the storage engine and the client is instructed to
+// delete the session cookie.
 //
 // Destroy operations are effective immediately, and any future operations on
 // the session within the same request cycle will return a ErrAlreadyWritten error
-// (if you see this error, chances are you probably want to use the Renew function instead).
+// (if you see this error, you probably want to use the Renew function instead).
+//
+// A new empty session will be created for any client that subsequently tries
+// to use the destroyed session token.
 func Destroy(w http.ResponseWriter, r *http.Request) error {
 	s, err := sessionFromContext(r)
 	if err != nil {

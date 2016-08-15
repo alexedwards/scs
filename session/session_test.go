@@ -1,6 +1,7 @@
 package session
 
 import (
+	"encoding/gob"
 	"fmt"
 	"io"
 	"net/http"
@@ -15,7 +16,14 @@ import (
 
 var testServeMux *http.ServeMux
 
+type testUser struct {
+	Name string
+	Age  int
+}
+
 func init() {
+	gob.Register(testUser{})
+
 	testServeMux = http.NewServeMux()
 
 	testServeMux.HandleFunc("/PutString", func(w http.ResponseWriter, r *http.Request) {
@@ -178,6 +186,44 @@ func init() {
 			return
 		}
 		fmt.Fprintf(w, "%s", b)
+	})
+
+	testServeMux.HandleFunc("/PutObject", func(w http.ResponseWriter, r *http.Request) {
+		u := testUser{"alice", 21}
+		err := PutObject(r, "test_object", u)
+		if err != nil {
+			io.WriteString(w, err.Error())
+			return
+		}
+		io.WriteString(w, "OK")
+	})
+
+	testServeMux.HandleFunc("/GetObject", func(w http.ResponseWriter, r *http.Request) {
+		v, err := GetObject(r, "test_object")
+		if err != nil {
+			io.WriteString(w, err.Error())
+			return
+		}
+		u, ok := v.(testUser)
+		if ok == false {
+			io.WriteString(w, "could not convert to user")
+			return
+		}
+		fmt.Fprintf(w, "%s: %d", u.Name, u.Age)
+	})
+
+	testServeMux.HandleFunc("/PopObject", func(w http.ResponseWriter, r *http.Request) {
+		v, err := PopObject(r, "test_object")
+		if err != nil {
+			io.WriteString(w, err.Error())
+			return
+		}
+		u, ok := v.(testUser)
+		if ok == false {
+			io.WriteString(w, "could not convert to user")
+			return
+		}
+		fmt.Fprintf(w, "%s: %d", u.Name, u.Age)
 	})
 
 	testServeMux.HandleFunc("/RemoveString", func(w http.ResponseWriter, r *http.Request) {

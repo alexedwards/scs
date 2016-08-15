@@ -1,7 +1,9 @@
 package session
 
 import (
+	"bytes"
 	"encoding/base64"
+	"encoding/gob"
 	"encoding/json"
 	"errors"
 	"net/http"
@@ -39,7 +41,6 @@ func GetString(r *http.Request, key string) (string, error) {
 	if ok == false {
 		return "", ErrTypeAssertionFailed
 	}
-
 	return str, nil
 }
 
@@ -114,7 +115,6 @@ func GetBool(r *http.Request, key string) (bool, error) {
 	if ok == false {
 		return false, ErrTypeAssertionFailed
 	}
-
 	return b, nil
 }
 
@@ -191,7 +191,6 @@ func GetInt(r *http.Request, key string) (int, error) {
 	case json.Number:
 		return strconv.Atoi(v.String())
 	}
-
 	return 0, ErrTypeAssertionFailed
 }
 
@@ -277,7 +276,6 @@ func GetFloat(r *http.Request, key string) (float64, error) {
 	case json.Number:
 		return v.Float64()
 	}
-
 	return 0, ErrTypeAssertionFailed
 }
 
@@ -363,7 +361,6 @@ func GetTime(r *http.Request, key string) (time.Time, error) {
 	case string:
 		return time.Parse(time.RFC3339, v)
 	}
-
 	return time.Time{}, ErrTypeAssertionFailed
 }
 
@@ -449,7 +446,6 @@ func GetBytes(r *http.Request, key string) ([]byte, error) {
 	case string:
 		return base64.StdEncoding.DecodeString(v)
 	}
-
 	return nil, ErrTypeAssertionFailed
 }
 
@@ -515,6 +511,164 @@ func PopBytes(r *http.Request, key string) ([]byte, error) {
 	return b, nil
 }
 
+// GetObject returns the data item for a given key from the session. It should
+// only be used to retrieve custom data types that have been stored using PutObject.
+//
+// The data item returned has the type interface{} and will need to be asserted
+// into it's original type. This must be exactly the same as a type registered with
+// the encoding/gob package. See https://godoc.org/github.com/alexedwards/scs/session#PutObject
+// for further information.
+//
+// Usage:
+// 	type User struct {
+// 		Name  string
+// 		Email string
+// 	}
+//
+// 	func init() {
+// 		gob.Register(user{})
+// 	}
+//
+// 	func getUserHandler(w http.ResponseWriter, r *http.Request) {
+// 		v, err := session.GetObject(r, "user")
+// 		if err != nil {
+// 			http.Error(w, err.Error(), 500)
+// 			return
+// 		}
+// 		user, ok := v.(User)
+//		if !ok {
+//			http.Error(w, err.Error(), 500)
+// 			return
+// 		}
+// 		fmt.Fprintf(w, "%s: %s", user.Name, user.Email)
+// 	}
+func GetObject(r *http.Request, key string) (interface{}, error) {
+	s, err := sessionFromContext(r)
+	if err != nil {
+		return nil, err
+	}
+
+	s.mu.RLock()
+	defer s.mu.RUnlock()
+
+	v, exists := s.data[key]
+	if exists == false {
+		return nil, ErrKeyNotFound
+	}
+
+	str, ok := v.(string)
+	if ok == false {
+		return nil, ErrTypeAssertionFailed
+	}
+	b, err := base64.StdEncoding.DecodeString(str)
+	if err != nil {
+		return nil, err
+	}
+	return gobDecode(b)
+}
+
+// PutObject adds a data item (represented by the empty interface value) and
+// corresponding key to the the session data. Any existing value for the key will
+// be replaced.
+//
+// PutObject is typically used to store custom data types. It encodes the data
+// item to a gob and then into a base64-encoded string which is persisted by the
+// storage engine. This makes PutObject (and the accompanying GetObject and PopObject
+// functions) comparatively expensive operations.
+//
+// Because gob encoding is used, the fields on custom types must be exported in
+// order to be persisted correctly. Custom data types must also be registered with
+// gob.Register before PutObject is called (see https://golang.org/pkg/encoding/gob/#Register).
+//
+// Usage:
+// 	type User struct {
+// 		Name  string
+// 		Email string
+// 	}
+//
+// 	func init() {
+// 		gob.Register(User{})
+// 	}
+//
+// 	func putUserHandler(w http.ResponseWriter, r *http.Request) {
+// 		user := User{"Alice", "alice@example.com"}
+// 		err := session.PutObject(r, "user", user)
+// 		if err != nil {
+// 			http.Error(w, err.Error(), 500)
+// 			return
+// 		}
+// 		fmt.Fprintln(w, "OK")
+// 	}
+func PutObject(r *http.Request, key string, val interface{}) error {
+	if val == nil {
+		return errors.New("value must not be nil")
+	}
+
+	s, err := sessionFromContext(r)
+	if err != nil {
+		return err
+	}
+
+	b, err := gobEncode(&val)
+	if err != nil {
+		return err
+	}
+
+	s.mu.Lock()
+	defer s.mu.Unlock()
+
+	if s.written == true {
+		return ErrAlreadyWritten
+	}
+	s.data[key] = base64.StdEncoding.EncodeToString(b)
+	s.modified = true
+	return nil
+}
+
+// PopObject returns the data item for a given key from the session and then removes
+// it (both the key and value). It should only be used to retrieve custom data
+// types that have been stored using PutObject.
+//
+// The data item returned has the type interface{} and will need to be asserted
+// into it's original type. This must be exactly the same as a type registered with
+// the encoding/gob package. See https://godoc.org/github.com/alexedwards/scs/session#PutObject
+// and https://godoc.org/github.com/alexedwards/scs/session#GetObject
+// for usage examples.
+func PopObject(r *http.Request, key string) (interface{}, error) {
+	s, err := sessionFromContext(r)
+	if err != nil {
+		return nil, err
+	}
+
+	s.mu.RLock()
+	defer s.mu.RUnlock()
+
+	if s.written == true {
+		return nil, ErrAlreadyWritten
+	}
+	v, exists := s.data[key]
+	if exists == false {
+		return nil, ErrKeyNotFound
+	}
+
+	str, ok := v.(string)
+	if ok == false {
+		return nil, ErrTypeAssertionFailed
+	}
+	b, err := base64.StdEncoding.DecodeString(str)
+	if err != nil {
+		return nil, err
+	}
+	i, err := gobDecode(b)
+	if err != nil {
+		return nil, err
+	}
+
+	delete(s.data, key)
+	s.modified = true
+	return i, nil
+}
+
 // Remove deletes the given key and corresponding value from the session data.
 // If the key is not present this operation is a no-op.
 func Remove(r *http.Request, key string) error {
@@ -553,4 +707,23 @@ func Clear(r *http.Request) error {
 	}
 	s.modified = true
 	return nil
+}
+
+func gobEncode(v interface{}) ([]byte, error) {
+	buf := new(bytes.Buffer)
+	err := gob.NewEncoder(buf).Encode(v)
+	if err != nil {
+		return nil, err
+	}
+	return buf.Bytes(), nil
+}
+
+func gobDecode(b []byte) (interface{}, error) {
+	var v interface{}
+	buf := bytes.NewBuffer(b)
+	err := gob.NewDecoder(buf).Decode(&v)
+	if err != nil {
+		return nil, err
+	}
+	return v, nil
 }

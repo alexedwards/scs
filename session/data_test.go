@@ -197,6 +197,45 @@ func TestBytes(t *testing.T) {
 	}
 }
 
+func TestObject(t *testing.T) {
+	m := Manage(engine.New())
+	h := m(testServeMux)
+
+	_, body, cookie := testRequest(t, h, "/PutObject", "")
+	if body != "OK" {
+		t.Fatalf("got %q: expected %q", body, "OK")
+	}
+
+	_, body, _ = testRequest(t, h, "/GetObject", cookie)
+	if body != "alice: 21" {
+		t.Fatalf("got %q: expected %q", body, "alice: 21")
+	}
+
+	_, body, cookie = testRequest(t, h, "/PopObject", cookie)
+	if body != "alice: 21" {
+		t.Fatalf("got %q: expected %q", body, "alice: 21")
+	}
+
+	_, body, _ = testRequest(t, h, "/GetObject", cookie)
+	if body != ErrKeyNotFound.Error() {
+		t.Fatalf("got %q: expected %q", body, ErrKeyNotFound.Error())
+	}
+
+	r := requestWithSession(new(http.Request), &session{data: make(map[string]interface{})})
+
+	u := testUser{"bob", 65}
+	_ = PutObject(r, "test_object", u)
+	o, _ := PopObject(r, "test_object")
+	if o != u {
+		t.Fatalf("got %v: expected %v", o, u)
+	}
+
+	err := PutBytes(r, "test_object", nil)
+	if err == nil {
+		t.Fatalf("expected an error")
+	}
+}
+
 func TestRemove(t *testing.T) {
 	m := Manage(engine.New())
 	h := m(testServeMux)

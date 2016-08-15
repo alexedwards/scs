@@ -5,12 +5,12 @@ import (
 	"testing"
 	"time"
 
-	"github.com/alexedwards/scs"
+	"github.com/alexedwards/scs/session"
 )
 
 func TestNew(t *testing.T) {
 	e := New()
-	_, ok := interface{}(e).(scs.Engine)
+	_, ok := interface{}(e).(session.Engine)
 	if ok == false {
 		t.Fatalf("got %v: expected %v", ok, true)
 	}

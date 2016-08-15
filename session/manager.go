@@ -3,13 +3,11 @@ package session
 import (
 	"bytes"
 	"net/http"
-
-	"github.com/alexedwards/scs"
 )
 
 type Middleware func(h http.Handler) http.Handler
 
-func Manage(engine scs.Engine, opts ...Option) Middleware {
+func Manage(engine Engine, opts ...Option) Middleware {
 	return func(h http.Handler) http.Handler {
 		do := *defaultOptions
 
@@ -29,7 +27,7 @@ func Manage(engine scs.Engine, opts ...Option) Middleware {
 
 type manager struct {
 	h      http.Handler
-	engine scs.Engine
+	engine Engine
 	opts   *options
 }
 

@@ -10,8 +10,6 @@ import (
 	"net/http"
 	"sync"
 	"time"
-
-	"github.com/alexedwards/scs"
 )
 
 // ErrAlreadyWritten is returned by operations that attempt to modify the
@@ -22,7 +20,7 @@ type session struct {
 	token    string
 	data     map[string]interface{}
 	deadline time.Time
-	engine   scs.Engine
+	engine   Engine
 	opts     *options
 	modified bool
 	written  bool
@@ -38,7 +36,7 @@ func generateToken() (string, error) {
 	return base64.RawURLEncoding.EncodeToString(b), nil
 }
 
-func newSession(r *http.Request, engine scs.Engine, opts *options) (*http.Request, error) {
+func newSession(r *http.Request, engine Engine, opts *options) (*http.Request, error) {
 	token, err := generateToken()
 	if err != nil {
 		return nil, err
@@ -53,7 +51,7 @@ func newSession(r *http.Request, engine scs.Engine, opts *options) (*http.Reques
 	return requestWithSession(r, s), nil
 }
 
-func load(r *http.Request, engine scs.Engine, opts *options) (*http.Request, error) {
+func load(r *http.Request, engine Engine, opts *options) (*http.Request, error) {
 	cookie, err := r.Cookie(CookieName)
 	if err == http.ErrNoCookie {
 		return newSession(r, engine, opts)

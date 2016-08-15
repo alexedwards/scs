@@ -1,4 +1,4 @@
-package scs
+package session
 
 import "time"
 

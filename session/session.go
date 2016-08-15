@@ -26,7 +26,7 @@ type session struct {
 	opts     *options
 	modified bool
 	written  bool
-	mu       sync.RWMutex
+	mu       sync.Mutex
 }
 
 func generateToken() (string, error) {

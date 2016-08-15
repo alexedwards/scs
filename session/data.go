@@ -29,10 +29,9 @@ func GetString(r *http.Request, key string) (string, error) {
 		return "", err
 	}
 
-	s.mu.RLock()
-	defer s.mu.RUnlock()
-
+	s.mu.Lock()
 	v, exists := s.data[key]
+	s.mu.Unlock()
 	if exists == false {
 		return "", ErrKeyNotFound
 	}
@@ -103,10 +102,9 @@ func GetBool(r *http.Request, key string) (bool, error) {
 		return false, err
 	}
 
-	s.mu.RLock()
-	defer s.mu.RUnlock()
-
+	s.mu.Lock()
 	v, exists := s.data[key]
+	s.mu.Unlock()
 	if exists == false {
 		return false, ErrKeyNotFound
 	}
@@ -177,10 +175,9 @@ func GetInt(r *http.Request, key string) (int, error) {
 		return 0, err
 	}
 
-	s.mu.RLock()
-	defer s.mu.RUnlock()
-
+	s.mu.Lock()
 	v, exists := s.data[key]
+	s.mu.Unlock()
 	if exists == false {
 		return 0, ErrKeyNotFound
 	}
@@ -223,8 +220,8 @@ func PopInt(r *http.Request, key string) (int, error) {
 		return 0, err
 	}
 
-	s.mu.RLock()
-	defer s.mu.RUnlock()
+	s.mu.Lock()
+	defer s.mu.Unlock()
 
 	if s.written == true {
 		return 0, ErrAlreadyWritten
@@ -261,10 +258,9 @@ func GetInt64(r *http.Request, key string) (int64, error) {
 		return 0, err
 	}
 
-	s.mu.RLock()
-	defer s.mu.RUnlock()
-
+	s.mu.Lock()
 	v, exists := s.data[key]
+	s.mu.Unlock()
 	if exists == false {
 		return 0, ErrKeyNotFound
 	}
@@ -307,8 +303,8 @@ func PopInt64(r *http.Request, key string) (int64, error) {
 		return 0, err
 	}
 
-	s.mu.RLock()
-	defer s.mu.RUnlock()
+	s.mu.Lock()
+	defer s.mu.Unlock()
 
 	if s.written == true {
 		return 0, ErrAlreadyWritten
@@ -346,10 +342,9 @@ func GetFloat(r *http.Request, key string) (float64, error) {
 		return 0, err
 	}
 
-	s.mu.RLock()
-	defer s.mu.RUnlock()
-
+	s.mu.Lock()
 	v, exists := s.data[key]
+	s.mu.Unlock()
 	if exists == false {
 		return 0, ErrKeyNotFound
 	}
@@ -392,8 +387,8 @@ func PopFloat(r *http.Request, key string) (float64, error) {
 		return 0, err
 	}
 
-	s.mu.RLock()
-	defer s.mu.RUnlock()
+	s.mu.Lock()
+	defer s.mu.Unlock()
 
 	if s.written == true {
 		return 0, ErrAlreadyWritten
@@ -431,10 +426,9 @@ func GetTime(r *http.Request, key string) (time.Time, error) {
 		return time.Time{}, err
 	}
 
-	s.mu.RLock()
-	defer s.mu.RUnlock()
-
+	s.mu.Lock()
 	v, exists := s.data[key]
+	s.mu.Unlock()
 	if exists == false {
 		return time.Time{}, ErrKeyNotFound
 	}
@@ -477,8 +471,8 @@ func PopTime(r *http.Request, key string) (time.Time, error) {
 		return time.Time{}, err
 	}
 
-	s.mu.RLock()
-	defer s.mu.RUnlock()
+	s.mu.Lock()
+	defer s.mu.Unlock()
 
 	if s.written == true {
 		return time.Time{}, ErrAlreadyWritten
@@ -516,10 +510,9 @@ func GetBytes(r *http.Request, key string) ([]byte, error) {
 		return nil, err
 	}
 
-	s.mu.RLock()
-	defer s.mu.RUnlock()
-
+	s.mu.Lock()
 	v, exists := s.data[key]
+	s.mu.Unlock()
 	if exists == false {
 		return nil, ErrKeyNotFound
 	}
@@ -566,8 +559,8 @@ func PopBytes(r *http.Request, key string) ([]byte, error) {
 		return nil, err
 	}
 
-	s.mu.RLock()
-	defer s.mu.RUnlock()
+	s.mu.Lock()
+	defer s.mu.Unlock()
 
 	if s.written == true {
 		return nil, ErrAlreadyWritten
@@ -632,10 +625,9 @@ func GetObject(r *http.Request, key string) (interface{}, error) {
 		return nil, err
 	}
 
-	s.mu.RLock()
-	defer s.mu.RUnlock()
-
+	s.mu.Lock()
 	v, exists := s.data[key]
+	s.mu.Unlock()
 	if exists == false {
 		return nil, ErrKeyNotFound
 	}
@@ -724,8 +716,8 @@ func PopObject(r *http.Request, key string) (interface{}, error) {
 		return nil, err
 	}
 
-	s.mu.RLock()
-	defer s.mu.RUnlock()
+	s.mu.Lock()
+	defer s.mu.Unlock()
 
 	if s.written == true {
 		return nil, ErrAlreadyWritten

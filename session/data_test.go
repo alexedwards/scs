@@ -92,6 +92,39 @@ func TestInt(t *testing.T) {
 	}
 }
 
+func TestInt64(t *testing.T) {
+	m := Manage(engine.New())
+	h := m(testServeMux)
+
+	_, body, cookie := testRequest(t, h, "/PutInt64", "")
+	if body != "OK" {
+		t.Fatalf("got %q: expected %q", body, "OK")
+	}
+
+	_, body, _ = testRequest(t, h, "/GetInt64", cookie)
+	if body != "9223372036854775807" {
+		t.Fatalf("got %q: expected %q", body, "9223372036854775807")
+	}
+
+	_, body, cookie = testRequest(t, h, "/PopInt64", cookie)
+	if body != "9223372036854775807" {
+		t.Fatalf("got %q: expected %q", body, "9223372036854775807")
+	}
+
+	_, body, _ = testRequest(t, h, "/GetInt64", cookie)
+	if body != ErrKeyNotFound.Error() {
+		t.Fatalf("got %q: expected %q", body, ErrKeyNotFound.Error())
+	}
+
+	r := requestWithSession(new(http.Request), &session{data: make(map[string]interface{})})
+
+	_ = PutInt64(r, "test_int64", 9223372036854775807)
+	i, _ := GetInt64(r, "test_int64")
+	if i != 9223372036854775807 {
+		t.Fatalf("got %d: expected %d", i, 9223372036854775807)
+	}
+}
+
 func TestFloat(t *testing.T) {
 	m := Manage(engine.New())
 	h := m(testServeMux)

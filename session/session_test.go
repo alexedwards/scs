@@ -107,6 +107,33 @@ func init() {
 		fmt.Fprintf(w, "%d", i)
 	})
 
+	testServeMux.HandleFunc("/PutInt64", func(w http.ResponseWriter, r *http.Request) {
+		err := PutInt64(r, "test_int", 9223372036854775807)
+		if err != nil {
+			io.WriteString(w, err.Error())
+			return
+		}
+		io.WriteString(w, "OK")
+	})
+
+	testServeMux.HandleFunc("/GetInt64", func(w http.ResponseWriter, r *http.Request) {
+		i, err := GetInt64(r, "test_int")
+		if err != nil {
+			io.WriteString(w, err.Error())
+			return
+		}
+		fmt.Fprintf(w, "%d", i)
+	})
+
+	testServeMux.HandleFunc("/PopInt64", func(w http.ResponseWriter, r *http.Request) {
+		i, err := PopInt64(r, "test_int")
+		if err != nil {
+			io.WriteString(w, err.Error())
+			return
+		}
+		fmt.Fprintf(w, "%d", i)
+	})
+
 	testServeMux.HandleFunc("/PutFloat", func(w http.ResponseWriter, r *http.Request) {
 		err := PutFloat(r, "test_float", 12.345)
 		if err != nil {

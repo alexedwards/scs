@@ -252,6 +252,90 @@ func PopInt(r *http.Request, key string) (int, error) {
 	return i, nil
 }
 
+// GetInt64 returns the int64 value for a given key from the session data. An ErrKeyNotFound
+// error is returned if the key does not exist. An ErrTypeAssertionFailed error
+// is returned if the value could not be type asserted or converted to a int64.
+func GetInt64(r *http.Request, key string) (int64, error) {
+	s, err := sessionFromContext(r)
+	if err != nil {
+		return 0, err
+	}
+
+	s.mu.RLock()
+	defer s.mu.RUnlock()
+
+	v, exists := s.data[key]
+	if exists == false {
+		return 0, ErrKeyNotFound
+	}
+
+	switch v := v.(type) {
+	case int64:
+		return v, nil
+	case json.Number:
+		return v.Int64()
+	}
+	return 0, ErrTypeAssertionFailed
+}
+
+// PutInt64 adds an int64 value and corresponding key to the session data. Any existing
+// value for the key will be replaced.
+func PutInt64(r *http.Request, key string, val int64) error {
+	s, err := sessionFromContext(r)
+	if err != nil {
+		return err
+	}
+
+	s.mu.Lock()
+	defer s.mu.Unlock()
+
+	if s.written == true {
+		return ErrAlreadyWritten
+	}
+	s.data[key] = val
+	s.modified = true
+	return nil
+}
+
+// PopInt64 returns the int64 value for a given key from the session data
+// and then removes it (both the key and value). An ErrKeyNotFound error is returned
+// if the key does not exist. An ErrTypeAssertionFailed error is returned if the
+// value could not be type asserted or converted to a int64.
+func PopInt64(r *http.Request, key string) (int64, error) {
+	s, err := sessionFromContext(r)
+	if err != nil {
+		return 0, err
+	}
+
+	s.mu.RLock()
+	defer s.mu.RUnlock()
+
+	if s.written == true {
+		return 0, ErrAlreadyWritten
+	}
+	v, exists := s.data[key]
+	if exists == false {
+		return 0, ErrKeyNotFound
+	}
+
+	var i int64
+	switch v := v.(type) {
+	case int64:
+		i = v
+	case json.Number:
+		i, err = v.Int64()
+		if err != nil {
+			return 0, err
+		}
+	default:
+		return 0, ErrTypeAssertionFailed
+	}
+
+	delete(s.data, key)
+	s.modified = true
+	return i, nil
+}
+
 // GetFloat returns the float64 value for a given key from the session data. An
 // ErrKeyNotFound error is returned if the key does not exist. An ErrTypeAssertionFailed
 // error is returned if the value could not be type asserted or converted to a

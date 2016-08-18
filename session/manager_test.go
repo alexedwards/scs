@@ -4,11 +4,11 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/alexedwards/scs/mem/engine"
+	"github.com/alexedwards/scs/engine/memstore"
 )
 
 func TestWriteResponse(t *testing.T) {
-	m := Manage(engine.New())
+	m := Manage(memstore.New())
 	h := m(testServeMux)
 
 	code, _, _ := testRequest(t, h, "/WriteHeader", "")
@@ -18,9 +18,9 @@ func TestWriteResponse(t *testing.T) {
 }
 
 func TestManagerOptionsLeak(t *testing.T) {
-	_ = Manage(engine.New(), Domain("example.org"))
+	_ = Manage(memstore.New(), Domain("example.org"))
 
-	m := Manage(engine.New())
+	m := Manage(memstore.New())
 	h := m(testServeMux)
 	_, _, cookie := testRequest(t, h, "/PutString", "")
 	if strings.Contains(cookie, "example.org") == true {

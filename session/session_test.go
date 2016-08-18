@@ -11,7 +11,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/alexedwards/scs/mem/engine"
+	"github.com/alexedwards/scs/engine/memstore"
 )
 
 var testServeMux *http.ServeMux
@@ -346,7 +346,7 @@ func TestGenerateToken(t *testing.T) {
 }
 
 func TestDestroy(t *testing.T) {
-	e := engine.New()
+	e := memstore.New()
 	m := Manage(e)
 	h := m(testServeMux)
 
@@ -384,7 +384,7 @@ func TestDestroy(t *testing.T) {
 }
 
 func TestRegenerateToken(t *testing.T) {
-	e := engine.New()
+	e := memstore.New()
 	m := Manage(e)
 	h := m(testServeMux)
 
@@ -411,7 +411,7 @@ func TestRegenerateToken(t *testing.T) {
 }
 
 func TestRenew(t *testing.T) {
-	e := engine.New()
+	e := memstore.New()
 	m := Manage(e)
 	h := m(testServeMux)
 

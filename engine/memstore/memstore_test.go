@@ -1,4 +1,4 @@
-package engine
+package memstore
 
 import (
 	"bytes"
@@ -9,22 +9,22 @@ import (
 )
 
 func TestNew(t *testing.T) {
-	e := New()
-	_, ok := interface{}(e).(session.Engine)
+	m := New()
+	_, ok := interface{}(m).(session.Engine)
 	if ok == false {
 		t.Fatalf("got %v: expected %v", ok, true)
 	}
 
-	if len(e.Cache.Items()) > 0 {
-		t.Fatalf("got %d: expected %d", len(e.Cache.Items()), 0)
+	if len(m.Cache.Items()) > 0 {
+		t.Fatalf("got %d: expected %d", len(m.Cache.Items()), 0)
 	}
 }
 
 func TestFind(t *testing.T) {
-	e := New()
-	e.Cache.Set("test_session_token", []byte("encoded_data"), 0)
+	m := New()
+	m.Cache.Set("test_session_token", []byte("encoded_data"), 0)
 
-	b, found, err := e.Find("test_session_token")
+	b, found, err := m.Find("test_session_token")
 	if err != nil {
 		t.Fatalf("got %v: expected %v", err, nil)
 	}
@@ -35,7 +35,7 @@ func TestFind(t *testing.T) {
 		t.Fatalf("got %v: expected %v", b, []byte("encoded_data"))
 	}
 
-	b, found, err = e.Find("missing_session_token")
+	b, found, err = m.Find("missing_session_token")
 	if err != nil {
 		t.Fatalf("got %v: expected %v", err, nil)
 	}
@@ -48,54 +48,54 @@ func TestFind(t *testing.T) {
 }
 
 func TestFindBadData(t *testing.T) {
-	e := New()
-	e.Cache.Set("test_session_token", "not_a_byte_slice", 0)
+	m := New()
+	m.Cache.Set("test_session_token", "not_a_byte_slice", 0)
 
-	_, _, err := e.Find("test_session_token")
+	_, _, err := m.Find("test_session_token")
 	if err != ErrTypeAssertionFailed {
 		t.Fatalf("got %v: expected %v", err, ErrTypeAssertionFailed)
 	}
 }
 
 func TestExpiry(t *testing.T) {
-	e := New()
+	m := New()
 
-	err := e.Save("test_session_token", []byte("encoded_data"), time.Now().Add(100*time.Millisecond))
+	err := m.Save("test_session_token", []byte("encoded_data"), time.Now().Add(100*time.Millisecond))
 	if err != nil {
 		t.Fatalf("got %v: expected %v", err, nil)
 	}
-	_, found, _ := e.Find("test_session_token")
+	_, found, _ := m.Find("test_session_token")
 	if found != true {
 		t.Fatalf("got %v: expected %v", found, true)
 	}
 	time.Sleep(100 * time.Millisecond)
-	_, found, _ = e.Find("test_session_token")
+	_, found, _ = m.Find("test_session_token")
 	if found != false {
 		t.Fatalf("got %v: expected %v", found, false)
 	}
 }
 
 func TestSave(t *testing.T) {
-	e := New()
+	m := New()
 
-	err := e.Save("test_session_token", []byte("encoded_data"), time.Now().Add(time.Minute))
+	err := m.Save("test_session_token", []byte("encoded_data"), time.Now().Add(time.Minute))
 	if err != nil {
 		t.Fatalf("got %v: expected %v", err, nil)
 	}
-	if len(e.Cache.Items()) != 1 {
-		t.Fatalf("got %d: expected %d", len(e.Cache.Items()), 1)
+	if len(m.Cache.Items()) != 1 {
+		t.Fatalf("got %d: expected %d", len(m.Cache.Items()), 1)
 	}
 }
 
 func TestDelete(t *testing.T) {
-	e := New()
-	e.Cache.Set("test_session_token", []byte("encoded_data"), 0)
+	m := New()
+	m.Cache.Set("test_session_token", []byte("encoded_data"), 0)
 
-	err := e.Delete("test_session_token")
+	err := m.Delete("test_session_token")
 	if err != nil {
 		t.Fatalf("got %v: expected %v", err, nil)
 	}
-	if len(e.Cache.Items()) != 0 {
-		t.Fatalf("got %d: expected %d", len(e.Cache.Items()), 0)
+	if len(m.Cache.Items()) != 0 {
+		t.Fatalf("got %d: expected %d", len(m.Cache.Items()), 0)
 	}
 }

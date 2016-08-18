@@ -1,4 +1,4 @@
-package engine
+package memstore
 
 import (
 	"errors"
@@ -9,19 +9,19 @@ import (
 
 var ErrTypeAssertionFailed = errors.New("type assertion failed: could not convert interface{} to []byte")
 
-func New() *engine {
-	return &engine{
+func New() *memstore {
+	return &memstore{
 		// Clear up expired items once every minute
 		cache.New(cache.DefaultExpiration, time.Minute),
 	}
 }
 
-type engine struct {
+type memstore struct {
 	*cache.Cache
 }
 
-func (e *engine) Find(token string) ([]byte, bool, error) {
-	v, exists := e.Cache.Get(token)
+func (m *memstore) Find(token string) ([]byte, bool, error) {
+	v, exists := m.Cache.Get(token)
 	if exists == false {
 		return nil, exists, nil
 	}
@@ -34,12 +34,12 @@ func (e *engine) Find(token string) ([]byte, bool, error) {
 	return b, exists, nil
 }
 
-func (e *engine) Save(token string, b []byte, expiry time.Time) error {
-	e.Cache.Set(token, b, expiry.Sub(time.Now()))
+func (m *memstore) Save(token string, b []byte, expiry time.Time) error {
+	m.Cache.Set(token, b, expiry.Sub(time.Now()))
 	return nil
 }
 
-func (e *engine) Delete(token string) error {
-	e.Cache.Delete(token)
+func (m *memstore) Delete(token string) error {
+	m.Cache.Delete(token)
 	return nil
 }

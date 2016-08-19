@@ -9,18 +9,18 @@ import (
 
 var ErrTypeAssertionFailed = errors.New("type assertion failed: could not convert interface{} to []byte")
 
-func New() *memstore {
-	return &memstore{
+func New() *MemStore {
+	return &MemStore{
 		// Clear up expired items once every minute
 		cache.New(cache.DefaultExpiration, time.Minute),
 	}
 }
 
-type memstore struct {
+type MemStore struct {
 	*cache.Cache
 }
 
-func (m *memstore) Find(token string) ([]byte, bool, error) {
+func (m *MemStore) Find(token string) ([]byte, bool, error) {
 	v, exists := m.Cache.Get(token)
 	if exists == false {
 		return nil, exists, nil
@@ -34,12 +34,12 @@ func (m *memstore) Find(token string) ([]byte, bool, error) {
 	return b, exists, nil
 }
 
-func (m *memstore) Save(token string, b []byte, expiry time.Time) error {
+func (m *MemStore) Save(token string, b []byte, expiry time.Time) error {
 	m.Cache.Set(token, b, expiry.Sub(time.Now()))
 	return nil
 }
 
-func (m *memstore) Delete(token string) error {
+func (m *MemStore) Delete(token string) error {
 	m.Cache.Delete(token)
 	return nil
 }

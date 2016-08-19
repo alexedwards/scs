@@ -298,6 +298,41 @@ func init() {
 		io.WriteString(w, "OK")
 	})
 
+	testServeMux.HandleFunc("/Save", func(w http.ResponseWriter, r *http.Request) {
+		err := PutString(r, "test_string", "lorem ipsum")
+		if err != nil {
+			io.WriteString(w, err.Error())
+			return
+		}
+		err = Save(w, r)
+		if err != nil {
+			io.WriteString(w, err.Error())
+			return
+		}
+		io.WriteString(w, "OK")
+	})
+
+	testServeMux.HandleFunc("/Flush", func(w http.ResponseWriter, r *http.Request) {
+		err := PutString(r, "test_string", "lorem ipsum")
+		if err != nil {
+			io.WriteString(w, err.Error())
+			return
+		}
+		err = Save(w, r)
+		if err != nil {
+			io.WriteString(w, err.Error())
+			return
+		}
+		fw, ok := w.(http.Flusher)
+		if !ok {
+			http.Error(w, "could not assert to Flusher", 500)
+			return
+		}
+		w.Write([]byte("This is some…"))
+		fw.Flush()
+		w.Write([]byte("flushed data"))
+	})
+
 	testServeMux.HandleFunc("/WriteHeader", func(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusTeapot)
 		io.WriteString(w, http.StatusText(http.StatusTeapot))
@@ -434,5 +469,36 @@ func TestRenew(t *testing.T) {
 	_, body, _ = testRequest(t, h, "/GetString", cookie)
 	if body != ErrKeyNotFound.Error() {
 		t.Fatalf("got %q: expected %q", body, ErrKeyNotFound.Error())
+	}
+}
+
+func TestSave(t *testing.T) {
+	e := memstore.New(time.Minute)
+	m := Manage(e)
+	h := m(testServeMux)
+
+	rr := httptest.NewRecorder()
+	r, err := http.NewRequest("GET", "/Save", nil)
+	if err != nil {
+		t.Fatal(err)
+	}
+	h.ServeHTTP(rr, r)
+
+	body := string(rr.Body.Bytes())
+	cookie := rr.Header().Get("Set-Cookie")
+	token := extractTokenFromCookie(cookie)
+
+	if body != "OK" {
+		t.Fatalf("got %q: expected %q", body, "OK")
+	}
+	if len(rr.Header()["Set-Cookie"]) != 1 {
+		t.Fatalf("got %d: expected %d", len(rr.Header()["Set-Cookie"]), 1)
+	}
+	if strings.HasPrefix(cookie, fmt.Sprintf("%s=", CookieName)) == false {
+		t.Fatalf("got %q: expected prefix %q", cookie, fmt.Sprintf("%s=", CookieName))
+	}
+	_, found, _ := e.Find(token)
+	if found != true {
+		t.Fatalf("got %v: expected %v", found, true)
 	}
 }

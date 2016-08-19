@@ -289,6 +289,59 @@ func Destroy(w http.ResponseWriter, r *http.Request) error {
 	return nil
 }
 
+// Save immediately writes the session cookie header to the ResponseWriter and
+// saves the session data to the storage engine, if needed.
+//
+// Using Save is not normally necessary. The session middleware (which buffers
+// all writes to the underlying connection) will automatically handle setting the
+// cookie header and storing the data for you.
+//
+// However there may be instances where you wish to break out of this normal
+// operation and (one way or another) write to the underlying connection before
+// control is passed back to the session middleware. In these instances, where
+// response headers have already been written, the middleware will be too late
+// to set the cookie header. The solution is to manually call Save before performing
+// any writes.
+//
+// An example is flushing data using the http.Flusher interface:
+//
+//	func flushingHandler(w http.ResponseWriter, r *http.Request) {
+//	 	err := session.PutString(r, "foo", "bar")
+//		if err != nil {
+//			http.Error(w, err.Error(), 500)
+//			return
+//		}
+//		err = session.Save(w, r)
+//		if err != nil {
+//			http.Error(w, err.Error(), 500)
+//			return
+//		}
+//
+//		fw, ok := w.(http.Flusher)
+//		if !ok {
+//			http.Error(w, "could not assert to http.Flusher", 500)
+//			return
+//		}
+//		w.Write([]byte("This is some…"))
+//		fw.Flush()
+//		w.Write([]byte("flushed data"))
+//	}
+func Save(w http.ResponseWriter, r *http.Request) error {
+	s, err := sessionFromContext(r)
+	if err != nil {
+		return err
+	}
+
+	s.mu.Lock()
+	wr := s.written
+	s.mu.Unlock()
+	if wr == true {
+		return ErrAlreadyWritten
+	}
+
+	return write(w, r)
+}
+
 func sessionFromContext(r *http.Request) (*session, error) {
 	s, ok := r.Context().Value(ContextName).(*session)
 	if ok == false {

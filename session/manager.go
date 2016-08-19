@@ -66,6 +66,15 @@ func (bw *bufferedResponseWriter) WriteHeader(code int) {
 	bw.code = code
 }
 
+func (bw *bufferedResponseWriter) Flush() {
+	f, ok := bw.ResponseWriter.(http.Flusher)
+	if ok == true {
+		bw.ResponseWriter.Write(bw.buf.Bytes())
+		f.Flush()
+		bw.buf.Reset()
+	}
+}
+
 func defaultErrorFunc(w http.ResponseWriter, r *http.Request, err error) {
 	http.Error(w, err.Error(), http.StatusInternalServerError)
 }

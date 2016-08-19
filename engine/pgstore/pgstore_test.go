@@ -88,39 +88,6 @@ func TestFindMissing(t *testing.T) {
 	}
 }
 
-func TestExpiry(t *testing.T) {
-	dsn := os.Getenv("SESSION_PG_TEST_DSN")
-	db, err := sql.Open("postgres", dsn)
-	if err != nil {
-		t.Fatal(err)
-	}
-	defer db.Close()
-	if err = db.Ping(); err != nil {
-		t.Fatal(err)
-	}
-	_, err = db.Exec("TRUNCATE TABLE sessions")
-	if err != nil {
-		t.Fatal(err)
-	}
-	_, err = db.Exec("INSERT INTO sessions VALUES('session_token', 'encoded_data', current_timestamp + interval '100 milliseconds')")
-	if err != nil {
-		t.Fatal(err)
-	}
-
-	p := New(db, 0)
-
-	_, found, _ := p.Find("session_token")
-	if found != true {
-		t.Fatalf("got %v: expected %v", found, true)
-	}
-
-	time.Sleep(100 * time.Millisecond)
-	_, found, _ = p.Find("session_token")
-	if found != false {
-		t.Fatalf("got %v: expected %v", found, false)
-	}
-}
-
 func TestSaveNew(t *testing.T) {
 	dsn := os.Getenv("SESSION_PG_TEST_DSN")
 	db, err := sql.Open("postgres", dsn)
@@ -191,6 +158,40 @@ func TestSaveUpdated(t *testing.T) {
 	}
 }
 
+func TestExpiry(t *testing.T) {
+	dsn := os.Getenv("SESSION_PG_TEST_DSN")
+	db, err := sql.Open("postgres", dsn)
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer db.Close()
+	if err = db.Ping(); err != nil {
+		t.Fatal(err)
+	}
+	_, err = db.Exec("TRUNCATE TABLE sessions")
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	p := New(db, 0)
+
+	err = p.Save("session_token", []byte("encoded_data"), time.Now().Add(100*time.Millisecond))
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	_, found, _ := p.Find("session_token")
+	if found != true {
+		t.Fatalf("got %v: expected %v", found, true)
+	}
+
+	time.Sleep(100 * time.Millisecond)
+	_, found, _ = p.Find("session_token")
+	if found != false {
+		t.Fatalf("got %v: expected %v", found, false)
+	}
+}
+
 func TestDelete(t *testing.T) {
 	dsn := os.Getenv("SESSION_PG_TEST_DSN")
 	db, err := sql.Open("postgres", dsn)
@@ -246,7 +247,7 @@ func TestSweeper(t *testing.T) {
 	p := New(db, 200*time.Millisecond)
 	defer p.StopSweeper()
 
-	_, err = db.Exec("INSERT INTO sessions VALUES('session_token', 'encoded_data', current_timestamp + interval '100 milliseconds')")
+	err = p.Save("session_token", []byte("encoded_data"), time.Now().Add(100*time.Millisecond))
 	if err != nil {
 		t.Fatal(err)
 	}

@@ -7,8 +7,6 @@ import (
 	"github.com/patrickmn/go-cache"
 )
 
-var ErrTypeAssertionFailed = errors.New("type assertion failed: could not convert interface{} to []byte")
-
 func New() *MemStore {
 	return &MemStore{
 		// Clear up expired items once every minute
@@ -28,7 +26,7 @@ func (m *MemStore) Find(token string) ([]byte, bool, error) {
 
 	b, ok := v.([]byte)
 	if ok == false {
-		return nil, exists, ErrTypeAssertionFailed
+		return nil, exists, errors.New("type assertion failed: could not convert interface{} to []byte")
 	}
 
 	return b, exists, nil

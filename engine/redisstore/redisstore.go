@@ -53,7 +53,7 @@ func (r *RedisStore) Delete(token string) error {
 	conn := r.pool.Get()
 	defer conn.Close()
 
-	_, err := conn.Do("DEL", Prefix+"session_token")
+	_, err := conn.Do("DEL", Prefix+token)
 	return err
 }
 

@@ -118,9 +118,16 @@ func write(w http.ResponseWriter, r *http.Request) error {
 		}
 	}
 
-	err = s.engine.Save(s.token, j, expiry)
-	if err != nil {
-		return err
+	if ce, ok := s.engine.(CookieEngine); ok {
+		s.token, err = ce.MakeToken(j, expiry)
+		if err != nil {
+			return err
+		}
+	} else {
+		err = s.engine.Save(s.token, j, expiry)
+		if err != nil {
+			return err
+		}
 	}
 
 	cookie := &http.Cookie{

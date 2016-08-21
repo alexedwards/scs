@@ -6,13 +6,10 @@ import (
 	"net/http/httptest"
 	"strings"
 	"testing"
-	"time"
-
-	"github.com/alexedwards/scs/engine/memstore"
 )
 
 func TestWriteResponse(t *testing.T) {
-	m := Manage(memstore.New(time.Minute))
+	m := Manage(testEngine)
 	h := m(testServeMux)
 
 	code, _, _ := testRequest(t, h, "/WriteHeader", "")
@@ -22,9 +19,9 @@ func TestWriteResponse(t *testing.T) {
 }
 
 func TestManagerOptionsLeak(t *testing.T) {
-	_ = Manage(memstore.New(time.Minute), Domain("example.org"))
+	_ = Manage(testEngine, Domain("example.org"))
 
-	m := Manage(memstore.New(time.Minute))
+	m := Manage(testEngine)
 	h := m(testServeMux)
 	_, _, cookie := testRequest(t, h, "/PutString", "")
 	if strings.Contains(cookie, "example.org") == true {
@@ -33,7 +30,7 @@ func TestManagerOptionsLeak(t *testing.T) {
 }
 
 func TestFlusher(t *testing.T) {
-	e := memstore.New(time.Minute)
+	e := testEngine
 	m := Manage(e)
 	h := m(testServeMux)
 

@@ -14,6 +14,7 @@ import (
 	"github.com/alexedwards/scs/engine/memstore"
 )
 
+var testEngine Engine
 var testServeMux *http.ServeMux
 
 type testUser struct {
@@ -24,6 +25,7 @@ type testUser struct {
 func init() {
 	gob.Register(testUser{})
 
+	testEngine = memstore.New(time.Minute)
 	testServeMux = http.NewServeMux()
 
 	testServeMux.HandleFunc("/PutString", func(w http.ResponseWriter, r *http.Request) {
@@ -381,7 +383,7 @@ func TestGenerateToken(t *testing.T) {
 }
 
 func TestDestroy(t *testing.T) {
-	e := memstore.New(time.Minute)
+	e := testEngine
 	m := Manage(e)
 	h := m(testServeMux)
 
@@ -419,7 +421,7 @@ func TestDestroy(t *testing.T) {
 }
 
 func TestRegenerateToken(t *testing.T) {
-	e := memstore.New(time.Minute)
+	e := testEngine
 	m := Manage(e)
 	h := m(testServeMux)
 
@@ -446,7 +448,7 @@ func TestRegenerateToken(t *testing.T) {
 }
 
 func TestRenew(t *testing.T) {
-	e := memstore.New(time.Minute)
+	e := testEngine
 	m := Manage(e)
 	h := m(testServeMux)
 
@@ -473,7 +475,7 @@ func TestRenew(t *testing.T) {
 }
 
 func TestSave(t *testing.T) {
-	e := memstore.New(time.Minute)
+	e := testEngine
 	m := Manage(e)
 	h := m(testServeMux)
 

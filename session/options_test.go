@@ -8,12 +8,10 @@ import (
 	"strings"
 	"testing"
 	"time"
-
-	"github.com/alexedwards/scs/engine/memstore"
 )
 
 func TestCookieOptions(t *testing.T) {
-	m := Manage(memstore.New(time.Minute))
+	m := Manage(testEngine)
 	h := m(testServeMux)
 
 	_, _, cookie := testRequest(t, h, "/PutString", "")
@@ -30,7 +28,7 @@ func TestCookieOptions(t *testing.T) {
 		t.Fatalf("got %q: expected to contain %q", cookie, "HttpOnly")
 	}
 
-	m = Manage(memstore.New(time.Minute), Path("/foo"), Domain("example.org"), Secure(true), HttpOnly(false), Lifetime(time.Hour), Persist(true))
+	m = Manage(testEngine, Path("/foo"), Domain("example.org"), Secure(true), HttpOnly(false), Lifetime(time.Hour), Persist(true))
 	h = m(testServeMux)
 
 	_, _, cookie = testRequest(t, h, "/PutString", "")
@@ -53,7 +51,7 @@ func TestCookieOptions(t *testing.T) {
 		t.Fatalf("got %q: expected to contain %q:", cookie, "Expires")
 	}
 
-	m = Manage(memstore.New(time.Minute), Lifetime(time.Hour))
+	m = Manage(testEngine, Lifetime(time.Hour))
 	h = m(testServeMux)
 
 	_, _, cookie = testRequest(t, h, "/PutString", "")
@@ -66,8 +64,7 @@ func TestCookieOptions(t *testing.T) {
 }
 
 func TestLifetime(t *testing.T) {
-	e := memstore.New(time.Minute)
-	m := Manage(e, Lifetime(200*time.Millisecond))
+	m := Manage(testEngine, Lifetime(200*time.Millisecond))
 	h := m(testServeMux)
 
 	_, _, cookie := testRequest(t, h, "/PutString", "")
@@ -89,8 +86,7 @@ func TestLifetime(t *testing.T) {
 }
 
 func TestIdleTimeout(t *testing.T) {
-	e := memstore.New(time.Minute)
-	m := Manage(e, IdleTimeout(100*time.Millisecond), Lifetime(500*time.Millisecond))
+	m := Manage(testEngine, IdleTimeout(100*time.Millisecond), Lifetime(500*time.Millisecond))
 	h := m(testServeMux)
 
 	_, _, cookie := testRequest(t, h, "/PutString", "")
@@ -126,7 +122,7 @@ func TestIdleTimeout(t *testing.T) {
 }
 
 func TestErrorFunc(t *testing.T) {
-	m := Manage(memstore.New(time.Minute))
+	m := Manage(testEngine)
 	man, ok := m(nil).(*manager)
 	if ok == false {
 		t.Fatal("type assertion failed")
@@ -141,7 +137,7 @@ func TestErrorFunc(t *testing.T) {
 		t.Fatalf("got %q: expected %q", string(rr.Body.Bytes()), "test error\n")
 	}
 
-	m = Manage(memstore.New(time.Minute), ErrorFunc(func(w http.ResponseWriter, r *http.Request, err error) {
+	m = Manage(testEngine, ErrorFunc(func(w http.ResponseWriter, r *http.Request, err error) {
 		w.WriteHeader(418)
 		io.WriteString(w, http.StatusText(418))
 	}))
@@ -161,8 +157,7 @@ func TestErrorFunc(t *testing.T) {
 }
 
 func TestPersist(t *testing.T) {
-	e := memstore.New(time.Minute)
-	m := Manage(e, IdleTimeout(5*time.Minute), Persist(true))
+	m := Manage(testEngine, IdleTimeout(5*time.Minute), Persist(true))
 	h := m(testServeMux)
 
 	_, _, cookie := testRequest(t, h, "/PutString", "")
@@ -175,7 +170,7 @@ func TestCookieName(t *testing.T) {
 	oldCookieName := CookieName
 	CookieName = "custom_cookie_name"
 
-	m := Manage(memstore.New(time.Minute))
+	m := Manage(testEngine)
 	h := m(testServeMux)
 
 	_, _, cookie := testRequest(t, h, "/PutString", "")
@@ -195,7 +190,7 @@ func TestContextDataName(t *testing.T) {
 	oldContextName := ContextName
 	ContextName = "custom_context_name"
 
-	m := Manage(memstore.New(time.Minute))
+	m := Manage(testEngine)
 	h := m(testServeMux)
 
 	_, _, cookie := testRequest(t, h, "/PutString", "")

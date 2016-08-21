@@ -5,12 +5,10 @@ import (
 	"net/http"
 	"testing"
 	"time"
-
-	"github.com/alexedwards/scs/engine/memstore"
 )
 
 func TestString(t *testing.T) {
-	m := Manage(memstore.New(time.Minute))
+	m := Manage(testEngine)
 	h := m(testServeMux)
 
 	_, body, cookie := testRequest(t, h, "/PutString", "")
@@ -35,7 +33,7 @@ func TestString(t *testing.T) {
 }
 
 func TestBool(t *testing.T) {
-	m := Manage(memstore.New(time.Minute))
+	m := Manage(testEngine)
 	h := m(testServeMux)
 
 	_, body, cookie := testRequest(t, h, "/PutBool", "")
@@ -60,7 +58,7 @@ func TestBool(t *testing.T) {
 }
 
 func TestInt(t *testing.T) {
-	m := Manage(memstore.New(time.Minute))
+	m := Manage(testEngine)
 	h := m(testServeMux)
 
 	_, body, cookie := testRequest(t, h, "/PutInt", "")
@@ -93,7 +91,7 @@ func TestInt(t *testing.T) {
 }
 
 func TestInt64(t *testing.T) {
-	m := Manage(memstore.New(time.Minute))
+	m := Manage(testEngine)
 	h := m(testServeMux)
 
 	_, body, cookie := testRequest(t, h, "/PutInt64", "")
@@ -126,7 +124,7 @@ func TestInt64(t *testing.T) {
 }
 
 func TestFloat(t *testing.T) {
-	m := Manage(memstore.New(time.Minute))
+	m := Manage(testEngine)
 	h := m(testServeMux)
 
 	_, body, cookie := testRequest(t, h, "/PutFloat", "")
@@ -159,7 +157,7 @@ func TestFloat(t *testing.T) {
 }
 
 func TestTime(t *testing.T) {
-	m := Manage(memstore.New(time.Minute))
+	m := Manage(testEngine)
 	h := m(testServeMux)
 
 	_, body, cookie := testRequest(t, h, "/PutTime", "")
@@ -193,7 +191,7 @@ func TestTime(t *testing.T) {
 }
 
 func TestBytes(t *testing.T) {
-	m := Manage(memstore.New(time.Minute))
+	m := Manage(testEngine)
 	h := m(testServeMux)
 
 	_, body, cookie := testRequest(t, h, "/PutBytes", "")
@@ -231,7 +229,7 @@ func TestBytes(t *testing.T) {
 }
 
 func TestObject(t *testing.T) {
-	m := Manage(memstore.New(time.Minute))
+	m := Manage(testEngine)
 	h := m(testServeMux)
 
 	_, body, cookie := testRequest(t, h, "/PutObject", "")
@@ -270,7 +268,7 @@ func TestObject(t *testing.T) {
 }
 
 func TestRemove(t *testing.T) {
-	m := Manage(memstore.New(time.Minute))
+	m := Manage(testEngine)
 	h := m(testServeMux)
 
 	_, _, cookie := testRequest(t, h, "/PutString", "")
@@ -293,7 +291,7 @@ func TestRemove(t *testing.T) {
 }
 
 func TestClear(t *testing.T) {
-	m := Manage(memstore.New(time.Minute))
+	m := Manage(testEngine)
 	h := m(testServeMux)
 
 	_, _, cookie := testRequest(t, h, "/PutString", "")

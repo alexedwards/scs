@@ -229,7 +229,7 @@ func TestDelete(t *testing.T) {
 	}
 }
 
-func TestSweeper(t *testing.T) {
+func TestCleanup(t *testing.T) {
 	dsn := os.Getenv("SESSION_PG_TEST_DSN")
 	db, err := sql.Open("postgres", dsn)
 	if err != nil {
@@ -245,7 +245,7 @@ func TestSweeper(t *testing.T) {
 	}
 
 	p := New(db, 200*time.Millisecond)
-	defer p.StopSweeper()
+	defer p.StopCleanup()
 
 	err = p.Save("session_token", []byte("encoded_data"), time.Now().Add(100*time.Millisecond))
 	if err != nil {
@@ -273,7 +273,7 @@ func TestSweeper(t *testing.T) {
 	}
 }
 
-func TestStopNilSweeper(t *testing.T) {
+func TestStopNilCleanup(t *testing.T) {
 	dsn := os.Getenv("SESSION_PG_TEST_DSN")
 	db, err := sql.Open("postgres", dsn)
 	if err != nil {
@@ -287,5 +287,5 @@ func TestStopNilSweeper(t *testing.T) {
 	p := New(db, 0)
 	time.Sleep(100 * time.Millisecond)
 	// A send to a nil channel will block forever
-	p.StopSweeper()
+	p.StopCleanup()
 }

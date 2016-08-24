@@ -1,5 +1,34 @@
-// TODO: Document that
-//	RenegerateToken and Renew are no-ops
+// Package cookiestore is a cookie-based storage engine for the SCS session package.
+//
+// It stores session data in AES-encrypted and SHA256-signed cookies on the client.
+// It also supports key rotation for increased security.
+//
+//	// HMAC authentication key (hexadecimal representation of 32 random bytes)
+//	var hmacKey = []byte("f71dc7e58abab014ddad2652475056f185164d262869c8931b239de52711ba87")
+//	// AES encryption key (hexadecimal representation of 16 random bytes)
+//	var blockKey = []byte("911182cec2f206986c8c82440adb7d17")
+//
+//	func main() {
+//	    // Create a new keyset using your authentication and encryption secret keys.
+//	    keyset, err := cookiestore.NewKeyset(hmacKey, blockKey)
+//	    if err != nil {
+//	        log.Fatal(err)
+//	    }
+//
+//	    // Create a new CookieStore instance using the keyset.
+//	    engine := cookiestore.New(keyset)
+//
+//	    sessionManager := session.Manage(engine)
+//	    http.ListenAndServe(":4000", sessionManager(http.DefaultServeMux))
+//	}
+//
+// The cookiestore package is a special case for the scs/session package because
+// it stores data on the client only, not the server. This means that using the
+// session.RegenerateToken() function as a mechanism to prevent session fixation
+// attacks is unnecessary when using cookiestore, because the signed and encrypted
+// cookie 'token' always changes whenever the session data is modified anyway.
+// The only impact of calling session.RegenerateToken() is to reset and restart
+// the session lifetime.
 package cookiestore
 
 import (
@@ -24,20 +53,36 @@ var (
 	errInvalidToken = errors.New("token is invalid")
 )
 
+// CookieStore represents the currently configured session storage engine.
 type CookieStore struct {
 	keyset     *Keyset
 	oldKeysets []*Keyset
 }
 
+// New returns a new CookieStore instance.
+//
+// The keyset parameter should contain the Keyset you want to use to sign and
+// encrypt session cookies.
+//
+// Optionally, the variadic oldKeyset parameter can be used to provide an arbitrary
+// number of old Keysets. This should be used to ensure that valid cookies continue
+// to work correctly after key rotation.
 func New(keyset *Keyset, oldKeysets ...*Keyset) *CookieStore {
 	return &CookieStore{keyset, oldKeysets}
 }
 
-func (c *CookieStore) MakeToken(b []byte, expiry time.Time) (string, error) {
+// MakeToken creates a signed, optionally encrypted, cookie token for the provided
+// session data. The returned token is limited to 4096 characters in length. An
+// error will be returned if this is exceeded.
+func (c *CookieStore) MakeToken(b []byte, expiry time.Time) (token string, err error) {
 	return encodeToken(c.keyset, b, expiry)
 }
 
-func (c *CookieStore) Find(token string) ([]byte, bool, error) {
+// Find returns the session data for given cookie token. It loops through all
+// available Keysets (including old Keysets) to try to decode the cookie. If
+// the cookie could not be decoded, or has expired, the returned exists flag
+// will be set to false.
+func (c *CookieStore) Find(token string) (b []byte, exists bool, error error) {
 	keysets := append([]*Keyset{c.keyset}, c.oldKeysets...)
 	for _, keyset := range keysets {
 		b, err := decodeToken(keyset, token)
@@ -53,10 +98,14 @@ func (c *CookieStore) Find(token string) ([]byte, bool, error) {
 	return nil, false, nil
 }
 
+// Save is a no-op. The function exists only to ensure that a CookieStore instance
+// satisfies the session.Engine interface.
 func (c *CookieStore) Save(token string, b []byte, expiry time.Time) error {
 	return nil
 }
 
+// Delete is a no-op. The function exists only to ensure that a CookieStore instance
+// satisfies the session.Engine interface.
 func (c *CookieStore) Delete(token string) error {
 	return nil
 }

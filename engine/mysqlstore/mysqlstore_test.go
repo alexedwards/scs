@@ -7,27 +7,7 @@ import (
 	"reflect"
 	"testing"
 	"time"
-
-	"github.com/alexedwards/scs/session"
 )
-
-func TestNew(t *testing.T) {
-	dsn := os.Getenv("SESSION_MYSQL_TEST_DSN")
-	db, err := sql.Open("mysql", dsn)
-	if err != nil {
-		t.Fatal(err)
-	}
-	defer db.Close()
-	if err = db.Ping(); err != nil {
-		t.Fatal(err)
-	}
-
-	m := New(db, 0)
-	_, ok := interface{}(m).(session.Engine)
-	if ok == false {
-		t.Fatalf("got %v: expected %v", ok, true)
-	}
-}
 
 func TestFind(t *testing.T) {
 	dsn := os.Getenv("SESSION_MYSQL_TEST_DSN")
@@ -229,7 +209,7 @@ func TestDelete(t *testing.T) {
 	}
 }
 
-func TestSweeper(t *testing.T) {
+func TestCleanup(t *testing.T) {
 	dsn := os.Getenv("SESSION_MYSQL_TEST_DSN")
 	db, err := sql.Open("mysql", dsn)
 	if err != nil {
@@ -245,7 +225,7 @@ func TestSweeper(t *testing.T) {
 	}
 
 	m := New(db, 200*time.Millisecond)
-	defer m.StopSweeper()
+	defer m.StopCleanup()
 
 	err = m.Save("session_token", []byte("encoded_data"), time.Now().Add(100*time.Millisecond))
 	if err != nil {
@@ -273,7 +253,7 @@ func TestSweeper(t *testing.T) {
 	}
 }
 
-func TestStopNilSweeper(t *testing.T) {
+func TestStopNilCleanup(t *testing.T) {
 	dsn := os.Getenv("SESSION_MYSQL_TEST_DSN")
 	db, err := sql.Open("mysql", dsn)
 	if err != nil {
@@ -287,5 +267,5 @@ func TestStopNilSweeper(t *testing.T) {
 	m := New(db, 0)
 	time.Sleep(100 * time.Millisecond)
 	// A send to a nil channel will block forever
-	m.StopSweeper()
+	m.StopCleanup()
 }

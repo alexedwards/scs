@@ -23,7 +23,7 @@ type testUser struct {
 }
 
 func init() {
-	gob.Register(testUser{})
+	gob.Register(new(testUser))
 
 	testEngine = memstore.New(time.Minute)
 	testServeMux = http.NewServeMux()
@@ -218,7 +218,7 @@ func init() {
 	})
 
 	testServeMux.HandleFunc("/PutObject", func(w http.ResponseWriter, r *http.Request) {
-		u := testUser{"alice", 21}
+		u := &testUser{"alice", 21}
 		err := PutObject(r, "test_object", u)
 		if err != nil {
 			io.WriteString(w, err.Error())
@@ -228,28 +228,20 @@ func init() {
 	})
 
 	testServeMux.HandleFunc("/GetObject", func(w http.ResponseWriter, r *http.Request) {
-		v, err := GetObject(r, "test_object")
+		u := new(testUser)
+		err := GetObject(r, "test_object", u)
 		if err != nil {
 			io.WriteString(w, err.Error())
-			return
-		}
-		u, ok := v.(testUser)
-		if ok == false {
-			io.WriteString(w, "could not convert to user")
 			return
 		}
 		fmt.Fprintf(w, "%s: %d", u.Name, u.Age)
 	})
 
 	testServeMux.HandleFunc("/PopObject", func(w http.ResponseWriter, r *http.Request) {
-		v, err := PopObject(r, "test_object")
+		u := new(testUser)
+		err := PopObject(r, "test_object", u)
 		if err != nil {
 			io.WriteString(w, err.Error())
-			return
-		}
-		u, ok := v.(testUser)
-		if ok == false {
-			io.WriteString(w, "could not convert to user")
 			return
 		}
 		fmt.Fprintf(w, "%s: %d", u.Name, u.Age)

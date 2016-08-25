@@ -3,6 +3,7 @@ package session
 import (
 	"bytes"
 	"net/http"
+	"reflect"
 	"testing"
 	"time"
 )
@@ -254,16 +255,12 @@ func TestObject(t *testing.T) {
 
 	r := requestWithSession(new(http.Request), &session{data: make(map[string]interface{})})
 
-	u := testUser{"bob", 65}
+	u := &testUser{"bob", 65}
 	_ = PutObject(r, "test_object", u)
-	o, _ := PopObject(r, "test_object")
-	if o != u {
-		t.Fatalf("got %v: expected %v", o, u)
-	}
-
-	err := PutBytes(r, "test_object", nil)
-	if err == nil {
-		t.Fatalf("expected an error")
+	o := &testUser{}
+	_ = PopObject(r, "test_object", o)
+	if reflect.DeepEqual(u, o) == false {
+		t.Fatalf("got %v: expected %v", reflect.DeepEqual(u, o), false)
 	}
 }
 

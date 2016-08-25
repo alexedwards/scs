@@ -588,13 +588,14 @@ func PopBytes(r *http.Request, key string) ([]byte, error) {
 	return b, nil
 }
 
-// GetObject returns the data item for a given key from the session. It should
-// only be used to retrieve custom data types that have been stored using PutObject.
+// GetObject reads the data for a given session key into an arbitrary object
+// (represented by the dst parameter). It should only be used to retrieve custom
+// data types that have been stored using PutObject.
 //
-// The data item returned has the type interface{} and will need to be asserted
-// into it's original type. This must be exactly the same as a type registered with
-// the encoding/gob package. See https://godoc.org/github.com/alexedwards/scs/session#PutObject
-// for further information.
+// The dst parameter must be a pointer.
+//
+// See https://godoc.org/github.com/alexedwards/scs/session#PutObject for further
+// information.
 //
 // Usage:
 // 	type User struct {
@@ -603,49 +604,48 @@ func PopBytes(r *http.Request, key string) ([]byte, error) {
 // 	}
 //
 // 	func init() {
-// 		gob.Register(user{})
+// 		gob.Register(new(User))
 // 	}
 //
 // 	func getUserHandler(w http.ResponseWriter, r *http.Request) {
-// 		v, err := session.GetObject(r, "user")
+//		user := new(User)
+//		err := session.GetObject(r, "user", user)
 // 		if err != nil {
 // 			http.Error(w, err.Error(), 500)
 // 			return
 // 		}
-// 		user, ok := v.(User)
-//		if !ok {
-//			http.Error(w, err.Error(), 500)
-// 			return
-// 		}
 // 		fmt.Fprintf(w, "%s: %s", user.Name, user.Email)
 // 	}
-func GetObject(r *http.Request, key string) (interface{}, error) {
+func GetObject(r *http.Request, key string, dst interface{}) error {
 	s, err := sessionFromContext(r)
 	if err != nil {
-		return nil, err
+		return err
 	}
 
 	s.mu.Lock()
 	v, exists := s.data[key]
 	s.mu.Unlock()
 	if exists == false {
-		return nil, ErrKeyNotFound
+		return ErrKeyNotFound
 	}
 
 	str, ok := v.(string)
 	if ok == false {
-		return nil, ErrTypeAssertionFailed
+		return ErrTypeAssertionFailed
 	}
 	b, err := base64.StdEncoding.DecodeString(str)
 	if err != nil {
-		return nil, err
+		return err
 	}
-	return gobDecode(b)
+
+	return gobDecode(b, dst)
 }
 
-// PutObject adds a data item (represented by the empty interface value) and
+// PutObject adds an arbitrary object (represented by the val parameter) and
 // corresponding key to the the session data. Any existing value for the key will
 // be replaced.
+//
+// The val parameter must be a pointer to your object.
 //
 // PutObject is typically used to store custom data types. It encodes the data
 // item to a gob and then into a base64-encoded string which is persisted by the
@@ -663,12 +663,12 @@ func GetObject(r *http.Request, key string) (interface{}, error) {
 // 	}
 //
 // 	func init() {
-// 		gob.Register(User{})
+// 		gob.Register(new(User))
 // 	}
 //
 // 	func putUserHandler(w http.ResponseWriter, r *http.Request) {
 // 		user := User{"Alice", "alice@example.com"}
-// 		err := session.PutObject(r, "user", user)
+// 		err := session.PutObject(r, "user", &user)
 // 		if err != nil {
 // 			http.Error(w, err.Error(), 500)
 // 			return
@@ -685,7 +685,7 @@ func PutObject(r *http.Request, key string, val interface{}) error {
 		return err
 	}
 
-	b, err := gobEncode(&val)
+	b, err := gobEncode(val)
 	if err != nil {
 		return err
 	}
@@ -701,48 +701,49 @@ func PutObject(r *http.Request, key string, val interface{}) error {
 	return nil
 }
 
-// PopObject returns the data item for a given key from the session and then removes
-// it (both the key and value). It should only be used to retrieve custom data
-// types that have been stored using PutObject.
+// PopObject reads the data for a given session key into an arbitrary object
+// (represented by the dst parameter) and then removes it (both the key and value).
+// It should only be used to retrieve custom data types that have been stored
+// using PutObject.
 //
-// The data item returned has the type interface{} and will need to be asserted
-// into it's original type. This must be exactly the same as a type registered with
-// the encoding/gob package. See https://godoc.org/github.com/alexedwards/scs/session#PutObject
+// The dst parameter must be a pointer.
+//
+// See https://godoc.org/github.com/alexedwards/scs/session#PutObject
 // and https://godoc.org/github.com/alexedwards/scs/session#GetObject
 // for usage examples.
-func PopObject(r *http.Request, key string) (interface{}, error) {
+func PopObject(r *http.Request, key string, dst interface{}) error {
 	s, err := sessionFromContext(r)
 	if err != nil {
-		return nil, err
+		return err
 	}
 
 	s.mu.Lock()
 	defer s.mu.Unlock()
 
 	if s.written == true {
-		return nil, ErrAlreadyWritten
+		return ErrAlreadyWritten
 	}
 	v, exists := s.data[key]
 	if exists == false {
-		return nil, ErrKeyNotFound
+		return ErrKeyNotFound
 	}
 
 	str, ok := v.(string)
 	if ok == false {
-		return nil, ErrTypeAssertionFailed
+		return ErrTypeAssertionFailed
 	}
 	b, err := base64.StdEncoding.DecodeString(str)
 	if err != nil {
-		return nil, err
+		return err
 	}
-	i, err := gobDecode(b)
+	err = gobDecode(b, dst)
 	if err != nil {
-		return nil, err
+		return err
 	}
 
 	delete(s.data, key)
 	s.modified = true
-	return i, nil
+	return nil
 }
 
 // Remove deletes the given key and corresponding value from the session data.
@@ -794,12 +795,7 @@ func gobEncode(v interface{}) ([]byte, error) {
 	return buf.Bytes(), nil
 }
 
-func gobDecode(b []byte) (interface{}, error) {
-	var v interface{}
+func gobDecode(b []byte, dst interface{}) error {
 	buf := bytes.NewBuffer(b)
-	err := gob.NewDecoder(buf).Decode(&v)
-	if err != nil {
-		return nil, err
-	}
-	return v, nil
+	return gob.NewDecoder(buf).Decode(dst)
 }

@@ -24,16 +24,9 @@ var ErrTypeAssertionFailed = errors.New("type assertion failed")
 // error is returned if the value could not be type asserted or converted to a
 // string.
 func GetString(r *http.Request, key string) (string, error) {
-	s, err := sessionFromContext(r)
+	v, err := get(r, key)
 	if err != nil {
 		return "", err
-	}
-
-	s.mu.Lock()
-	v, exists := s.data[key]
-	s.mu.Unlock()
-	if exists == false {
-		return "", ErrKeyNotFound
 	}
 
 	str, ok := v.(string)
@@ -46,20 +39,7 @@ func GetString(r *http.Request, key string) (string, error) {
 // PutString adds a string value and corresponding key to the the session data.
 // Any existing value for the key will be replaced.
 func PutString(r *http.Request, key string, val string) error {
-	s, err := sessionFromContext(r)
-	if err != nil {
-		return err
-	}
-
-	s.mu.Lock()
-	defer s.mu.Unlock()
-
-	if s.written == true {
-		return ErrAlreadyWritten
-	}
-	s.data[key] = val
-	s.modified = true
-	return nil
+	return put(r, key, val)
 }
 
 // PopString returns the string value for a given key from the session data
@@ -67,29 +47,15 @@ func PutString(r *http.Request, key string, val string) error {
 // if the key does not exist. An ErrTypeAssertionFailed error is returned if the
 // value could not be type asserted to a string.
 func PopString(r *http.Request, key string) (string, error) {
-	s, err := sessionFromContext(r)
+	v, err := pop(r, key)
 	if err != nil {
 		return "", err
-	}
-
-	s.mu.Lock()
-	defer s.mu.Unlock()
-
-	if s.written == true {
-		return "", ErrAlreadyWritten
-	}
-	v, exists := s.data[key]
-	if exists == false {
-		return "", ErrKeyNotFound
 	}
 
 	str, ok := v.(string)
 	if ok == false {
 		return "", ErrTypeAssertionFailed
 	}
-
-	delete(s.data, key)
-	s.modified = true
 	return str, nil
 }
 
@@ -97,16 +63,9 @@ func PopString(r *http.Request, key string) (string, error) {
 // error is returned if the key does not exist. An ErrTypeAssertionFailed error
 // is returned if the value could not be type asserted to a bool.
 func GetBool(r *http.Request, key string) (bool, error) {
-	s, err := sessionFromContext(r)
+	v, err := get(r, key)
 	if err != nil {
 		return false, err
-	}
-
-	s.mu.Lock()
-	v, exists := s.data[key]
-	s.mu.Unlock()
-	if exists == false {
-		return false, ErrKeyNotFound
 	}
 
 	b, ok := v.(bool)
@@ -119,20 +78,7 @@ func GetBool(r *http.Request, key string) (bool, error) {
 // PutBool adds a bool value and corresponding key to the session data. Any existing
 // value for the key will be replaced.
 func PutBool(r *http.Request, key string, val bool) error {
-	s, err := sessionFromContext(r)
-	if err != nil {
-		return err
-	}
-
-	s.mu.Lock()
-	defer s.mu.Unlock()
-
-	if s.written == true {
-		return ErrAlreadyWritten
-	}
-	s.data[key] = val
-	s.modified = true
-	return nil
+	return put(r, key, val)
 }
 
 // PopBool returns the bool value for a given key from the session data
@@ -140,29 +86,15 @@ func PutBool(r *http.Request, key string, val bool) error {
 // if the key does not exist. An ErrTypeAssertionFailed error is returned if the
 // value could not be type asserted to a bool.
 func PopBool(r *http.Request, key string) (bool, error) {
-	s, err := sessionFromContext(r)
+	v, err := pop(r, key)
 	if err != nil {
 		return false, err
-	}
-
-	s.mu.Lock()
-	defer s.mu.Unlock()
-
-	if s.written == true {
-		return false, ErrAlreadyWritten
-	}
-	v, exists := s.data[key]
-	if exists == false {
-		return false, ErrKeyNotFound
 	}
 
 	b, ok := v.(bool)
 	if ok == false {
 		return false, ErrTypeAssertionFailed
 	}
-
-	delete(s.data, key)
-	s.modified = true
 	return b, nil
 }
 
@@ -170,16 +102,9 @@ func PopBool(r *http.Request, key string) (bool, error) {
 // error is returned if the key does not exist. An ErrTypeAssertionFailed error
 // is returned if the value could not be type asserted or converted to a int.
 func GetInt(r *http.Request, key string) (int, error) {
-	s, err := sessionFromContext(r)
+	v, err := get(r, key)
 	if err != nil {
 		return 0, err
-	}
-
-	s.mu.Lock()
-	v, exists := s.data[key]
-	s.mu.Unlock()
-	if exists == false {
-		return 0, ErrKeyNotFound
 	}
 
 	switch v := v.(type) {
@@ -194,20 +119,7 @@ func GetInt(r *http.Request, key string) (int, error) {
 // PutInt adds an int value and corresponding key to the session data. Any existing
 // value for the key will be replaced.
 func PutInt(r *http.Request, key string, val int) error {
-	s, err := sessionFromContext(r)
-	if err != nil {
-		return err
-	}
-
-	s.mu.Lock()
-	defer s.mu.Unlock()
-
-	if s.written == true {
-		return ErrAlreadyWritten
-	}
-	s.data[key] = val
-	s.modified = true
-	return nil
+	return put(r, key, val)
 }
 
 // PopInt returns the int value for a given key from the session data
@@ -215,54 +127,27 @@ func PutInt(r *http.Request, key string, val int) error {
 // if the key does not exist. An ErrTypeAssertionFailed error is returned if the
 // value could not be type asserted or converted to a int.
 func PopInt(r *http.Request, key string) (int, error) {
-	s, err := sessionFromContext(r)
+	v, err := pop(r, key)
 	if err != nil {
 		return 0, err
 	}
 
-	s.mu.Lock()
-	defer s.mu.Unlock()
-
-	if s.written == true {
-		return 0, ErrAlreadyWritten
-	}
-	v, exists := s.data[key]
-	if exists == false {
-		return 0, ErrKeyNotFound
-	}
-
-	var i int
 	switch v := v.(type) {
 	case int:
-		i = v
+		return v, nil
 	case json.Number:
-		i, err = strconv.Atoi(v.String())
-		if err != nil {
-			return 0, err
-		}
-	default:
-		return 0, ErrTypeAssertionFailed
+		return strconv.Atoi(v.String())
 	}
-
-	delete(s.data, key)
-	s.modified = true
-	return i, nil
+	return 0, ErrTypeAssertionFailed
 }
 
 // GetInt64 returns the int64 value for a given key from the session data. An ErrKeyNotFound
 // error is returned if the key does not exist. An ErrTypeAssertionFailed error
 // is returned if the value could not be type asserted or converted to a int64.
 func GetInt64(r *http.Request, key string) (int64, error) {
-	s, err := sessionFromContext(r)
+	v, err := get(r, key)
 	if err != nil {
 		return 0, err
-	}
-
-	s.mu.Lock()
-	v, exists := s.data[key]
-	s.mu.Unlock()
-	if exists == false {
-		return 0, ErrKeyNotFound
 	}
 
 	switch v := v.(type) {
@@ -277,20 +162,7 @@ func GetInt64(r *http.Request, key string) (int64, error) {
 // PutInt64 adds an int64 value and corresponding key to the session data. Any existing
 // value for the key will be replaced.
 func PutInt64(r *http.Request, key string, val int64) error {
-	s, err := sessionFromContext(r)
-	if err != nil {
-		return err
-	}
-
-	s.mu.Lock()
-	defer s.mu.Unlock()
-
-	if s.written == true {
-		return ErrAlreadyWritten
-	}
-	s.data[key] = val
-	s.modified = true
-	return nil
+	return put(r, key, val)
 }
 
 // PopInt64 returns the int64 value for a given key from the session data
@@ -298,38 +170,18 @@ func PutInt64(r *http.Request, key string, val int64) error {
 // if the key does not exist. An ErrTypeAssertionFailed error is returned if the
 // value could not be type asserted or converted to a int64.
 func PopInt64(r *http.Request, key string) (int64, error) {
-	s, err := sessionFromContext(r)
+	v, err := pop(r, key)
 	if err != nil {
 		return 0, err
 	}
 
-	s.mu.Lock()
-	defer s.mu.Unlock()
-
-	if s.written == true {
-		return 0, ErrAlreadyWritten
-	}
-	v, exists := s.data[key]
-	if exists == false {
-		return 0, ErrKeyNotFound
-	}
-
-	var i int64
 	switch v := v.(type) {
 	case int64:
-		i = v
+		return v, nil
 	case json.Number:
-		i, err = v.Int64()
-		if err != nil {
-			return 0, err
-		}
-	default:
-		return 0, ErrTypeAssertionFailed
+		return v.Int64()
 	}
-
-	delete(s.data, key)
-	s.modified = true
-	return i, nil
+	return 0, ErrTypeAssertionFailed
 }
 
 // GetFloat returns the float64 value for a given key from the session data. An
@@ -337,16 +189,9 @@ func PopInt64(r *http.Request, key string) (int64, error) {
 // error is returned if the value could not be type asserted or converted to a
 // float64.
 func GetFloat(r *http.Request, key string) (float64, error) {
-	s, err := sessionFromContext(r)
+	v, err := get(r, key)
 	if err != nil {
 		return 0, err
-	}
-
-	s.mu.Lock()
-	v, exists := s.data[key]
-	s.mu.Unlock()
-	if exists == false {
-		return 0, ErrKeyNotFound
 	}
 
 	switch v := v.(type) {
@@ -361,20 +206,7 @@ func GetFloat(r *http.Request, key string) (float64, error) {
 // PutFloat adds an float64 value and corresponding key to the session data. Any
 // existing value for the key will be replaced.
 func PutFloat(r *http.Request, key string, val float64) error {
-	s, err := sessionFromContext(r)
-	if err != nil {
-		return err
-	}
-
-	s.mu.Lock()
-	defer s.mu.Unlock()
-
-	if s.written == true {
-		return ErrAlreadyWritten
-	}
-	s.data[key] = val
-	s.modified = true
-	return nil
+	return put(r, key, val)
 }
 
 // PopFloat returns the float64 value for a given key from the session data
@@ -382,38 +214,18 @@ func PutFloat(r *http.Request, key string, val float64) error {
 // if the key does not exist. An ErrTypeAssertionFailed error is returned if the
 // value could not be type asserted or converted to a float64.
 func PopFloat(r *http.Request, key string) (float64, error) {
-	s, err := sessionFromContext(r)
+	v, err := pop(r, key)
 	if err != nil {
 		return 0, err
 	}
 
-	s.mu.Lock()
-	defer s.mu.Unlock()
-
-	if s.written == true {
-		return 0, ErrAlreadyWritten
-	}
-	v, exists := s.data[key]
-	if exists == false {
-		return 0, ErrKeyNotFound
-	}
-
-	var f float64
 	switch v := v.(type) {
 	case float64:
-		f = v
+		return v, nil
 	case json.Number:
-		f, err = v.Float64()
-		if err != nil {
-			return 0, err
-		}
-	default:
-		return 0, ErrTypeAssertionFailed
+		return v.Float64()
 	}
-
-	delete(s.data, key)
-	s.modified = true
-	return f, nil
+	return 0, ErrTypeAssertionFailed
 }
 
 // GetTime returns the time.Time value for a given key from the session data. An
@@ -421,16 +233,9 @@ func PopFloat(r *http.Request, key string) (float64, error) {
 // error is returned if the value could not be type asserted or converted to a
 // time.Time.
 func GetTime(r *http.Request, key string) (time.Time, error) {
-	s, err := sessionFromContext(r)
+	v, err := get(r, key)
 	if err != nil {
 		return time.Time{}, err
-	}
-
-	s.mu.Lock()
-	v, exists := s.data[key]
-	s.mu.Unlock()
-	if exists == false {
-		return time.Time{}, ErrKeyNotFound
 	}
 
 	switch v := v.(type) {
@@ -445,20 +250,7 @@ func GetTime(r *http.Request, key string) (time.Time, error) {
 // PutTime adds an time.Time value and corresponding key to the session data. Any
 // existing value for the key will be replaced.
 func PutTime(r *http.Request, key string, val time.Time) error {
-	s, err := sessionFromContext(r)
-	if err != nil {
-		return err
-	}
-
-	s.mu.Lock()
-	defer s.mu.Unlock()
-
-	if s.written == true {
-		return ErrAlreadyWritten
-	}
-	s.data[key] = val
-	s.modified = true
-	return nil
+	return put(r, key, val)
 }
 
 // PopTime returns the time.Time value for a given key from the session data
@@ -466,38 +258,18 @@ func PutTime(r *http.Request, key string, val time.Time) error {
 // if the key does not exist. An ErrTypeAssertionFailed error is returned if the
 // value could not be type asserted or converted to a time.Time.
 func PopTime(r *http.Request, key string) (time.Time, error) {
-	s, err := sessionFromContext(r)
+	v, err := pop(r, key)
 	if err != nil {
 		return time.Time{}, err
 	}
 
-	s.mu.Lock()
-	defer s.mu.Unlock()
-
-	if s.written == true {
-		return time.Time{}, ErrAlreadyWritten
-	}
-	v, exists := s.data[key]
-	if exists == false {
-		return time.Time{}, ErrKeyNotFound
-	}
-
-	var t time.Time
 	switch v := v.(type) {
 	case time.Time:
-		t = v
+		return v, nil
 	case string:
-		t, err = time.Parse(time.RFC3339, v)
-		if err != nil {
-			return time.Time{}, err
-		}
-	default:
-		return time.Time{}, ErrTypeAssertionFailed
+		return time.Parse(time.RFC3339, v)
 	}
-
-	delete(s.data, key)
-	s.modified = true
-	return t, nil
+	return time.Time{}, ErrTypeAssertionFailed
 }
 
 // GetBytes returns the byte slice ([]byte) value for a given key from the session
@@ -505,16 +277,9 @@ func PopTime(r *http.Request, key string) (time.Time, error) {
 // error is returned if the value could not be type asserted or converted to
 // []byte.
 func GetBytes(r *http.Request, key string) ([]byte, error) {
-	s, err := sessionFromContext(r)
+	v, err := get(r, key)
 	if err != nil {
 		return nil, err
-	}
-
-	s.mu.Lock()
-	v, exists := s.data[key]
-	s.mu.Unlock()
-	if exists == false {
-		return nil, ErrKeyNotFound
 	}
 
 	switch v := v.(type) {
@@ -533,20 +298,7 @@ func PutBytes(r *http.Request, key string, val []byte) error {
 		return errors.New("value must not be nil")
 	}
 
-	s, err := sessionFromContext(r)
-	if err != nil {
-		return err
-	}
-
-	s.mu.Lock()
-	defer s.mu.Unlock()
-
-	if s.written == true {
-		return ErrAlreadyWritten
-	}
-	s.data[key] = val
-	s.modified = true
-	return nil
+	return put(r, key, val)
 }
 
 // PopBytes returns the byte slice ([]byte) value for a given key from the session
@@ -554,38 +306,18 @@ func PutBytes(r *http.Request, key string, val []byte) error {
 // returned if the key does not exist. An ErrTypeAssertionFailed error is returned
 // if the value could not be type asserted or converted to a []byte.
 func PopBytes(r *http.Request, key string) ([]byte, error) {
-	s, err := sessionFromContext(r)
+	v, err := pop(r, key)
 	if err != nil {
 		return nil, err
 	}
 
-	s.mu.Lock()
-	defer s.mu.Unlock()
-
-	if s.written == true {
-		return nil, ErrAlreadyWritten
-	}
-	v, exists := s.data[key]
-	if exists == false {
-		return nil, ErrKeyNotFound
-	}
-
-	var b []byte
 	switch v := v.(type) {
 	case []byte:
-		b = v
+		return v, nil
 	case string:
-		b, err = base64.StdEncoding.DecodeString(v)
-		if err != nil {
-			return nil, err
-		}
-	default:
-		return nil, ErrTypeAssertionFailed
+		return base64.StdEncoding.DecodeString(v)
 	}
-
-	delete(s.data, key)
-	s.modified = true
-	return b, nil
+	return nil, ErrTypeAssertionFailed
 }
 
 // GetObject reads the data for a given session key into an arbitrary object
@@ -617,23 +349,7 @@ func PopBytes(r *http.Request, key string) ([]byte, error) {
 // 		fmt.Fprintf(w, "%s: %s", user.Name, user.Email)
 // 	}
 func GetObject(r *http.Request, key string, dst interface{}) error {
-	s, err := sessionFromContext(r)
-	if err != nil {
-		return err
-	}
-
-	s.mu.Lock()
-	v, exists := s.data[key]
-	s.mu.Unlock()
-	if exists == false {
-		return ErrKeyNotFound
-	}
-
-	str, ok := v.(string)
-	if ok == false {
-		return ErrTypeAssertionFailed
-	}
-	b, err := base64.StdEncoding.DecodeString(str)
+	b, err := GetBytes(r, key)
 	if err != nil {
 		return err
 	}
@@ -680,25 +396,12 @@ func PutObject(r *http.Request, key string, val interface{}) error {
 		return errors.New("value must not be nil")
 	}
 
-	s, err := sessionFromContext(r)
-	if err != nil {
-		return err
-	}
-
 	b, err := gobEncode(val)
 	if err != nil {
 		return err
 	}
 
-	s.mu.Lock()
-	defer s.mu.Unlock()
-
-	if s.written == true {
-		return ErrAlreadyWritten
-	}
-	s.data[key] = base64.StdEncoding.EncodeToString(b)
-	s.modified = true
-	return nil
+	return PutBytes(r, key, b)
 }
 
 // PopObject reads the data for a given session key into an arbitrary object
@@ -712,38 +415,12 @@ func PutObject(r *http.Request, key string, val interface{}) error {
 // and https://godoc.org/github.com/alexedwards/scs/session#GetObject
 // for usage examples.
 func PopObject(r *http.Request, key string, dst interface{}) error {
-	s, err := sessionFromContext(r)
+	b, err := PopBytes(r, key)
 	if err != nil {
 		return err
 	}
 
-	s.mu.Lock()
-	defer s.mu.Unlock()
-
-	if s.written == true {
-		return ErrAlreadyWritten
-	}
-	v, exists := s.data[key]
-	if exists == false {
-		return ErrKeyNotFound
-	}
-
-	str, ok := v.(string)
-	if ok == false {
-		return ErrTypeAssertionFailed
-	}
-	b, err := base64.StdEncoding.DecodeString(str)
-	if err != nil {
-		return err
-	}
-	err = gobDecode(b, dst)
-	if err != nil {
-		return err
-	}
-
-	delete(s.data, key)
-	s.modified = true
-	return nil
+	return gobDecode(b, dst)
 }
 
 // Remove deletes the given key and corresponding value from the session data.
@@ -784,6 +461,61 @@ func Clear(r *http.Request) error {
 	}
 	s.modified = true
 	return nil
+}
+
+func get(r *http.Request, key string) (interface{}, error) {
+	s, err := sessionFromContext(r)
+	if err != nil {
+		return nil, err
+	}
+
+	s.mu.Lock()
+	v, exists := s.data[key]
+	s.mu.Unlock()
+	if exists == false {
+		return nil, ErrKeyNotFound
+	}
+
+	return v, nil
+}
+
+func put(r *http.Request, key string, val interface{}) error {
+	s, err := sessionFromContext(r)
+	if err != nil {
+		return err
+	}
+
+	s.mu.Lock()
+	defer s.mu.Unlock()
+
+	if s.written == true {
+		return ErrAlreadyWritten
+	}
+	s.data[key] = val
+	s.modified = true
+	return nil
+}
+
+func pop(r *http.Request, key string) (interface{}, error) {
+	s, err := sessionFromContext(r)
+	if err != nil {
+		return "", err
+	}
+
+	s.mu.Lock()
+	defer s.mu.Unlock()
+
+	if s.written == true {
+		return "", ErrAlreadyWritten
+	}
+	v, exists := s.data[key]
+	if exists == false {
+		return "", ErrKeyNotFound
+	}
+
+	delete(s.data, key)
+	s.modified = true
+	return v, nil
 }
 
 func gobEncode(v interface{}) ([]byte, error) {

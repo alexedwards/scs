@@ -258,7 +258,7 @@ func TestObject(t *testing.T) {
 	u := &testUser{"bob", 65}
 	_ = PutObject(r, "test_object", u)
 	o := &testUser{}
-	_ = PopObject(r, "test_object", o)
+	_ = GetObject(r, "test_object", o)
 	if reflect.DeepEqual(u, o) == false {
 		t.Fatalf("got %v: expected %v", reflect.DeepEqual(u, o), false)
 	}

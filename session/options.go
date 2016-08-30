@@ -5,7 +5,7 @@ import (
 	"time"
 )
 
-// ContextDataName changes the value of the (string) key used to store the session
+// ContextName changes the value of the (string) key used to store the session
 // information in Request.Context. You should only need to change this if there is
 // a naming clash.
 var ContextName = "scs.session"
@@ -81,8 +81,10 @@ func IdleTimeout(t time.Duration) Option {
 }
 
 // Lifetime sets the maximum length of time that a session is valid for before
-// it expires. The default value is 24 hours. This is an 'absolute expiry' which
-// is set when the session is first created and does not change.
+// it expires. The lifetime is an 'absolute expiry' which is set when the session
+// is first created and does not change.
+//
+// The default value is 24 hours.
 func Lifetime(t time.Duration) Option {
 	return func(opts *options) {
 		opts.lifetime = t

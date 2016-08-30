@@ -42,10 +42,10 @@ func PutString(r *http.Request, key string, val string) error {
 	return put(r, key, val)
 }
 
-// PopString returns the string value for a given key from the session data
-// and then removes it (both the key and value). An ErrKeyNotFound error is returned
-// if the key does not exist. An ErrTypeAssertionFailed error is returned if the
-// value could not be type asserted to a string.
+// PopString removes the string value for a given key from the session data
+// and returns it. An ErrKeyNotFound error is returned if the key does not exist.
+// An ErrTypeAssertionFailed error is returned if the value could not be type
+// asserted to a string.
 func PopString(r *http.Request, key string) (string, error) {
 	v, err := pop(r, key)
 	if err != nil {
@@ -81,10 +81,9 @@ func PutBool(r *http.Request, key string, val bool) error {
 	return put(r, key, val)
 }
 
-// PopBool returns the bool value for a given key from the session data
-// and then removes it (both the key and value). An ErrKeyNotFound error is returned
-// if the key does not exist. An ErrTypeAssertionFailed error is returned if the
-// value could not be type asserted to a bool.
+// PopBool removes the bool value for a given key from the session data and returns
+// it. An ErrKeyNotFound error is returned if the key does not exist. An ErrTypeAssertionFailed
+// error is returned if the value could not be type asserted to a bool.
 func PopBool(r *http.Request, key string) (bool, error) {
 	v, err := pop(r, key)
 	if err != nil {
@@ -122,10 +121,10 @@ func PutInt(r *http.Request, key string, val int) error {
 	return put(r, key, val)
 }
 
-// PopInt returns the int value for a given key from the session data
-// and then removes it (both the key and value). An ErrKeyNotFound error is returned
-// if the key does not exist. An ErrTypeAssertionFailed error is returned if the
-// value could not be type asserted or converted to a int.
+// PopInt removes the int value for a given key from the session data
+// and returns it. An ErrKeyNotFound error is returned if the key does not exist.
+// An ErrTypeAssertionFailed error is returned if the value could not be type
+// asserted or converted to a int.
 func PopInt(r *http.Request, key string) (int, error) {
 	v, err := pop(r, key)
 	if err != nil {
@@ -165,10 +164,10 @@ func PutInt64(r *http.Request, key string, val int64) error {
 	return put(r, key, val)
 }
 
-// PopInt64 returns the int64 value for a given key from the session data
-// and then removes it (both the key and value). An ErrKeyNotFound error is returned
-// if the key does not exist. An ErrTypeAssertionFailed error is returned if the
-// value could not be type asserted or converted to a int64.
+// PopInt64 remvoes the int64 value for a given key from the session data
+// and returns it. An ErrKeyNotFound error is returned if the key does not exist.
+// An ErrTypeAssertionFailed error is returned if the value could not be type
+// asserted or converted to a int64.
 func PopInt64(r *http.Request, key string) (int64, error) {
 	v, err := pop(r, key)
 	if err != nil {
@@ -209,10 +208,10 @@ func PutFloat(r *http.Request, key string, val float64) error {
 	return put(r, key, val)
 }
 
-// PopFloat returns the float64 value for a given key from the session data
-// and then removes it (both the key and value). An ErrKeyNotFound error is returned
-// if the key does not exist. An ErrTypeAssertionFailed error is returned if the
-// value could not be type asserted or converted to a float64.
+// PopFloat removes the float64 value for a given key from the session data
+// and returns it. An ErrKeyNotFound error is returned if the key does not exist.
+// An ErrTypeAssertionFailed error is returned if the value could not be type
+// asserted or converted to a float64.
 func PopFloat(r *http.Request, key string) (float64, error) {
 	v, err := pop(r, key)
 	if err != nil {
@@ -253,10 +252,10 @@ func PutTime(r *http.Request, key string, val time.Time) error {
 	return put(r, key, val)
 }
 
-// PopTime returns the time.Time value for a given key from the session data
-// and then removes it (both the key and value). An ErrKeyNotFound error is returned
-// if the key does not exist. An ErrTypeAssertionFailed error is returned if the
-// value could not be type asserted or converted to a time.Time.
+// PopTime removes the time.Time value for a given key from the session data
+// and returns it. An ErrKeyNotFound error is returned if the key does not exist.
+// An ErrTypeAssertionFailed error is returned if the value could not be type
+// asserted or converted to a time.Time.
 func PopTime(r *http.Request, key string) (time.Time, error) {
 	v, err := pop(r, key)
 	if err != nil {
@@ -301,10 +300,10 @@ func PutBytes(r *http.Request, key string, val []byte) error {
 	return put(r, key, val)
 }
 
-// PopBytes returns the byte slice ([]byte) value for a given key from the session
-// data and then removes it (both the key and value). An ErrKeyNotFound error is
-// returned if the key does not exist. An ErrTypeAssertionFailed error is returned
-// if the value could not be type asserted or converted to a []byte.
+// PopBytes removes the byte slice ([]byte) value for a given key from the session
+// data and returns it. An ErrKeyNotFound error is returned if the key does not
+// exist. An ErrTypeAssertionFailed error is returned if the value could not be
+// type asserted or converted to a []byte.
 func PopBytes(r *http.Request, key string) ([]byte, error) {
 	v, err := pop(r, key)
 	if err != nil {
@@ -320,34 +319,38 @@ func PopBytes(r *http.Request, key string) ([]byte, error) {
 	return nil, ErrTypeAssertionFailed
 }
 
-// GetObject reads the data for a given session key into an arbitrary object
-// (represented by the dst parameter). It should only be used to retrieve custom
-// data types that have been stored using PutObject.
-//
-// The dst parameter must be a pointer.
-//
-// See https://godoc.org/github.com/alexedwards/scs/session#PutObject for further
-// information.
-//
-// Usage:
-// 	type User struct {
-// 		Name  string
-// 		Email string
-// 	}
-//
-// 	func init() {
-// 		gob.Register(new(User))
-// 	}
-//
-// 	func getUserHandler(w http.ResponseWriter, r *http.Request) {
-//		user := new(User)
-//		err := session.GetObject(r, "user", user)
-// 		if err != nil {
-// 			http.Error(w, err.Error(), 500)
-// 			return
-// 		}
-// 		fmt.Fprintf(w, "%s: %s", user.Name, user.Email)
-// 	}
+/*
+GetObject reads the data for a given session key into an arbitrary object
+(represented by the dst parameter). It should only be used to retrieve custom
+data types that have been stored using PutObject.
+
+The dst parameter must be a pointer.
+
+Usage:
+
+	// Note that the fields on the custom type are all exported.
+	type User struct {
+	    Name  string
+	    Email string
+	}
+
+	func getHandler(w http.ResponseWriter, r *http.Request) {
+	    // Register the type with the encoding/gob package. Usually this would be
+	    // done in an init() function.
+	    gob.Register(User{})
+
+	    // Initialise a pointer to a new, empty, custom object.
+	    user := &User{}
+
+	    // Read the custom object data from the session into the pointer.
+	    err := session.GetObject(r, "user", user)
+	    if err != nil {
+	        http.Error(w, err.Error(), 500)
+	        return
+	    }
+	    fmt.Fprintf(w, "Name: %s, Email: %s", user.Name, user.Email)
+	}
+*/
 func GetObject(r *http.Request, key string, dst interface{}) error {
 	b, err := GetBytes(r, key)
 	if err != nil {
@@ -357,40 +360,44 @@ func GetObject(r *http.Request, key string, dst interface{}) error {
 	return gobDecode(b, dst)
 }
 
-// PutObject adds an arbitrary object (represented by the val parameter) and
-// corresponding key to the the session data. Any existing value for the key will
-// be replaced.
-//
-// The val parameter must be a pointer to your object.
-//
-// PutObject is typically used to store custom data types. It encodes the data
-// item to a gob and then into a base64-encoded string which is persisted by the
-// storage engine. This makes PutObject (and the accompanying GetObject and PopObject
-// functions) comparatively expensive operations.
-//
-// Because gob encoding is used, the fields on custom types must be exported in
-// order to be persisted correctly. Custom data types must also be registered with
-// gob.Register before PutObject is called (see https://golang.org/pkg/encoding/gob/#Register).
-//
-// Usage:
-// 	type User struct {
-// 		Name  string
-// 		Email string
-// 	}
-//
-// 	func init() {
-// 		gob.Register(new(User))
-// 	}
-//
-// 	func putUserHandler(w http.ResponseWriter, r *http.Request) {
-// 		user := User{"Alice", "alice@example.com"}
-// 		err := session.PutObject(r, "user", &user)
-// 		if err != nil {
-// 			http.Error(w, err.Error(), 500)
-// 			return
-// 		}
-// 		fmt.Fprintln(w, "OK")
-// 	}
+/*
+PutObject adds an arbitrary object and corresponding key to the the session data.
+Any existing value for the key will be replaced.
+
+The val parameter must be a pointer to your object.
+
+PutObject is typically used to store custom data types. It encodes the object
+into a gob and then into a base64-encoded string which is persisted by the
+storage engine. This makes PutObject (and the accompanying GetObject and PopObject
+functions) comparatively expensive operations.
+
+Because gob encoding is used, the fields on custom types must be exported in
+order to be persisted correctly. Custom data types must also be registered with
+gob.Register before PutObject is called (see https://golang.org/pkg/encoding/gob/#Register).
+
+Usage:
+
+  type User struct {
+      Name  string
+      Email string
+  }
+
+  func putHandler(w http.ResponseWriter, r *http.Request) {
+      // Register the type with the encoding/gob package. Usually this would be
+      // done in an init() function.
+      gob.Register(User{})
+
+      // Initialise a pointer to a new custom object.
+      user := &User{"Alice", "alice@example.com"}
+
+      // Store the custom object in the session data. Important: you should pass in
+      // a pointer to your object, not the value.
+      err := session.PutObject(r, "user", user)
+      if err != nil {
+          http.Error(w, err.Error(), 500)
+      }
+  }
+*/
 func PutObject(r *http.Request, key string, val interface{}) error {
 	if val == nil {
 		return errors.New("value must not be nil")
@@ -404,16 +411,11 @@ func PutObject(r *http.Request, key string, val interface{}) error {
 	return PutBytes(r, key, b)
 }
 
-// PopObject reads the data for a given session key into an arbitrary object
-// (represented by the dst parameter) and then removes it (both the key and value).
-// It should only be used to retrieve custom data types that have been stored
-// using PutObject.
+// PopObject removes the data for a given session key and reads it into a custom
+// object (represented by the dst parameter). It should only be used to retrieve
+// custom data types that have been stored using PutObject.
 //
 // The dst parameter must be a pointer.
-//
-// See https://godoc.org/github.com/alexedwards/scs/session#PutObject
-// and https://godoc.org/github.com/alexedwards/scs/session#GetObject
-// for usage examples.
 func PopObject(r *http.Request, key string, dst interface{}) error {
 	b, err := PopBytes(r, key)
 	if err != nil {

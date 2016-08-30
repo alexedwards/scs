@@ -1,3 +1,65 @@
+/*
+Package session provides session management middleware and helpers for
+manipulating session data.
+
+It should be installed alongside one of the storage engines from https://godoc.org/github.com/alexedwards/scs/engine.
+
+For example:
+
+    $ go get github.com/alexedwards/scs/session
+    $ go get github.com/alexedwards/scs/engine/memstore
+
+Basic use:
+
+    package main
+
+    import (
+        "io"
+        "net/http"
+
+        "github.com/alexedwards/scs/engine/memstore"
+        "github.com/alexedwards/scs/session"
+    )
+
+    func main() {
+        // Initialise a new storage engine. Here we use the memstore package, but the principles
+        // are the same no matter which back-end store you choose.
+        engine := memstore.New(0)
+
+        // Initialise the session manager middleware, passing in the storage engine as
+        // the first parameter. This middleware will automatically handle loading and
+        // saving of session data for you.
+        sessionManager := session.Manage(engine)
+
+        // Set up your HTTP handlers in the normal way.
+        mux := http.NewServeMux()
+        mux.HandleFunc("/put", putHandler)
+        mux.HandleFunc("/get", getHandler)
+
+        // Wrap your handlers with the session manager middleware.
+        http.ListenAndServe(":4000", sessionManager(mux))
+    }
+
+    func putHandler(w http.ResponseWriter, r *http.Request) {
+        // Use the PutString helper to store a new key and associated string value in
+        // the session data. Helpers are also available for bool, int, int64, float,
+        // time.Time and []byte data types.
+        err := session.PutString(r, "message", "Hello from a session!")
+        if err != nil {
+            http.Error(w, err.Error(), 500)
+        }
+    }
+
+    func getHandler(w http.ResponseWriter, r *http.Request) {
+        // Use the GetString helper to retreive the string value associated with a key.
+        msg, err := session.GetString(r, "message")
+        if err != nil {
+            http.Error(w, err.Error(), 500)
+            return
+        }
+        io.WriteString(w, msg)
+    }
+*/
 package session
 
 import (
@@ -12,8 +74,8 @@ import (
 	"time"
 )
 
-// ErrAlreadyWritten is returned by operations that attempt to modify the
-// session data after it has already been sent to the storage engine and client.
+// ErrAlreadyWritten is returned when an attempt is made to modify the session
+// data after it has already been sent to the storage engine and client.
 var ErrAlreadyWritten = errors.New("session already written to the engine and http.ResponseWriter")
 
 type session struct {
@@ -150,32 +212,38 @@ func write(w http.ResponseWriter, r *http.Request) error {
 	return nil
 }
 
-// RegenerateToken creates a new session token while retaining the current session
-// data. The session lifetime is also reset.
-//
-// The old session token (and accompanying data) is deleted from the storage engine.
-//
-// To mitigate the risk of session fixation attacks, it's important that you call
-// RegenerateToken before making any changes to privilege levels (e.g. login and
-// logout operations). See https://www.owasp.org/index.php/Session_fixation for
-// additional information.
-//
-// Usage:
-//
-//	func login(w http.ResponseWriter, r *http.Request) {
-//		…
-//		userID := 123
-//		err := session.RegenerateToken(r)
-//		if err != nil {
-//			http.Error(w, err.Error(), 500)
-//			return
-//		}
-//		if err := session.PutInt(r, "user.id", userID); err != nil {
-//			http.Error(w, err.Error(), 500)
-//			return
-//		}
-//		…
-//	}
+/*
+RegenerateToken creates a new session token while retaining the current session
+data. The session lifetime is also reset.
+
+The old session token and accompanying data are deleted from the storage engine.
+
+To mitigate the risk of session fixation attacks, it's important that you call
+RegenerateToken before making any changes to privilege levels (e.g. login and
+logout operations). See https://www.owasp.org/index.php/Session_fixation for
+additional information.
+
+Usage:
+
+	func loginHandler(w http.ResponseWriter, r *http.Request) {
+	    userID := 123
+
+	    // First regenerate the session token…
+	    err := session.RegenerateToken(r)
+	    if err != nil {
+	        http.Error(w, err.Error(), 500)
+	        return
+	    }
+
+	    // Then make the privilege-level change.
+	    err = session.PutInt(r, "userID", userID)
+	    if err != nil {
+	        http.Error(w, err.Error(), 500)
+	        return
+	    }
+	}
+
+*/
 func RegenerateToken(r *http.Request) error {
 	s, err := sessionFromContext(r)
 	if err != nil {
@@ -209,7 +277,7 @@ func RegenerateToken(r *http.Request) error {
 // Renew creates a new session token and removes all data for the session. The
 // session lifetime is also reset.
 //
-// The old session token (and accompanying data) is deleted from the storage engine.
+// The old session token and accompanying data are deleted from the storage engine.
 //
 // The Renew function is essentially a concurrency-safe amalgamation of the
 // RegenerateToken and Clear functions.
@@ -246,13 +314,13 @@ func Renew(r *http.Request) error {
 	return nil
 }
 
-// Destroy deletes the current session. The session token (and any accompanying
-// data) is deleted from the storage engine and the client is instructed to
+// Destroy deletes the current session. The session token and accompanying
+// data are deleted from the storage engine, and the client is instructed to
 // delete the session cookie.
 //
-// Destroy operations are effective immediately, and any future operations on
-// the session within the same request cycle will return a ErrAlreadyWritten error
-// (if you see this error, you probably want to use the Renew function instead).
+// Destroy operations are effective immediately, and any further operations on
+// the session in the same request cycle will return an ErrAlreadyWritten error.
+// If you see this error you probably want to use the Renew function instead.
 //
 // A new empty session will be created for any client that subsequently tries
 // to use the destroyed session token.

@@ -5,8 +5,28 @@ import (
 	"net/http"
 )
 
+// Middleware defines the signature for the session management middleware.
 type Middleware func(h http.Handler) http.Handler
 
+/*
+Manage returns a new session manager middleware instance. The first parameter
+should be a valid storage engine, followed by zero or more functional options.
+
+For example:
+
+	session.Manage(memstore.New(0))
+
+	session.Manage(memstore.New(0), session.Lifetime(14*24*time.Hour))
+
+	session.Manage(memstore.New(0),
+		session.Secure(true),
+		session.Persist(true),
+		session.Lifetime(14*24*time.Hour),
+	)
+
+The returned session manager can be used to wrap any http.Handler. It automatically
+loads sessions based on the HTTP request and saves session data as and when necessary.
+*/
 func Manage(engine Engine, opts ...Option) Middleware {
 	return func(h http.Handler) http.Handler {
 		do := *defaultOptions

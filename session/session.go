@@ -180,7 +180,7 @@ func write(w http.ResponseWriter, r *http.Request) error {
 		}
 	}
 
-	if ce, ok := s.engine.(CookieEngine); ok {
+	if ce, ok := s.engine.(cookieEngine); ok {
 		s.token, err = ce.MakeToken(j, expiry)
 		if err != nil {
 			return err

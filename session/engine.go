@@ -22,7 +22,6 @@ type Engine interface {
 	Save(token string, b []byte, expiry time.Time) (err error)
 }
 
-// todo: make this unexported?
-type CookieEngine interface {
+type cookieEngine interface {
 	MakeToken(b []byte, expiry time.Time) (token string, err error)
 }

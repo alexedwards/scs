@@ -23,10 +23,6 @@ func TestNew(t *testing.T) {
 	if ok == false {
 		t.Fatalf("got %v: expected %v", ok, true)
 	}
-	_, ok = interface{}(c).(session.CookieEngine)
-	if ok == false {
-		t.Fatalf("got %v: expected %v", ok, true)
-	}
 }
 
 func TestMakeToken(t *testing.T) {

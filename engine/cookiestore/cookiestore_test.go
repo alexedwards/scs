@@ -39,7 +39,7 @@ func TestMakeToken(t *testing.T) {
 		t.Fatal(err)
 	}
 	if bytes.Index([]byte(token), []byte("\000")) > 1 {
-		t.Fatal("got %v: expected no invalid bytes", []byte(token))
+		t.Fatalf("got %v: expected no invalid bytes", []byte(token))
 	}
 
 	b2, found, err := c.Find(token)
@@ -77,7 +77,7 @@ func TestMakeUnencryptedToken(t *testing.T) {
 		t.Fatal(err)
 	}
 	if bytes.Index([]byte(token), []byte("\000")) > 1 {
-		t.Fatal("got %v: expected no invalid bytes", []byte(token))
+		t.Fatalf("got %v: expected no invalid bytes", []byte(token))
 	}
 
 	b2, found, err := c.Find(token)

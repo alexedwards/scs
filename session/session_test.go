@@ -426,7 +426,7 @@ func TestRegenerateToken(t *testing.T) {
 	}
 	newToken := extractTokenFromCookie(cookie)
 	if newToken == oldToken {
-		t.Fatalf("expected a difference", newToken)
+		t.Fatal("expected a difference")
 	}
 	_, found, _ := e.Find(oldToken)
 	if found != false {
@@ -453,7 +453,7 @@ func TestRenew(t *testing.T) {
 	}
 	newToken := extractTokenFromCookie(cookie)
 	if newToken == oldToken {
-		t.Fatalf("expected a difference", newToken)
+		t.Fatal("expected a difference")
 	}
 	_, found, _ := e.Find(oldToken)
 	if found != false {

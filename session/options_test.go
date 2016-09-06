@@ -175,7 +175,7 @@ func TestCookieName(t *testing.T) {
 
 	_, _, cookie := testRequest(t, h, "/PutString", "")
 	if strings.HasPrefix(cookie, "custom_cookie_name=") == false {
-		t.Fatalf("got %q: expected prefix %q", "custom_cookie_name=")
+		t.Fatalf("got %q: expected prefix %q", cookie, "custom_cookie_name=")
 	}
 
 	_, body, _ := testRequest(t, h, "/GetString", cookie)

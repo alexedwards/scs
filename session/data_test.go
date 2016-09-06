@@ -153,7 +153,7 @@ func TestFloat(t *testing.T) {
 	_ = PutFloat(r, "test_float", 12.345)
 	i, _ := GetFloat(r, "test_float")
 	if i != 12.345 {
-		t.Fatalf("got %d: expected %d", i, 12.345)
+		t.Fatalf("got %f: expected %f", i, 12.345)
 	}
 }
 

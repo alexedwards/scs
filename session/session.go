@@ -51,7 +51,7 @@ Basic use:
     }
 
     func getHandler(w http.ResponseWriter, r *http.Request) {
-        // Use the GetString helper to retreive the string value associated with a key.
+        // Use the GetString helper to retrieve the string value associated with a key.
         msg, err := session.GetString(r, "message")
         if err != nil {
             http.Error(w, err.Error(), 500)

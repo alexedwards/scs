@@ -4,7 +4,7 @@
 // The package is fine to use as-is, but it is strongly recommended that you vendor
 // the package to avoid compatibility problems in the future.
 //
-// The redisstore pacakge relies on the the popular Redigo Redis client
+// The redisstore package relies on the the popular Redigo Redis client
 // (https://github.com/garyburd/redigo).
 //
 // Usage:

@@ -6,7 +6,7 @@
 //	CREATE TABLE sessions (
 //		token string,
 //		data blob,
-//		expiry  time
+//		expiry time
 //	)
 //	CREATE INDEX sessions_expiry_idx ON sessions (expiry);
 //
@@ -18,7 +18,7 @@
 //
 //  func main() {
 //      // Establish a database/sql pool
-//      db, err := sql.Open("ql", "test.db")
+//      db, err := sql.Open("ql", "example.db")
 //      if err != nil {
 //          log.Fatal(err)
 //      }
@@ -40,7 +40,7 @@ import (
 	"log"
 	"time"
 
-	//load ql driver
+	// Register ql driver with database/sql
 	_ "github.com/cznic/ql/driver"
 )
 
@@ -172,7 +172,7 @@ func Table() string {
 	CREATE TABLE sessions (
 		token string,
 		data blob,
-		expiry  time
+		expiry time
 	)
 	`
 }

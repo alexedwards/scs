@@ -330,6 +330,7 @@ func TestStopNilCleanup(t *testing.T) {
 	// A send to a nil channel will block forever
 	p.StopCleanup()
 }
+
 func migrate(t *testing.T, db *sql.DB) {
 	_, err := execTx(db, Table())
 	if err != nil {

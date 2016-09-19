@@ -476,6 +476,20 @@ func PopObject(r *http.Request, key string, dst interface{}) error {
 	return gobDecode(b, dst)
 }
 
+// Exists returns true if the given key is present in the session data.
+func Exists(r *http.Request, key string) (bool, error) {
+	s, err := sessionFromContext(r)
+	if err != nil {
+		return false, err
+	}
+
+	s.mu.Lock()
+	_, exists := s.data[key]
+	s.mu.Unlock()
+
+	return exists, nil
+}
+
 // Remove deletes the given key and corresponding value from the session data.
 // If the key is not present this operation is a no-op.
 func Remove(r *http.Request, key string) error {

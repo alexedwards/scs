@@ -247,6 +247,15 @@ func init() {
 		fmt.Fprintf(w, "%s: %d", u.Name, u.Age)
 	})
 
+	testServeMux.HandleFunc("/Exists", func(w http.ResponseWriter, r *http.Request) {
+		exists, err := Exists(r, "test_string")
+		if err != nil {
+			io.WriteString(w, err.Error())
+			return
+		}
+		fmt.Fprintf(w, "%v", exists)
+	})
+
 	testServeMux.HandleFunc("/RemoveString", func(w http.ResponseWriter, r *http.Request) {
 		err := Remove(r, "test_string")
 		if err != nil {

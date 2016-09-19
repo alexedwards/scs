@@ -268,19 +268,18 @@ func TestExists(t *testing.T) {
 	m := Manage(testEngine)
 	h := m(testServeMux)
 
-	_, body, cookie := testRequest(t, h, "/Exists", "")
-	if body != "false" {
-		t.Fatalf("got %q: expected %q", body, "false")
-	}
+	_, _, cookie := testRequest(t, h, "/PutString", "")
 
-	_, body, _ = testRequest(t, h, "/PutString", "")
-	if body != "OK" {
-		t.Fatalf("got %q: expected %q", body, "OK")
-	}
-
-	_, body, _ = testRequest(t, h, "/Exists", cookie)
+	_, body, _ := testRequest(t, h, "/Exists", cookie)
 	if body != "true" {
 		t.Fatalf("got %q: expected %q", body, "true")
+	}
+
+	_, body, _ = testRequest(t, h, "/PopString", cookie)
+
+	_, body, _ = testRequest(t, h, "/Exists", cookie)
+	if body != "false" {
+		t.Fatalf("got %q: expected %q", body, "false")
 	}
 }
 

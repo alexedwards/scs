@@ -75,8 +75,8 @@ func TestLifetime(t *testing.T) {
 	time.Sleep(100 * time.Millisecond)
 
 	_, body, _ := testRequest(t, h, "/GetString", cookie)
-	if body != ErrKeyNotFound.Error() {
-		t.Fatalf("got %q: expected %q", body, ErrKeyNotFound.Error())
+	if body != "" {
+		t.Fatalf("got %q: expected %q", body, "")
 	}
 	_, _, cookie = testRequest(t, h, "/PutString", cookie)
 	newToken := extractTokenFromCookie(cookie)
@@ -94,8 +94,8 @@ func TestIdleTimeout(t *testing.T) {
 	time.Sleep(150 * time.Millisecond)
 
 	_, body, _ := testRequest(t, h, "/GetString", cookie)
-	if body != ErrKeyNotFound.Error() {
-		t.Fatalf("got %q: expected %q", body, ErrKeyNotFound.Error())
+	if body != "" {
+		t.Fatalf("got %q: expected %q", body, "")
 	}
 	_, _, cookie = testRequest(t, h, "/PutString", cookie)
 	newToken := extractTokenFromCookie(cookie)
@@ -112,7 +112,7 @@ func TestIdleTimeout(t *testing.T) {
 
 	_, body, cookie = testRequest(t, h, "/GetString", cookie)
 	if body != "lorem ipsum" {
-		t.Fatalf("got %q: expected %q", body, ErrKeyNotFound.Error())
+		t.Fatalf("got %q: expected %q", body, "lorem ipsum")
 	}
 	_, _, cookie = testRequest(t, h, "/PutString", cookie)
 	newToken = extractTokenFromCookie(cookie)

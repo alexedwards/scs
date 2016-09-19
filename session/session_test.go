@@ -461,8 +461,8 @@ func TestRenew(t *testing.T) {
 	}
 
 	_, body, _ = testRequest(t, h, "/GetString", cookie)
-	if body != ErrKeyNotFound.Error() {
-		t.Fatalf("got %q: expected %q", body, ErrKeyNotFound.Error())
+	if body != "" {
+		t.Fatalf("got %q: expected %q", body, "")
 	}
 }
 

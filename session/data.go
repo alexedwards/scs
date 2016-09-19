@@ -11,22 +11,21 @@ import (
 	"time"
 )
 
-// ErrKeyNotFound is returned by operations on session data when the given
-// key does not exist.
-var ErrKeyNotFound = errors.New("key not found in session data")
-
 // ErrTypeAssertionFailed is returned by operations on session data where the
 // received value could not be type asserted or converted into the required type.
 var ErrTypeAssertionFailed = errors.New("type assertion failed")
 
-// GetString returns the string value for a given key from the session data. An
-// ErrKeyNotFound error is returned if the key does not exist. An ErrTypeAssertionFailed
+// GetString returns the string value for a given key from the session data. The
+// zero value for a string ("") is returned if the key does not exist. An ErrTypeAssertionFailed
 // error is returned if the value could not be type asserted or converted to a
 // string.
 func GetString(r *http.Request, key string) (string, error) {
-	v, err := get(r, key)
+	v, exists, err := get(r, key)
 	if err != nil {
 		return "", err
+	}
+	if exists == false {
+		return "", nil
 	}
 
 	str, ok := v.(string)
@@ -43,13 +42,16 @@ func PutString(r *http.Request, key string, val string) error {
 }
 
 // PopString removes the string value for a given key from the session data
-// and returns it. An ErrKeyNotFound error is returned if the key does not exist.
-// An ErrTypeAssertionFailed error is returned if the value could not be type
-// asserted to a string.
+// and returns it. The zero value for a string ("") is returned if the key does
+// not exist. An ErrTypeAssertionFailed error is returned if the value could not
+// be type asserted to a string.
 func PopString(r *http.Request, key string) (string, error) {
-	v, err := pop(r, key)
+	v, exists, err := pop(r, key)
 	if err != nil {
 		return "", err
+	}
+	if exists == false {
+		return "", nil
 	}
 
 	str, ok := v.(string)
@@ -59,13 +61,16 @@ func PopString(r *http.Request, key string) (string, error) {
 	return str, nil
 }
 
-// GetBool returns the bool value for a given key from the session data. An ErrKeyNotFound
-// error is returned if the key does not exist. An ErrTypeAssertionFailed error
-// is returned if the value could not be type asserted to a bool.
+// GetBool returns the bool value for a given key from the session data. The
+// zero value for a bool (false) is returned if the key does not exist. An ErrTypeAssertionFailed
+// error is returned if the value could not be type asserted to a bool.
 func GetBool(r *http.Request, key string) (bool, error) {
-	v, err := get(r, key)
+	v, exists, err := get(r, key)
 	if err != nil {
 		return false, err
+	}
+	if exists == false {
+		return false, nil
 	}
 
 	b, ok := v.(bool)
@@ -82,12 +87,16 @@ func PutBool(r *http.Request, key string, val bool) error {
 }
 
 // PopBool removes the bool value for a given key from the session data and returns
-// it. An ErrKeyNotFound error is returned if the key does not exist. An ErrTypeAssertionFailed
-// error is returned if the value could not be type asserted to a bool.
+// it. The zero value for a bool (false) is returned if the key does not exist.
+// An ErrTypeAssertionFailed error is returned if the value could not be type
+// asserted to a bool.
 func PopBool(r *http.Request, key string) (bool, error) {
-	v, err := pop(r, key)
+	v, exists, err := pop(r, key)
 	if err != nil {
 		return false, err
+	}
+	if exists == false {
+		return false, nil
 	}
 
 	b, ok := v.(bool)
@@ -97,13 +106,16 @@ func PopBool(r *http.Request, key string) (bool, error) {
 	return b, nil
 }
 
-// GetInt returns the int value for a given key from the session data. An ErrKeyNotFound
-// error is returned if the key does not exist. An ErrTypeAssertionFailed error
-// is returned if the value could not be type asserted or converted to a int.
+// GetInt returns the int value for a given key from the session data. The zero
+// value for an int (0) is returned if the key does not exist. An ErrTypeAssertionFailed
+// error is returned if the value could not be type asserted or converted to a int.
 func GetInt(r *http.Request, key string) (int, error) {
-	v, err := get(r, key)
+	v, exists, err := get(r, key)
 	if err != nil {
 		return 0, err
+	}
+	if exists == false {
+		return 0, nil
 	}
 
 	switch v := v.(type) {
@@ -121,14 +133,17 @@ func PutInt(r *http.Request, key string, val int) error {
 	return put(r, key, val)
 }
 
-// PopInt removes the int value for a given key from the session data
-// and returns it. An ErrKeyNotFound error is returned if the key does not exist.
-// An ErrTypeAssertionFailed error is returned if the value could not be type
-// asserted or converted to a int.
+// PopInt removes the int value for a given key from the session data and returns
+// it. The zero value for an int (0) is returned if the key does not exist. An
+// ErrTypeAssertionFailed error is returned if the value could not be type asserted
+// or converted to a int.
 func PopInt(r *http.Request, key string) (int, error) {
-	v, err := pop(r, key)
+	v, exists, err := pop(r, key)
 	if err != nil {
 		return 0, err
+	}
+	if exists == false {
+		return 0, nil
 	}
 
 	switch v := v.(type) {
@@ -140,13 +155,18 @@ func PopInt(r *http.Request, key string) (int, error) {
 	return 0, ErrTypeAssertionFailed
 }
 
-// GetInt64 returns the int64 value for a given key from the session data. An ErrKeyNotFound
-// error is returned if the key does not exist. An ErrTypeAssertionFailed error
-// is returned if the value could not be type asserted or converted to a int64.
+//
+
+// GetInt64 returns the int64 value for a given key from the session data. The
+// zero value for an int (0) is returned if the key does not exist. An ErrTypeAssertionFailed
+// error is returned if the value could not be type asserted or converted to a int64.
 func GetInt64(r *http.Request, key string) (int64, error) {
-	v, err := get(r, key)
+	v, exists, err := get(r, key)
 	if err != nil {
 		return 0, err
+	}
+	if exists == false {
+		return 0, nil
 	}
 
 	switch v := v.(type) {
@@ -165,13 +185,16 @@ func PutInt64(r *http.Request, key string, val int64) error {
 }
 
 // PopInt64 remvoes the int64 value for a given key from the session data
-// and returns it. An ErrKeyNotFound error is returned if the key does not exist.
-// An ErrTypeAssertionFailed error is returned if the value could not be type
-// asserted or converted to a int64.
+// and returns it. The zero value for an int (0) is returned if the key does not
+// exist. An ErrTypeAssertionFailed error is returned if the value could not be
+// type asserted or converted to a int64.
 func PopInt64(r *http.Request, key string) (int64, error) {
-	v, err := pop(r, key)
+	v, exists, err := pop(r, key)
 	if err != nil {
 		return 0, err
+	}
+	if exists == false {
+		return 0, nil
 	}
 
 	switch v := v.(type) {
@@ -183,14 +206,17 @@ func PopInt64(r *http.Request, key string) (int64, error) {
 	return 0, ErrTypeAssertionFailed
 }
 
-// GetFloat returns the float64 value for a given key from the session data. An
-// ErrKeyNotFound error is returned if the key does not exist. An ErrTypeAssertionFailed
+// GetFloat returns the float64 value for a given key from the session data. The
+// zero value for an float (0) is returned if the key does not exist. An ErrTypeAssertionFailed
 // error is returned if the value could not be type asserted or converted to a
 // float64.
 func GetFloat(r *http.Request, key string) (float64, error) {
-	v, err := get(r, key)
+	v, exists, err := get(r, key)
 	if err != nil {
 		return 0, err
+	}
+	if exists == false {
+		return 0, nil
 	}
 
 	switch v := v.(type) {
@@ -209,13 +235,16 @@ func PutFloat(r *http.Request, key string, val float64) error {
 }
 
 // PopFloat removes the float64 value for a given key from the session data
-// and returns it. An ErrKeyNotFound error is returned if the key does not exist.
-// An ErrTypeAssertionFailed error is returned if the value could not be type
-// asserted or converted to a float64.
+// and returns it. The zero value for an float (0) is returned if the key does
+// not exist. An ErrTypeAssertionFailed error is returned if the value could not
+// be type asserted or converted to a float64.
 func PopFloat(r *http.Request, key string) (float64, error) {
-	v, err := pop(r, key)
+	v, exists, err := pop(r, key)
 	if err != nil {
 		return 0, err
+	}
+	if exists == false {
+		return 0, nil
 	}
 
 	switch v := v.(type) {
@@ -227,14 +256,18 @@ func PopFloat(r *http.Request, key string) (float64, error) {
 	return 0, ErrTypeAssertionFailed
 }
 
-// GetTime returns the time.Time value for a given key from the session data. An
-// ErrKeyNotFound error is returned if the key does not exist. An ErrTypeAssertionFailed
+// GetTime returns the time.Time value for a given key from the session data. The
+// zero value for a time.Time object is returned if the key does not exist (this
+// can be checked for with the time.IsZero method). An ErrTypeAssertionFailed
 // error is returned if the value could not be type asserted or converted to a
 // time.Time.
 func GetTime(r *http.Request, key string) (time.Time, error) {
-	v, err := get(r, key)
+	v, exists, err := get(r, key)
 	if err != nil {
 		return time.Time{}, err
+	}
+	if exists == false {
+		return time.Time{}, nil
 	}
 
 	switch v := v.(type) {
@@ -253,13 +286,17 @@ func PutTime(r *http.Request, key string, val time.Time) error {
 }
 
 // PopTime removes the time.Time value for a given key from the session data
-// and returns it. An ErrKeyNotFound error is returned if the key does not exist.
-// An ErrTypeAssertionFailed error is returned if the value could not be type
-// asserted or converted to a time.Time.
+// and returns it. The zero value for a time.Time object is returned if the key
+// does not exist (this can be checked for with the time.IsZero method). An ErrTypeAssertionFailed
+// error is returned if the value could not be type asserted or converted to a
+// time.Time.
 func PopTime(r *http.Request, key string) (time.Time, error) {
-	v, err := pop(r, key)
+	v, exists, err := pop(r, key)
 	if err != nil {
 		return time.Time{}, err
+	}
+	if exists == false {
+		return time.Time{}, nil
 	}
 
 	switch v := v.(type) {
@@ -272,13 +309,16 @@ func PopTime(r *http.Request, key string) (time.Time, error) {
 }
 
 // GetBytes returns the byte slice ([]byte) value for a given key from the session
-// data. An ErrKeyNotFound error is returned if the key does not exist. An ErrTypeAssertionFailed
-// error is returned if the value could not be type asserted or converted to
-// []byte.
+// data. The zero value for a slice (nil) is returned if the key does not exist.
+// An ErrTypeAssertionFailed error is returned if the value could not be type
+// asserted or converted to []byte.
 func GetBytes(r *http.Request, key string) ([]byte, error) {
-	v, err := get(r, key)
+	v, exists, err := get(r, key)
 	if err != nil {
 		return nil, err
+	}
+	if exists == false {
+		return nil, nil
 	}
 
 	switch v := v.(type) {
@@ -301,13 +341,16 @@ func PutBytes(r *http.Request, key string, val []byte) error {
 }
 
 // PopBytes removes the byte slice ([]byte) value for a given key from the session
-// data and returns it. An ErrKeyNotFound error is returned if the key does not
-// exist. An ErrTypeAssertionFailed error is returned if the value could not be
-// type asserted or converted to a []byte.
+// data and returns it. The zero value for a slice (nil) is returned if the key
+// does not exist. An ErrTypeAssertionFailed error is returned if the value could
+// not be type asserted or converted to a []byte.
 func PopBytes(r *http.Request, key string) ([]byte, error) {
-	v, err := pop(r, key)
+	v, exists, err := pop(r, key)
 	if err != nil {
 		return nil, err
+	}
+	if exists == false {
+		return nil, nil
 	}
 
 	switch v := v.(type) {
@@ -322,7 +365,8 @@ func PopBytes(r *http.Request, key string) ([]byte, error) {
 /*
 GetObject reads the data for a given session key into an arbitrary object
 (represented by the dst parameter). It should only be used to retrieve custom
-data types that have been stored using PutObject.
+data types that have been stored using PutObject. The object represented by dst
+will remain unchanged if the key does not exist.
 
 The dst parameter must be a pointer.
 
@@ -355,6 +399,9 @@ func GetObject(r *http.Request, key string, dst interface{}) error {
 	b, err := GetBytes(r, key)
 	if err != nil {
 		return err
+	}
+	if b == nil {
+		return nil
 	}
 
 	return gobDecode(b, dst)
@@ -413,13 +460,17 @@ func PutObject(r *http.Request, key string, val interface{}) error {
 
 // PopObject removes the data for a given session key and reads it into a custom
 // object (represented by the dst parameter). It should only be used to retrieve
-// custom data types that have been stored using PutObject.
+// custom data types that have been stored using PutObject. The object represented
+// by dst will remain unchanged if the key does not exist.
 //
 // The dst parameter must be a pointer.
 func PopObject(r *http.Request, key string, dst interface{}) error {
 	b, err := PopBytes(r, key)
 	if err != nil {
 		return err
+	}
+	if b == nil {
+		return nil
 	}
 
 	return gobDecode(b, dst)
@@ -465,20 +516,17 @@ func Clear(r *http.Request) error {
 	return nil
 }
 
-func get(r *http.Request, key string) (interface{}, error) {
+func get(r *http.Request, key string) (interface{}, bool, error) {
 	s, err := sessionFromContext(r)
 	if err != nil {
-		return nil, err
+		return nil, false, err
 	}
 
 	s.mu.Lock()
 	v, exists := s.data[key]
 	s.mu.Unlock()
-	if exists == false {
-		return nil, ErrKeyNotFound
-	}
 
-	return v, nil
+	return v, exists, nil
 }
 
 func put(r *http.Request, key string, val interface{}) error {
@@ -498,26 +546,26 @@ func put(r *http.Request, key string, val interface{}) error {
 	return nil
 }
 
-func pop(r *http.Request, key string) (interface{}, error) {
+func pop(r *http.Request, key string) (interface{}, bool, error) {
 	s, err := sessionFromContext(r)
 	if err != nil {
-		return "", err
+		return "", false, err
 	}
 
 	s.mu.Lock()
 	defer s.mu.Unlock()
 
 	if s.written == true {
-		return "", ErrAlreadyWritten
+		return "", false, ErrAlreadyWritten
 	}
 	v, exists := s.data[key]
 	if exists == false {
-		return "", ErrKeyNotFound
+		return nil, false, nil
 	}
 
 	delete(s.data, key)
 	s.modified = true
-	return v, nil
+	return v, true, nil
 }
 
 func gobEncode(v interface{}) ([]byte, error) {

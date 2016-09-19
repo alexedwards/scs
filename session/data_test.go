@@ -28,8 +28,8 @@ func TestString(t *testing.T) {
 	}
 
 	_, body, _ = testRequest(t, h, "/GetString", cookie)
-	if body != ErrKeyNotFound.Error() {
-		t.Fatalf("got %q: expected %q", body, ErrKeyNotFound.Error())
+	if body != "" {
+		t.Fatalf("got %q: expected %q", body, "")
 	}
 }
 
@@ -53,8 +53,8 @@ func TestBool(t *testing.T) {
 	}
 
 	_, body, _ = testRequest(t, h, "/GetBool", cookie)
-	if body != ErrKeyNotFound.Error() {
-		t.Fatalf("got %q: expected %q", body, ErrKeyNotFound.Error())
+	if body != "false" {
+		t.Fatalf("got %q: expected %q", body, "false")
 	}
 }
 
@@ -78,8 +78,8 @@ func TestInt(t *testing.T) {
 	}
 
 	_, body, _ = testRequest(t, h, "/GetInt", cookie)
-	if body != ErrKeyNotFound.Error() {
-		t.Fatalf("got %q: expected %q", body, ErrKeyNotFound.Error())
+	if body != "0" {
+		t.Fatalf("got %q: expected %q", body, "0")
 	}
 
 	r := requestWithSession(new(http.Request), &session{data: make(map[string]interface{})})
@@ -111,8 +111,8 @@ func TestInt64(t *testing.T) {
 	}
 
 	_, body, _ = testRequest(t, h, "/GetInt64", cookie)
-	if body != ErrKeyNotFound.Error() {
-		t.Fatalf("got %q: expected %q", body, ErrKeyNotFound.Error())
+	if body != "0" {
+		t.Fatalf("got %q: expected %q", body, "0")
 	}
 
 	r := requestWithSession(new(http.Request), &session{data: make(map[string]interface{})})
@@ -144,8 +144,8 @@ func TestFloat(t *testing.T) {
 	}
 
 	_, body, _ = testRequest(t, h, "/GetFloat", cookie)
-	if body != ErrKeyNotFound.Error() {
-		t.Fatalf("got %q: expected %q", body, ErrKeyNotFound.Error())
+	if body != "0.000" {
+		t.Fatalf("got %q: expected %q", body, "0.000")
 	}
 
 	r := requestWithSession(new(http.Request), &session{data: make(map[string]interface{})})
@@ -177,8 +177,8 @@ func TestTime(t *testing.T) {
 	}
 
 	_, body, _ = testRequest(t, h, "/GetTime", cookie)
-	if body != ErrKeyNotFound.Error() {
-		t.Fatalf("got %q: expected %q", body, ErrKeyNotFound.Error())
+	if body != "01 Jan 01 00:00 UTC" {
+		t.Fatalf("got %q: expected %q", body, "01 Jan 01 00:00 UTC")
 	}
 
 	r := requestWithSession(new(http.Request), &session{data: make(map[string]interface{})})
@@ -211,8 +211,8 @@ func TestBytes(t *testing.T) {
 	}
 
 	_, body, _ = testRequest(t, h, "/GetBytes", cookie)
-	if body != ErrKeyNotFound.Error() {
-		t.Fatalf("got %q: expected %q", body, ErrKeyNotFound.Error())
+	if body != "" {
+		t.Fatalf("got %q: expected %q", body, "")
 	}
 
 	r := requestWithSession(new(http.Request), &session{data: make(map[string]interface{})})
@@ -249,8 +249,8 @@ func TestObject(t *testing.T) {
 	}
 
 	_, body, _ = testRequest(t, h, "/GetObject", cookie)
-	if body != ErrKeyNotFound.Error() {
-		t.Fatalf("got %q: expected %q", body, ErrKeyNotFound.Error())
+	if body != ": 0" {
+		t.Fatalf("got %q: expected %q", body, ": 0")
 	}
 
 	r := requestWithSession(new(http.Request), &session{data: make(map[string]interface{})})
@@ -261,6 +261,26 @@ func TestObject(t *testing.T) {
 	_ = GetObject(r, "test_object", o)
 	if reflect.DeepEqual(u, o) == false {
 		t.Fatalf("got %v: expected %v", reflect.DeepEqual(u, o), false)
+	}
+}
+
+func TestExists(t *testing.T) {
+	m := Manage(testEngine)
+	h := m(testServeMux)
+
+	_, body, cookie := testRequest(t, h, "/Exists", "")
+	if body != "false" {
+		t.Fatalf("got %q: expected %q", body, "false")
+	}
+
+	_, body, _ = testRequest(t, h, "/PutString", "")
+	if body != "OK" {
+		t.Fatalf("got %q: expected %q", body, "OK")
+	}
+
+	_, body, _ = testRequest(t, h, "/Exists", cookie)
+	if body != "true" {
+		t.Fatalf("got %q: expected %q", body, "true")
 	}
 }
 
@@ -277,8 +297,8 @@ func TestRemove(t *testing.T) {
 	}
 
 	_, body, _ = testRequest(t, h, "/GetString", cookie)
-	if body != ErrKeyNotFound.Error() {
-		t.Fatalf("got %q: expected %q", body, ErrKeyNotFound.Error())
+	if body != "" {
+		t.Fatalf("got %q: expected %q", body, "")
 	}
 
 	_, body, _ = testRequest(t, h, "/GetBool", cookie)
@@ -300,12 +320,12 @@ func TestClear(t *testing.T) {
 	}
 
 	_, body, _ = testRequest(t, h, "/GetString", cookie)
-	if body != ErrKeyNotFound.Error() {
-		t.Fatalf("got %q: expected %q", body, ErrKeyNotFound.Error())
+	if body != "" {
+		t.Fatalf("got %q: expected %q", body, "")
 	}
 
 	_, body, _ = testRequest(t, h, "/GetBool", cookie)
-	if body != ErrKeyNotFound.Error() {
-		t.Fatalf("got %q: expected %q", body, ErrKeyNotFound.Error())
+	if body != "false" {
+		t.Fatalf("got %q: expected %q", body, "false")
 	}
 }

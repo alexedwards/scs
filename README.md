@@ -86,7 +86,8 @@ func putHandler(w http.ResponseWriter, r *http.Request) {
 }
 
 func getHandler(w http.ResponseWriter, r *http.Request) {
-    // Use the GetString helper to retreive the string value associated with a key.
+    // Use the GetString helper to retreive the string value associated with a key. 
+    // The zero value is returned if the key does not exist.
     msg, err := session.GetString(r, "message")
     if err != nil {
         http.Error(w, err.Error(), 500)
@@ -233,8 +234,7 @@ func putHandler(w http.ResponseWriter, r *http.Request) {
 
 func popHandler(w http.ResponseWriter, r *http.Request) {
     // Use the PopString helper to retrieve the string and delete it from the
-    // session. Subsequent attempts to retrieve the data will return an ErrKeyNotFound
-    // error.
+    // session.
     msg, err := session.PopString(r, "flashMessage")
     if err != nil {
         http.Error(w, err.Error(), 500)

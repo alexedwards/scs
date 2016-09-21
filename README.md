@@ -33,6 +33,13 @@ $ go get github.com/alexedwards/scs/session
 $ go get github.com/alexedwards/scs/engine/memstore
 ```
 
+Or (recommended) use use [gvt](https://github.com/FiloSottile/gvt) to vendor the packages you need. For example:
+
+```
+$ gvt fetch github.com/alexedwards/scs/session
+$ gvt fetch github.com/alexedwards/scs/engine/memstore
+```
+
 ## Examples
 
 * [Basic use](#basic-use)

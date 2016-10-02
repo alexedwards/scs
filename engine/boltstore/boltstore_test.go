@@ -10,7 +10,7 @@ import (
 )
 
 func TestSave(t *testing.T) {
-	db, err := bolt.Open("testing.db", 0600, nil)
+	db, err := bolt.Open("/tmp/testing.db", 0600, nil)
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -30,7 +30,7 @@ func TestSave(t *testing.T) {
 }
 
 func TestFind(t *testing.T) {
-	db, err := bolt.Open("testing.db", 0600, nil)
+	db, err := bolt.Open("/tmp/testing.db", 0600, nil)
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -67,7 +67,7 @@ func TestFind(t *testing.T) {
 }
 
 func TestDelete(t *testing.T) {
-	db, err := bolt.Open("testing.db", 0600, nil)
+	db, err := bolt.Open("/tmp/testing.db", 0600, nil)
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -112,7 +112,7 @@ func TestDelete(t *testing.T) {
 }
 
 func TestExpire(t *testing.T) {
-	db, err := bolt.Open("testing.db", 0600, nil)
+	db, err := bolt.Open("/tmp/testing.db", 0600, nil)
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -138,7 +138,7 @@ func TestExpire(t *testing.T) {
 }
 
 func TestCleanup(t *testing.T) {
-	db, err := bolt.Open("testing.db", 0600, nil)
+	db, err := bolt.Open("/tmp/testing.db", 0600, nil)
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -175,7 +175,7 @@ func TestCleanup(t *testing.T) {
 }
 
 func TestStopNilCleanup(t *testing.T) {
-	db, err := bolt.Open("testing.db", 0600, nil)
+	db, err := bolt.Open("/tmp/testing.db", 0600, nil)
 	if err != nil {
 		log.Fatal(err)
 	}

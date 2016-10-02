@@ -25,6 +25,7 @@ SCS is broken up into small single-purpose packages for ease of use. You should 
 | [engine/pgstore](https://github.com/alexedwards/scs/tree/master/engine/pgstore)         | PostgreSQL based storage eninge                                                   |
 | [engine/mysqlstore](https://github.com/alexedwards/scs/tree/master/engine/mysqlstore)   | MySQL based storage engine                                                        |
 | [engine/redisstore](https://github.com/alexedwards/scs/tree/master/engine/redisstore)   | Redis based storage engine                                                        |
+| [engine/boltstore](https://github.com/alexedwards/scs/tree/master/engine/boltstore)     | BoltDB based storage engine                                                       |
 
 For example:
 
@@ -318,11 +319,12 @@ type Engine interface {
 Performance of SCS is heavily influenced by the choice of storage engine. The following benchmarks simulate a HTTP request during which an existing session is loaded, an integer value is retreived, modified and the session is saved.
 
 ```
-BenchmarkSCSMemstore-8            200000          9573 ns/op        3643 B/op         49 allocs/op
-BenchmarkSCSCookies-8             100000         23220 ns/op        7516 B/op         83 allocs/op
-BenchmarkSCSRedis-8                30000         45783 ns/op        4459 B/op         76 allocs/op
-BenchmarkSCSPostgres-8               500       3715685 ns/op        5585 B/op         96 allocs/op
-BenchmarkSCSMySQL-8                  300       5782698 ns/op        4382 B/op         73 allocs/op
+BenchmarkSCSMemstore-8                200000          8463 ns/op        3644 B/op         49 allocs/op
+BenchmarkSCSCookies-8                 100000         20675 ns/op        7518 B/op         83 allocs/op
+BenchmarkSCSRedis-8                    30000         43636 ns/op        3229 B/op         64 allocs/op
+BenchmarkSCSPostgres-8                   500       3787304 ns/op        5584 B/op         96 allocs/op
+BenchmarkSCSMySQL-8                      300       5511906 ns/op        4382 B/op         73 allocs/op
+BenchmarkSCSBoltstore-8                  300       4086699 ns/op       12331 B/op        117 allocs/op
 ```
 
 These benchmarks can be run from the `benchmark_test.go` file.

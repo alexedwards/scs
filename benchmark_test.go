@@ -3,17 +3,20 @@ package scs
 import (
 	"database/sql"
 	"encoding/gob"
+	"log"
 	"net/http"
 	"net/http/httptest"
 	"os"
 	"testing"
 
+	"github.com/alexedwards/scs/engine/boltstore"
 	"github.com/alexedwards/scs/engine/cookiestore"
 	"github.com/alexedwards/scs/engine/memstore"
 	"github.com/alexedwards/scs/engine/mysqlstore"
 	"github.com/alexedwards/scs/engine/pgstore"
 	"github.com/alexedwards/scs/engine/redisstore"
 	"github.com/alexedwards/scs/session"
+	"github.com/boltdb/bolt"
 	"github.com/garyburd/redigo/redis"
 )
 
@@ -153,6 +156,16 @@ func BenchmarkSCSMySQL(b *testing.B) {
 	benchSCS(b, mysqlstore.New(db, 0))
 }
 
+func BenchmarkSCSBoltstore(b *testing.B) {
+	db, err := bolt.Open("/tmp/testing.db", 0600, nil)
+	if err != nil {
+		log.Fatal(err)
+	}
+	defer db.Close()
+
+	benchSCS(b, boltstore.New(db, 0))
+}
+
 func BenchmarkSCSObjectMemstore(b *testing.B) {
 	benchSCSObject(b, memstore.New(0))
 }
@@ -200,4 +213,14 @@ func BenchmarkSCSObjectMySQL(b *testing.B) {
 	defer db.Close()
 
 	benchSCSObject(b, mysqlstore.New(db, 0))
+}
+
+func BenchmarkSCSObjectBoltstore(b *testing.B) {
+	db, err := bolt.Open("/tmp/testing.db", 0600, nil)
+	if err != nil {
+		log.Fatal(err)
+	}
+	defer db.Close()
+
+	benchSCSObject(b, boltstore.New(db, 0))
 }

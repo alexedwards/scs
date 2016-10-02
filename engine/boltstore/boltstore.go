@@ -13,7 +13,7 @@ var (
 	expiryBucketName = []byte("scs_expiry_bucket")
 )
 
-// BoltStore is a SQS storage engine backed by a boltdb file.
+// BoltStore is a SCS storage engine backed by a boltdb file.
 type BoltStore struct {
 	db          *bolt.DB
 	stopCleanup chan bool
@@ -65,7 +65,7 @@ func (bs *BoltStore) Save(token string, b []byte, expiry time.Time) error {
 
 // Find returns the data for a session token.
 // If the session token is not found or is expired,
-// the data will be nil and exists flag will be false.
+// the exists flag will be false.
 func (bs *BoltStore) Find(token string) (b []byte, exists bool, err error) {
 	var value []byte
 	err = bs.db.View(func(tx *bolt.Tx) error {

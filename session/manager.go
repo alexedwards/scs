@@ -5,7 +5,9 @@ import (
 	"net/http"
 )
 
-// Middleware defines the signature for the session management middleware.
+// Deprecated: Middleware previously defined the signature for the session management
+// middleware returned by Manage. Manage now returns a func(h http.Handler) http.Handler
+// directly instead, so it's easier to use with middleware chaining packages like Alice.
 type Middleware func(h http.Handler) http.Handler
 
 /*
@@ -27,7 +29,7 @@ For example:
 The returned session manager can be used to wrap any http.Handler. It automatically
 loads sessions based on the HTTP request and saves session data as and when necessary.
 */
-func Manage(engine Engine, opts ...Option) Middleware {
+func Manage(engine Engine, opts ...Option) func(h http.Handler) http.Handler {
 	return func(h http.Handler) http.Handler {
 		do := *defaultOptions
 

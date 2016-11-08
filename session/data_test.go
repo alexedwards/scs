@@ -304,6 +304,11 @@ func TestRemove(t *testing.T) {
 	if body != "true" {
 		t.Fatalf("got %q: expected %q", body, "true")
 	}
+
+	_, _, cookie = testRequest(t, h, "/RemoveString", cookie)
+	if cookie != "" {
+		t.Fatalf("got %q: expected %q", cookie, "")
+	}
 }
 
 func TestClear(t *testing.T) {

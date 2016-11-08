@@ -504,6 +504,12 @@ func Remove(r *http.Request, key string) error {
 	if s.written == true {
 		return ErrAlreadyWritten
 	}
+
+	_, exists := s.data[key]
+	if exists == false {
+		return nil
+	}
+
 	delete(s.data, key)
 	s.modified = true
 	return nil

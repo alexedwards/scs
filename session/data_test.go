@@ -332,4 +332,9 @@ func TestClear(t *testing.T) {
 	if body != "false" {
 		t.Fatalf("got %q: expected %q", body, "false")
 	}
+
+	_, _, cookie = testRequest(t, h, "/Clear", cookie)
+	if cookie != "" {
+		t.Fatalf("got %q: expected %q", cookie, "")
+	}
 }

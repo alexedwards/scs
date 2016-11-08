@@ -516,7 +516,8 @@ func Remove(r *http.Request, key string) error {
 }
 
 // Clear removes all data for the current session. The session token and lifetime
-// are unaffected.
+// are unaffected. If there is no data in the current session this operation is
+// a no-op.
 func Clear(r *http.Request) error {
 	s, err := sessionFromContext(r)
 	if err != nil {
@@ -529,6 +530,11 @@ func Clear(r *http.Request) error {
 	if s.written == true {
 		return ErrAlreadyWritten
 	}
+
+	if len(s.data) == 0 {
+		return nil
+	}
+
 	for key := range s.data {
 		delete(s.data, key)
 	}

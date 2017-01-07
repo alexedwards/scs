@@ -45,7 +45,7 @@ $ gvt fetch github.com/alexedwards/scs/engine/memstore
 
 * [Basic use](#basic-use)
 * [Setting options](#setting-options)
-* [Storing custom types](#storing-custom-types)
+* [Storing data](#storing-data)
 * [Flash data](#flash-data)
 * [Preventing session fixation](#preventing-session-fixation)
 * [Destroying data and sessions](#destroying-data-and-sessions)
@@ -159,7 +159,22 @@ func ServerError(w http.ResponseWriter, r *http.Request, err error) {
 }
 ```
 
-### Storing custom types
+### Storing data
+
+SCS comes with built-in functions for storing and retreiving various types of data:
+
+* `PutBool`, `GetBool`, `PopBool` &ndash; for use with `bool` types
+* `PutBytes`, `GetBytes`, `PopBytes` &ndash; for use with byte slice `[]byte` types
+* `PutFloat`, `GetFloat`, `PopFloat` &ndash; for use with `float64` types
+* `PutInt`, `GetInt`, `PopInt` &ndash; for use with `int` types
+* `PutInt64`, `GetInt64`, `PopInt64` &ndash; for use with `int64` types
+* `PutString`, `GetString`, `PopString` &ndash; for use with `string` types
+* `PutTime`, `GetTime`, `PopTime` &ndash; for use with `time.Time` types
+
+* `Keys` &ndash; returns a alphabetically-sorted slice of all key names.
+
+
+#### Custom types
 
 Custom types can be stored and retreived using the `PutObject` and `GetObject` helpers.
 

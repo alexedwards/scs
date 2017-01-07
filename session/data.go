@@ -7,6 +7,7 @@ import (
 	"encoding/json"
 	"errors"
 	"net/http"
+	"sort"
 	"strconv"
 	"time"
 )
@@ -474,6 +475,28 @@ func PopObject(r *http.Request, key string, dst interface{}) error {
 	}
 
 	return gobDecode(b, dst)
+}
+
+// Keys returns a slice of all key names present in the session data, sorted
+// alphabetically. If the session contains no data then an empty slice will be
+// returned.
+func Keys(r *http.Request) ([]string, error) {
+	s, err := sessionFromContext(r)
+	if err != nil {
+		return nil, err
+	}
+
+	s.mu.Lock()
+	keys := make([]string, len(s.data))
+	i := 0
+	for k, _ := range s.data {
+		keys[i] = k
+		i++
+	}
+	s.mu.Unlock()
+
+	sort.Strings(keys)
+	return keys, nil
 }
 
 // Exists returns true if the given key is present in the session data.

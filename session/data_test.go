@@ -264,6 +264,25 @@ func TestObject(t *testing.T) {
 	}
 }
 
+func TestKeys(t *testing.T) {
+	m := Manage(testEngine)
+	h := m(testServeMux)
+
+	_, _, cookie := testRequest(t, h, "/PutString", "")
+	_, _, _ = testRequest(t, h, "/PutBool", cookie)
+
+	_, body, _ := testRequest(t, h, "/Keys", cookie)
+	if body != "[test_bool test_string]" {
+		t.Fatalf("got %q: expected %q", body, "[test_bool test_string]")
+	}
+
+	_, _, _ = testRequest(t, h, "/Clear", cookie)
+	_, body, _ = testRequest(t, h, "/Keys", cookie)
+	if body != "[]" {
+		t.Fatalf("got %q: expected %q", body, "[test_bool test_string]")
+	}
+}
+
 func TestExists(t *testing.T) {
 	m := Manage(testEngine)
 	h := m(testServeMux)

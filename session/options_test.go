@@ -2,6 +2,7 @@ package session
 
 import (
 	"errors"
+	"fmt"
 	"io"
 	"net/http"
 	"net/http/httptest"
@@ -129,12 +130,12 @@ func TestErrorFunc(t *testing.T) {
 	}
 
 	rr := httptest.NewRecorder()
-	man.opts.errorFunc(rr, new(http.Request), errors.New("test error"))
+	man.opts.errorFunc(rr, new(http.Request), errors.New("testing error log..."))
 	if rr.Code != http.StatusInternalServerError {
 		t.Fatalf("got %d: expected %d", rr.Code, http.StatusInternalServerError)
 	}
-	if string(rr.Body.Bytes()) != "test error\n" {
-		t.Fatalf("got %q: expected %q", string(rr.Body.Bytes()), "test error\n")
+	if string(rr.Body.Bytes()) != fmt.Sprintf("%s\n", http.StatusText(http.StatusInternalServerError)) {
+		t.Fatalf("got %q: expected %q", string(rr.Body.Bytes()), fmt.Sprintf("%s\n", http.StatusText(http.StatusInternalServerError)))
 	}
 
 	m = Manage(testEngine, ErrorFunc(func(w http.ResponseWriter, r *http.Request, err error) {
@@ -147,7 +148,7 @@ func TestErrorFunc(t *testing.T) {
 	}
 
 	rr = httptest.NewRecorder()
-	man.opts.errorFunc(rr, new(http.Request), errors.New("test error"))
+	man.opts.errorFunc(rr, new(http.Request), errors.New("testing error log..."))
 	if rr.Code != 418 {
 		t.Fatalf("got %d: expected %d", rr.Code, 418)
 	}

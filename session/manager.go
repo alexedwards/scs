@@ -2,6 +2,7 @@ package session
 
 import (
 	"bytes"
+	"log"
 	"net/http"
 )
 
@@ -98,5 +99,6 @@ func (bw *bufferedResponseWriter) Flush() {
 }
 
 func defaultErrorFunc(w http.ResponseWriter, r *http.Request, err error) {
-	http.Error(w, err.Error(), http.StatusInternalServerError)
+	log.Output(2, err.Error())
+	http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
 }

@@ -72,7 +72,11 @@ func (m *manager) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	if bw.code != 0 {
 		w.WriteHeader(bw.code)
 	}
-	w.Write(bw.buf.Bytes())
+
+	_, err = w.Write(bw.buf.Bytes())
+	if err != nil {
+		m.opts.errorFunc(w, r, err)
+	}
 }
 
 type bufferedResponseWriter struct {

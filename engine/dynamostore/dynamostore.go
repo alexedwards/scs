@@ -10,8 +10,8 @@
 //		import (
 //			"net/http"
 //
-//			"github.com/alexedwards/scs/session"
-//			"github.com/alexedwards/scs/engine/dynamostore"
+//			"github.com/databrary/scs/session"
+//			"github.com/databrary/scs/engine/dynamostore"
 //			"github.com/aws/aws-sdk-go/aws"
 //			"github.com/aws/aws-sdk-go/aws/endpoints"
 //			awsSession "github.com/aws/aws-sdk-go/aws/session"

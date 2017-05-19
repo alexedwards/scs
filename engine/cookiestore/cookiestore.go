@@ -45,7 +45,7 @@ import (
 	"strconv"
 	"time"
 
-	"github.com/alexedwards/scs/session"
+	"github.com/databrary/scs/session"
 )
 
 var (

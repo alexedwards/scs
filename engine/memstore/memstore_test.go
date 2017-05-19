@@ -6,7 +6,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/alexedwards/scs/session"
+	"github.com/databrary/scs/session"
 )
 
 func TestNew(t *testing.T) {

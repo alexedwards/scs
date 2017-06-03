@@ -102,6 +102,11 @@ func (bw *bufferedResponseWriter) Flush() {
 	}
 }
 
+func (bw *bufferedResponseWriter) Hijack() (net.Conn, *bufio.ReadWriter, error) {
+	hj := bw.ResponseWriter.(http.Hijacker)
+	return hj.Hijack()
+}
+
 func defaultErrorFunc(w http.ResponseWriter, r *http.Request, err error) {
 	log.Output(2, err.Error())
 	http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)

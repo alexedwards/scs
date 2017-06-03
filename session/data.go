@@ -489,7 +489,7 @@ func Keys(r *http.Request) ([]string, error) {
 	s.mu.Lock()
 	keys := make([]string, len(s.data))
 	i := 0
-	for k, _ := range s.data {
+	for k := range s.data {
 		keys[i] = k
 		i++
 	}

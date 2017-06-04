@@ -1,0 +1,144 @@
+package filestore
+
+import (
+	"bytes"
+	"reflect"
+	"testing"
+	"time"
+
+	"github.com/alexedwards/scs/session"
+)
+
+const (
+	filePath = "/tmp/scs_filestore_engine_test.data"
+)
+
+func TestNew(t *testing.T) {
+	m := New(filePath, time.Minute)
+	_, ok := interface{}(m).(session.Engine)
+	if ok == false {
+		t.Fatalf("got %v: expected %v", ok, true)
+	}
+
+	if len(m.Cache.Items()) > 0 {
+		t.Fatalf("got %d: expected %d", len(m.Cache.Items()), 0)
+	}
+}
+
+func TestFind(t *testing.T) {
+	m := New(filePath, time.Minute)
+	m.Cache.Set("session_token", []byte("encoded_data"), 0)
+
+	b, found, err := m.Find("session_token")
+	if err != nil {
+		t.Fatalf("got %v: expected %v", err, nil)
+	}
+	if found != true {
+		t.Fatalf("got %v: expected %v", found, true)
+	}
+	if bytes.Equal(b, []byte("encoded_data")) == false {
+		t.Fatalf("got %v: expected %v", b, []byte("encoded_data"))
+	}
+}
+
+func TestFindMissing(t *testing.T) {
+	m := New(filePath, time.Minute)
+
+	_, found, err := m.Find("missing_session_token")
+	if err != nil {
+		t.Fatalf("got %v: expected %v", err, nil)
+	}
+	if found != false {
+		t.Fatalf("got %v: expected %v", found, false)
+	}
+}
+
+func TestFindBadData(t *testing.T) {
+	m := New(filePath, time.Minute)
+	m.Cache.Set("session_token", "not_a_byte_slice", 0)
+
+	_, _, err := m.Find("session_token")
+	if err != errTypeAssertionFailed {
+		t.Fatalf("got %v: expected %v", err, errTypeAssertionFailed)
+	}
+}
+
+func TestSaveNew(t *testing.T) {
+	m := New(filePath, time.Minute)
+
+	err := m.Save("session_token", []byte("encoded_data"), time.Now().Add(time.Minute))
+	if err != nil {
+		t.Fatalf("got %v: expected %v", err, nil)
+	}
+
+	v, found := m.Cache.Get("session_token")
+	if found != true {
+		t.Fatalf("got %v: expected %v", found, true)
+	}
+	b, ok := v.([]byte)
+	if ok == false {
+		t.Fatal("could not convert to []byte")
+	}
+	if reflect.DeepEqual(b, []byte("encoded_data")) == false {
+		t.Fatalf("got %v: expected %v", b, []byte("encoded_data"))
+	}
+}
+
+func TestSaveUpdated(t *testing.T) {
+	m := New(filePath, time.Minute)
+	m.Cache.Set("session_token", []byte("encoded_data"), 0)
+
+	err := m.Save("session_token", []byte("encoded_data"), time.Now().Add(time.Minute))
+	if err != nil {
+		t.Fatalf("got %v: expected %v", err, nil)
+	}
+
+	err = m.Save("session_token", []byte("new_encoded_data"), time.Now().Add(time.Minute))
+	if err != nil {
+		t.Fatalf("got %v: expected %v", err, nil)
+	}
+
+	v, _ := m.Cache.Get("session_token")
+	b, ok := v.([]byte)
+	if ok == false {
+		t.Fatal("could not convert to []byte")
+	}
+	if reflect.DeepEqual(b, []byte("new_encoded_data")) == false {
+		t.Fatalf("got %v: expected %v", b, []byte("new_encoded_data"))
+	}
+}
+
+func TestExpiry(t *testing.T) {
+	m := New(filePath, time.Minute)
+
+	err := m.Save("session_token", []byte("encoded_data"), time.Now().Add(100*time.Millisecond))
+	if err != nil {
+		t.Fatalf("got %v: expected %v", err, nil)
+	}
+
+	_, found, _ := m.Find("session_token")
+	if found != true {
+		t.Fatalf("got %v: expected %v", found, true)
+	}
+
+	time.Sleep(100 * time.Millisecond)
+	_, found, _ = m.Find("session_token")
+	if found != false {
+		t.Fatalf("got %v: expected %v", found, false)
+	}
+}
+
+func TestDelete(t *testing.T) {
+	m := New(filePath, time.Minute)
+	m.Cache.Set("session_token", []byte("encoded_data"), 0)
+
+	err := m.Delete("session_token")
+	if err != nil {
+		t.Fatalf("got %v: expected %v", err, nil)
+	}
+
+	_, found := m.Cache.Get("session_token")
+	if found != false {
+		t.Fatalf("got %v: expected %v", found, false)
+	}
+}

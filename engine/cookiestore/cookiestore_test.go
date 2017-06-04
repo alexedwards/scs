@@ -7,7 +7,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/alexedwards/scs/session"
+	"github.com/databrary/scs/session"
 )
 
 var hmacKey = []byte("f71dc7e58abab014ddad2652475056f185164d262869c8931b239de52711ba87")

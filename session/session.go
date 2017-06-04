@@ -2,12 +2,12 @@
 Package session provides session management middleware and helpers for
 manipulating session data.
 
-It should be installed alongside one of the storage engines from https://godoc.org/github.com/alexedwards/scs/engine.
+It should be installed alongside one of the storage engines from https://godoc.org/github.com/databrary/scs/engine.
 
 For example:
 
-    $ go get github.com/alexedwards/scs/session
-    $ go get github.com/alexedwards/scs/engine/memstore
+    $ go get github.com/databrary/scs/session
+    $ go get github.com/databrary/scs/engine/memstore
 
 Basic use:
 
@@ -17,8 +17,8 @@ Basic use:
         "io"
         "net/http"
 
-        "github.com/alexedwards/scs/engine/memstore"
-        "github.com/alexedwards/scs/session"
+        "github.com/databrary/scs/engine/memstore"
+        "github.com/databrary/scs/session"
     )
 
     func main() {
@@ -69,6 +69,7 @@ import (
 	"encoding/base64"
 	"encoding/json"
 	"errors"
+	"fmt"
 	"net/http"
 	"sync"
 	"time"
@@ -87,6 +88,15 @@ type session struct {
 	modified bool
 	written  bool
 	mu       sync.Mutex
+}
+
+func SetPersist(r *http.Request, persist bool) error {
+	s, err := sessionFromContext(r)
+	if err != nil {
+		return err
+	}
+	s.opts.persist = persist
+	return nil
 }
 
 func generateToken() (string, error) {
@@ -134,11 +144,13 @@ func load(r *http.Request, engine Engine, opts *options) (*http.Request, error) 
 		return newSession(r, engine, opts)
 	}
 
-	data, deadline, err := decodeFromJSON(j)
+	data, deadline, persist, err := decodeFromJSON(j)
+	fmt.Println(deadline.String())
 	if err != nil {
 		return nil, err
 	}
 
+	opts.persist = persist
 	s := &session{
 		token:    token,
 		data:     data,
@@ -167,7 +179,7 @@ func write(w http.ResponseWriter, r *http.Request) error {
 		return nil
 	}
 
-	j, err := encodeToJSON(s.data, s.deadline)
+	j, err := encodeToJSON(s.data, s.deadline, s.opts.persist)
 	if err != nil {
 		return err
 	}
@@ -191,7 +203,6 @@ func write(w http.ResponseWriter, r *http.Request) error {
 			return err
 		}
 	}
-
 	cookie := &http.Cookie{
 		Name:     CookieName,
 		Value:    s.token,
@@ -430,27 +441,30 @@ func requestWithSession(r *http.Request, s *session) *http.Request {
 	return r.WithContext(ctx)
 }
 
-func encodeToJSON(data map[string]interface{}, deadline time.Time) ([]byte, error) {
+func encodeToJSON(data map[string]interface{}, deadline time.Time, persist bool) ([]byte, error) {
 	return json.Marshal(&struct {
 		Data     map[string]interface{} `json:"data"`
 		Deadline int64                  `json:"deadline"`
+		Persist  bool                   `json:"persist"`
 	}{
 		Data:     data,
 		Deadline: deadline.UnixNano(),
+		Persist:  persist,
 	})
 }
 
-func decodeFromJSON(j []byte) (map[string]interface{}, time.Time, error) {
+func decodeFromJSON(j []byte) (map[string]interface{}, time.Time, bool, error) {
 	aux := struct {
 		Data     map[string]interface{} `json:"data"`
 		Deadline int64                  `json:"deadline"`
+		Persist  bool                   `json:"persist"`
 	}{}
 
 	dec := json.NewDecoder(bytes.NewReader(j))
 	dec.UseNumber()
 	err := dec.Decode(&aux)
 	if err != nil {
-		return nil, time.Time{}, err
+		return nil, time.Time{}, false, err
 	}
-	return aux.Data, time.Unix(0, aux.Deadline), nil
+	return aux.Data, time.Unix(0, aux.Deadline), aux.Persist, nil
 }

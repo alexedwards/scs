@@ -9,14 +9,14 @@ import (
 	"os"
 	"testing"
 
-	"github.com/alexedwards/scs/engine/boltstore"
-	"github.com/alexedwards/scs/engine/cookiestore"
-	"github.com/alexedwards/scs/engine/memstore"
-	"github.com/alexedwards/scs/engine/mysqlstore"
-	"github.com/alexedwards/scs/engine/pgstore"
-	"github.com/alexedwards/scs/engine/redisstore"
-	"github.com/alexedwards/scs/session"
 	"github.com/boltdb/bolt"
+	"github.com/databrary/scs/engine/boltstore"
+	"github.com/databrary/scs/engine/cookiestore"
+	"github.com/databrary/scs/engine/memstore"
+	"github.com/databrary/scs/engine/mysqlstore"
+	"github.com/databrary/scs/engine/pgstore"
+	"github.com/databrary/scs/engine/redisstore"
+	"github.com/databrary/scs/session"
 	"github.com/garyburd/redigo/redis"
 )
 

@@ -11,7 +11,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/alexedwards/scs/engine/memstore"
+	"github.com/databrary/scs/engine/memstore"
 )
 
 var testEngine Engine
@@ -30,6 +30,34 @@ func init() {
 
 	testServeMux.HandleFunc("/PutString", func(w http.ResponseWriter, r *http.Request) {
 		err := PutString(r, "test_string", "lorem ipsum")
+		if err != nil {
+			io.WriteString(w, err.Error())
+			return
+		}
+		io.WriteString(w, "OK")
+	})
+
+	testServeMux.HandleFunc("/PersistTrue", func(w http.ResponseWriter, r *http.Request) {
+		err := SetPersist(r, true)
+		if err != nil {
+			io.WriteString(w, err.Error())
+			return
+		}
+		err = PutString(r, "test_string", "lorem ipsum")
+		if err != nil {
+			io.WriteString(w, err.Error())
+			return
+		}
+		io.WriteString(w, "OK")
+	})
+
+	testServeMux.HandleFunc("/PersistFalse", func(w http.ResponseWriter, r *http.Request) {
+		err := SetPersist(r, false)
+		if err != nil {
+			io.WriteString(w, err.Error())
+			return
+		}
+		err = PutString(r, "test_string", "lorem ipsum")
 		if err != nil {
 			io.WriteString(w, err.Error())
 			return
@@ -512,5 +540,92 @@ func TestSave(t *testing.T) {
 	_, found, _ := e.Find(token)
 	if found != true {
 		t.Fatalf("got %v: expected %v", found, true)
+	}
+}
+
+func TestSetPersistTrue(t *testing.T) {
+	e := testEngine
+	m := Manage(e)
+	h := m(testServeMux)
+
+	rr := httptest.NewRecorder()
+	r, err := http.NewRequest("GET", "/PersistTrue", nil)
+	if err != nil {
+		t.Fatal(err)
+	}
+	h.ServeHTTP(rr, r)
+
+	body := string(rr.Body.Bytes())
+	cookie := rr.Header().Get("Set-Cookie")
+	token := extractTokenFromCookie(cookie)
+
+	if body != "OK" {
+		t.Fatalf("got %q: expected %q", body, "OK")
+	}
+	if len(rr.Header()["Set-Cookie"]) != 1 {
+		t.Fatalf("got %d: expected %d", len(rr.Header()["Set-Cookie"]), 1)
+	}
+	if strings.HasPrefix(cookie, fmt.Sprintf("%s=", CookieName)) == false {
+		t.Fatalf("got %q: expected prefix %q", cookie, fmt.Sprintf("%s=", CookieName))
+	}
+	b, found, _ := e.Find(token)
+	if found != true {
+		t.Fatalf("got %v: expected %v", found, true)
+	}
+
+	if strings.Contains(cookie, "Expires") == false {
+		t.Fatalf("got %q: expected to contain %q", cookie, "Expires... something")
+	}
+
+	_, _, persist, err := decodeFromJSON(b)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if persist != true {
+		t.Fatalf("got %q: expected to contain %q", persist, "true")
+	}
+
+}
+
+func TestSetPersistFalse(t *testing.T) {
+	e := testEngine
+	m := Manage(e)
+	h := m(testServeMux)
+
+	rr := httptest.NewRecorder()
+	r, err := http.NewRequest("GET", "/PersistFalse", nil)
+	if err != nil {
+		t.Fatal(err)
+	}
+	h.ServeHTTP(rr, r)
+
+	body := string(rr.Body.Bytes())
+	cookie := rr.Header().Get("Set-Cookie")
+	token := extractTokenFromCookie(cookie)
+
+	if body != "OK" {
+		t.Fatalf("got %q: expected %q", body, "OK")
+	}
+	if len(rr.Header()["Set-Cookie"]) != 1 {
+		t.Fatalf("got %d: expected %d", len(rr.Header()["Set-Cookie"]), 1)
+	}
+	if strings.HasPrefix(cookie, fmt.Sprintf("%s=", CookieName)) == false {
+		t.Fatalf("got %q: expected prefix %q", cookie, fmt.Sprintf("%s=", CookieName))
+	}
+	b, found, _ := e.Find(token)
+	if found != true {
+		t.Fatalf("got %v: expected %v", found, true)
+	}
+
+	if strings.Contains(cookie, "Expires") == true {
+		t.Fatalf("got %q: expected to not contain %q", cookie, "Expires")
+	}
+
+	_, _, persist, err := decodeFromJSON(b)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if persist != false {
+		t.Fatalf("got %q: expected to contain %q", persist, "false")
 	}
 }

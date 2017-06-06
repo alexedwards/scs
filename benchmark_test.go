@@ -9,6 +9,7 @@ import (
 	"os"
 	"testing"
 
+	"github.com/SlinSo/scs/engine/buntstore"
 	"github.com/alexedwards/scs/engine/boltstore"
 	"github.com/alexedwards/scs/engine/cookiestore"
 	"github.com/alexedwards/scs/engine/memstore"
@@ -18,6 +19,7 @@ import (
 	"github.com/alexedwards/scs/session"
 	"github.com/boltdb/bolt"
 	"github.com/garyburd/redigo/redis"
+	"github.com/tidwall/buntdb"
 )
 
 func benchSCS(b *testing.B, engine session.Engine) {
@@ -166,6 +168,29 @@ func BenchmarkSCSBoltstore(b *testing.B) {
 	benchSCS(b, boltstore.New(db, 0))
 }
 
+func BenchmarkSCSBuntstore(b *testing.B) {
+	db, err := buntdb.Open("/tmp/bunttesting.db")
+	if err != nil {
+		log.Fatal(err)
+	}
+	defer db.Close()
+
+	benchSCS(b, buntstore.New(db))
+
+	b.StopTimer()
+	err = db.Update(func(tx *buntdb.Tx) error {
+		return tx.DeleteAll()
+	})
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	err = db.Shrink()
+	if err != nil {
+		log.Fatal(err)
+	}
+}
+
 func BenchmarkSCSObjectMemstore(b *testing.B) {
 	benchSCSObject(b, memstore.New(0))
 }
@@ -223,4 +248,27 @@ func BenchmarkSCSObjectBoltstore(b *testing.B) {
 	defer db.Close()
 
 	benchSCSObject(b, boltstore.New(db, 0))
+}
+
+func BenchmarkSCSObjectBuntstore(b *testing.B) {
+	db, err := buntdb.Open("/tmp/bunttesting.db")
+	if err != nil {
+		log.Fatal(err)
+	}
+	defer db.Close()
+
+	benchSCSObject(b, buntstore.New(db))
+
+	b.StopTimer()
+	err = db.Update(func(tx *buntdb.Tx) error {
+		return tx.DeleteAll()
+	})
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	err = db.Shrink()
+	if err != nil {
+		log.Fatal(err)
+	}
 }

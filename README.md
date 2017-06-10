@@ -26,6 +26,7 @@ SCS is broken up into small single-purpose packages for ease of use. You should 
 | [engine/mysqlstore](https://github.com/alexedwards/scs/tree/master/engine/mysqlstore)   | MySQL based storage engine                                                        |
 | [engine/redisstore](https://github.com/alexedwards/scs/tree/master/engine/redisstore)   | Redis based storage engine                                                        |
 | [engine/boltstore](https://github.com/alexedwards/scs/tree/master/engine/boltstore)     | BoltDB based storage engine                                                       |
+| [engine/buntstore](https://github.com/alexedwards/scs/tree/master/engine/buntstore)     | BuntDB based storage engine                                                       |
 
 For example:
 

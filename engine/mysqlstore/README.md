@@ -1,4 +1,4 @@
-# mysqlstore 
+# mysqlstore
 [![godoc](https://godoc.org/github.com/alexedwards/scs/engine/mysqlstore?status.png)](https://godoc.org/github.com/alexedwards/scs/engine/mysqlstore)
 
 Package mysqlstore is a MySQL-based storage engine for the [SCS session package](https://godoc.org/github.com/alexedwards/scs/session).
@@ -33,6 +33,17 @@ CREATE TABLE sessions (
 CREATE INDEX sessions_expiry_idx ON sessions (expiry);
 ```
 
+Or for MySQL versions < 5.6.4:
+
+```sql
+CREATE TABLE sessions (
+  token CHAR(43) PRIMARY KEY,
+  data BLOB NOT NULL,
+  expiry TIMESTAMP NOT NULL
+);
+CREATE INDEX sessions_expiry_idx ON sessions (expiry);
+```
+
 ### Example
 
 ```go
@@ -57,7 +68,7 @@ func main() {
     }
     defer db.Close()
 
-    // Create a new MySQLStore instance using the existing database/sql pool, 
+    // Create a new MySQLStore instance using the existing database/sql pool,
     // with a cleanup interval of 5 minutes.
     engine := mysqlstore.New(db, 5*time.Minute)
 

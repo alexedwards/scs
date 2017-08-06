@@ -38,6 +38,8 @@ package mysqlstore
 import (
 	"database/sql"
 	"log"
+	"strconv"
+	"strings"
 	"time"
 
 	// Register go-sql-driver/mysql with database/sql
@@ -47,6 +49,7 @@ import (
 // MySQLStore represents the currently configured session storage engine.
 type MySQLStore struct {
 	*sql.DB
+	version     string
 	stopCleanup chan bool
 }
 
@@ -56,10 +59,15 @@ type MySQLStore struct {
 // is removed by the background cleanup goroutine. Setting it to 0 prevents
 // the cleanup goroutine from running (i.e. expired sessions will not be removed).
 func New(db *sql.DB, cleanupInterval time.Duration) *MySQLStore {
-	m := &MySQLStore{DB: db}
+	m := &MySQLStore{
+		DB:      db,
+		version: getVersion(db),
+	}
+
 	if cleanupInterval > 0 {
 		go m.startCleanup(cleanupInterval)
 	}
+
 	return m
 }
 
@@ -68,7 +76,15 @@ func New(db *sql.DB, cleanupInterval time.Duration) *MySQLStore {
 // set to false.
 func (m *MySQLStore) Find(token string) ([]byte, bool, error) {
 	var b []byte
-	row := m.DB.QueryRow("SELECT data FROM sessions WHERE token = ? AND UTC_TIMESTAMP(6) < expiry", token)
+	var stmt string
+
+	if compareVersion("5.6.4", m.version) >= 0 {
+		stmt = "SELECT data FROM sessions WHERE token = ? AND UTC_TIMESTAMP(6) < expiry"
+	} else {
+		stmt = "SELECT data FROM sessions WHERE token = ? AND UTC_TIMESTAMP < expiry"
+	}
+
+	row := m.DB.QueryRow(stmt, token)
 	err := row.Scan(&b)
 	if err == sql.ErrNoRows {
 		return nil, false, nil
@@ -143,6 +159,54 @@ func (m *MySQLStore) StopCleanup() {
 }
 
 func (m *MySQLStore) deleteExpired() error {
-	_, err := m.DB.Exec("DELETE FROM sessions WHERE expiry < UTC_TIMESTAMP(6)")
+	var stmt string
+
+	if compareVersion("5.6.4", m.version) >= 0 {
+		stmt = "DELETE FROM sessions WHERE expiry < UTC_TIMESTAMP(6)"
+	} else {
+		stmt = "DELETE FROM sessions WHERE expiry < UTC_TIMESTAMP"
+	}
+
+	_, err := m.DB.Exec(stmt)
 	return err
+}
+
+func getVersion(db *sql.DB) string {
+	var version string
+	row := db.QueryRow("SELECT VERSION()")
+	err := row.Scan(&version)
+	if err != nil {
+		return ""
+	}
+	return strings.Split(version, "-")[0]
+}
+
+// Based on https://stackoverflow.com/a/26729704
+func compareVersion(a, b string) (ret int) {
+	as := strings.Split(a, ".")
+	bs := strings.Split(b, ".")
+	loopMax := len(bs)
+	if len(as) > len(bs) {
+		loopMax = len(as)
+	}
+	for i := 0; i < loopMax; i++ {
+		var x, y string
+		if len(as) > i {
+			x = as[i]
+		}
+		if len(bs) > i {
+			y = bs[i]
+		}
+		xi, _ := strconv.Atoi(x)
+		yi, _ := strconv.Atoi(y)
+		if xi > yi {
+			ret = -1
+		} else if xi < yi {
+			ret = 1
+		}
+		if ret != 0 {
+			break
+		}
+	}
+	return
 }

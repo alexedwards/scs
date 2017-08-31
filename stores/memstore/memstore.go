@@ -1,4 +1,4 @@
-// Package memstore is a in-memory storage engine for the SCS session package.
+// Package memstore is a in-memory session store for the SCS session package.
 //
 // Warning: Because memstore uses in-memory storage only, all session data will
 // be lost when your Go program is stopped or restarted. On the upside though,
@@ -11,16 +11,6 @@
 // The memstore package provides a background 'cleanup' goroutine to delete
 // expired session data. This stops the underlying cache from holding on to invalid
 // sessions forever and taking up unnecessary memory.
-//
-// Usage:
-//
-//	func main() {
-//		// Create a new memstore storage engine with a cleanup interval of 5 minutes.
-//		engine := memstore.New(5 * time.Minute)
-//
-//		sessionManager := session.Manage(engine)
-//		http.ListenAndServe(":4000", sessionManager(http.DefaultServeMux))
-//	}
 package memstore
 
 import (
@@ -32,7 +22,7 @@ import (
 
 var errTypeAssertionFailed = errors.New("type assertion failed: could not convert interface{} to []byte")
 
-// MemStore represents the currently configured session storage engine. It is essentially
+// MemStore represents the currently configured session session store. It is essentially
 // a wrapper around a go-cache instance (see https://github.com/patrickmn/go-cache).
 type MemStore struct {
 	*cache.Cache

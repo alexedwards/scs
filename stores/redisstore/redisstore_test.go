@@ -7,27 +7,8 @@ import (
 	"testing"
 	"time"
 
-	"github.com/alexedwards/scs/session"
 	"github.com/garyburd/redigo/redis"
 )
-
-func TestNew(t *testing.T) {
-	redisPool := redis.NewPool(func() (redis.Conn, error) {
-		addr := os.Getenv("SESSION_REDIS_TEST_ADDR")
-		conn, err := redis.Dial("tcp", addr)
-		if err != nil {
-			return nil, err
-		}
-		return conn, err
-	}, 1)
-	defer redisPool.Close()
-
-	r := New(redisPool)
-	_, ok := interface{}(r).(session.Engine)
-	if ok == false {
-		t.Fatalf("got %v: expected %v", ok, true)
-	}
-}
 
 func TestFind(t *testing.T) {
 	redisPool := redis.NewPool(func() (redis.Conn, error) {

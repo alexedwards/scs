@@ -1,4 +1,4 @@
-// Package buntstore is a buntdb based storage engine for the SCS session package.
+// Package buntstore is a buntdb based session store for the SCS session package.
 package buntstore
 
 import (
@@ -7,7 +7,7 @@ import (
 	"github.com/tidwall/buntdb"
 )
 
-// BuntStore is a SCS storage engine backed by a buntdb file.
+// BuntStore is a SCS session store backed by a buntdb file.
 type BuntStore struct {
 	db *buntdb.DB
 }

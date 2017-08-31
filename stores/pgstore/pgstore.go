@@ -1,4 +1,4 @@
-// Package pgstore is a PostgreSQL-based storage engine for the SCS session package.
+// Package pgstore is a PostgreSQL-based session store for the SCS session package.
 //
 // A working PostgreSQL database is required, containing a sessions table with
 // the definition:
@@ -13,26 +13,6 @@
 // The pgstore package provides a background 'cleanup' goroutine to delete expired
 // session data. This stops the database table from holding on to invalid sessions
 // indefinitely and growing unnecessarily large.
-//
-// Usage:
-//
-//  func main() {
-//      // Establish a database/sql pool
-//      db, err := sql.Open("postgres", "postgres://user:pass@localhost/db")
-//      if err != nil {
-//          log.Fatal(err)
-//      }
-//      defer db.Close()
-//
-//      // Create a new PGStore instance using the existing database/sql pool,
-//      // with a cleanup interval of 5 minutes.
-//      engine := pgstore.New(db, 5*time.Minute)
-//
-//      sessionManager := session.Manage(engine)
-//      http.ListenAndServe(":4000", sessionManager(http.DefaultServeMux))
-//  }
-//
-// The pgstore package is underpinned by the pq driver (https://github.com/lib/pq).
 package pgstore
 
 import (
@@ -44,7 +24,7 @@ import (
 	_ "github.com/lib/pq"
 )
 
-// PGStore represents the currently configured session storage engine.
+// PGStore represents the currently configured session session store.
 type PGStore struct {
 	*sql.DB
 	stopCleanup chan bool
@@ -120,21 +100,6 @@ func (p *PGStore) startCleanup(interval time.Duration) {
 // the cleanup goroutine (which will run forever) will prevent the PGStore object
 // from being garbage collected even after the test function has finished. You
 // can prevent this by manually calling StopCleanup.
-//
-// Example:
-//
-//	func TestExample(t *testing.T) {
-//		db, err := sql.Open("postgres", "postgres://user:pass@localhost/db")
-//		if err != nil {
-//			t.Fatal(err)
-//		}
-//		defer db.Close()
-//
-//		engine := pgstore.New(db, time.Second)
-//		defer engine.StopCleanup()
-//
-//		// Run test...
-//	}
 func (p *PGStore) StopCleanup() {
 	if p.stopCleanup != nil {
 		p.stopCleanup <- true

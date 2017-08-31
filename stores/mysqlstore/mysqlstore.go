@@ -1,4 +1,4 @@
-// Package mysqlstore is a MySQL-based storage engine for the SCS session package.
+// Package mysqlstore is a MySQL-based session store for the SCS session package.
 //
 // A working MySQL database is required, containing a sessions table with
 // the definition:
@@ -13,26 +13,6 @@
 // The mysqlstore package provides a background 'cleanup' goroutine to delete expired
 // session data. This stops the database table from holding on to invalid sessions
 // forever and growing unnecessarily large.
-//
-// Usage:
-//
-//  func main() {
-//      // Establish a database/sql pool
-//      db, err := sql.Open("mysql", "user:pass@/db")
-//      if err != nil {
-//          log.Fatal(err)
-//      }
-//      defer db.Close()
-//
-//      // Create a new MySQLStore instance using the existing database/sql pool,
-//      // with a cleanup interval of 5 minutes.
-//      engine := mysqlstore.New(db, 5*time.Minute)
-//
-//      sessionManager := session.Manage(engine)
-//      http.ListenAndServe(":4000", sessionManager(http.DefaultServeMux))
-//  }
-//
-// It is underpinned by the go-sql-driver/mysql driver (https://github.com/go-sql-driver/mysql).
 package mysqlstore
 
 import (
@@ -46,7 +26,7 @@ import (
 	_ "github.com/go-sql-driver/mysql"
 )
 
-// MySQLStore represents the currently configured session storage engine.
+// MySQLStore represents the currently configured session session store.
 type MySQLStore struct {
 	*sql.DB
 	version     string
@@ -137,21 +117,6 @@ func (m *MySQLStore) startCleanup(interval time.Duration) {
 // the cleanup goroutine (which will run forever) will prevent the MySQLStore object
 // from being garbage collected even after the test function has finished. You
 // can prevent this by manually calling StopCleanup.
-//
-// Example:
-//
-//	func TestExample(t *testing.T) {
-//		db, err := sql.Open("mysql", "user:pass@/db")
-//		if err != nil {
-//			t.Fatal(err)
-//		}
-//		defer db.Close()
-//
-//		engine := mysqlstore.New(db, time.Second)
-//		defer engine.StopCleanup()
-//
-//		// Run test...
-//	}
 func (m *MySQLStore) StopCleanup() {
 	if m.stopCleanup != nil {
 		m.stopCleanup <- true

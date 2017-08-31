@@ -1,4 +1,4 @@
-// Package redisstore is a Redis-based storage engine for the SCS session package.
+// Package redisstore is a Redis-based session store for the SCS session package.
 //
 // Warning: The redisstore API is not finalized and may change, possibly significantly.
 // The package is fine to use as-is, but it is strongly recommended that you vendor
@@ -6,25 +6,6 @@
 //
 // The redisstore package relies on the the popular Redigo Redis client
 // (https://github.com/garyburd/redigo).
-//
-// Usage:
-//
-//	func main() {
-//		// Establish a Redigo connection pool following instructions at
-//		// https://godoc.org/github.com/garyburd/redigo/redis#Pool
-//	    pool := &redis.Pool{
-//	        MaxIdle: 10,
-//	        Dial: func() (redis.Conn, error) {
-//	            return redis.Dial("tcp", "localhost:6379")
-//	        },
-//	    }
-//
-//	    // Create a new RedisStore instance using the connection pool.
-//	    engine := redisstore.New(pool)
-//
-//	    sessionManager := session.Manage(engine)
-//	    http.ListenAndServe(":4000", sessionManager(http.DefaultServeMux))
-//	}
 package redisstore
 
 import (
@@ -37,7 +18,7 @@ import (
 // a naming clash.
 var Prefix = "scs:session:"
 
-// RedisStore represents the currently configured session storage engine. It is essentially
+// RedisStore represents the currently configured session session store. It is essentially
 // a wrapper around a Redigo connection pool.
 type RedisStore struct {
 	pool *redis.Pool

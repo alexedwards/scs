@@ -1,4 +1,4 @@
-// Package qlstore is a ql-based storage engine for the SCS session package.
+// Package qlstore is a ql-based session store for the SCS session package.
 //
 // A working ql database is required, containing a sessions table with
 // the definition:
@@ -13,26 +13,6 @@
 // The qlstore package provides a background 'cleanup' goroutine to delete expired
 // session data. This stops the database table from holding on to invalid sessions
 // indefinitely and growing unnecessarily large.
-//
-// Usage:
-//
-//  func main() {
-//      // Establish a database/sql pool
-//      db, err := sql.Open("ql", "example.db")
-//      if err != nil {
-//          log.Fatal(err)
-//      }
-//      defer db.Close()
-//
-//      // Create a new QLStore instance using the existing database/sql pool,
-//      // with a cleanup interval of 5 minutes.
-//      engine := qlstore.New(db, 5*time.Minute)
-//
-//      sessionManager := session.Manage(engine)
-//      http.ListenAndServe(":4000", sessionManager(http.DefaultServeMux))
-//  }
-//
-// The qlstore package is underpinned by the pq driver (github.com/cznic/ql/driver).
 package qlstore
 
 import (
@@ -44,7 +24,7 @@ import (
 	_ "github.com/cznic/ql/driver"
 )
 
-// QLStore represents the currently configured session storage engine.
+// QLStore represents the currently configured session session store.
 type QLStore struct {
 	*sql.DB
 	stopCleanup chan bool
@@ -145,21 +125,6 @@ func execTx(db *sql.DB, query string, args ...interface{}) (sql.Result, error) {
 // the cleanup goroutine (which will run forever) will prevent the QLStore object
 // from being garbage collected even after the test function has finished. You
 // can prevent this by manually calling StopCleanup.
-//
-// Example:
-//
-//	func TestExample(t *testing.T) {
-//		db, err := sql.Open("ql", "test.db")
-//		if err != nil {
-//			t.Fatal(err)
-//		}
-//		defer db.Close()
-//
-//		engine := pgstore.New(db, time.Second)
-//		defer engine.StopCleanup()
-//
-//		// Run test...
-//	}
 func (q *QLStore) StopCleanup() {
 	if q.stopCleanup != nil {
 		q.stopCleanup <- true

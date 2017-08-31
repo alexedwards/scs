@@ -5,21 +5,7 @@ import (
 	"reflect"
 	"testing"
 	"time"
-
-	"github.com/alexedwards/scs/session"
 )
-
-func TestNew(t *testing.T) {
-	m := New(time.Minute)
-	_, ok := interface{}(m).(session.Engine)
-	if ok == false {
-		t.Fatalf("got %v: expected %v", ok, true)
-	}
-
-	if len(m.Cache.Items()) > 0 {
-		t.Fatalf("got %d: expected %d", len(m.Cache.Items()), 0)
-	}
-}
 
 func TestFind(t *testing.T) {
 	m := New(time.Minute)

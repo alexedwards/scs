@@ -6,7 +6,6 @@ import (
 	"testing"
 	"time"
 
-	"github.com/alexedwards/scs/session"
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/aws/endpoints"
 	awsSession "github.com/aws/aws-sdk-go/aws/session"
@@ -53,17 +52,6 @@ func clearTestDynamoDB(t *testing.T, dy *dynamodb.DynamoDB) {
 	err = d.Delete(token)
 	if err != nil {
 		t.Fatal(err)
-	}
-}
-
-func TestNew(t *testing.T) {
-	dy := getTestDynamoDB(t)
-	clearTestDynamoDB(t, dy)
-
-	d := New(dy)
-	_, ok := interface{}(d).(session.Engine)
-	if ok == false {
-		t.Fatalf("got %v: expected %v", ok, true)
 	}
 }
 

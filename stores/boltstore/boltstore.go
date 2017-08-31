@@ -1,4 +1,4 @@
-// Package boltstore is a boltdb based storage engine for the SCS session package.
+// Package boltstore is a boltdb based session store for the SCS session package.
 package boltstore
 
 import (
@@ -13,7 +13,7 @@ var (
 	expiryBucketName = []byte("scs_expiry_bucket")
 )
 
-// BoltStore is a SCS storage engine backed by a boltdb file.
+// BoltStore is a SCS session store backed by a boltdb file.
 type BoltStore struct {
 	db          *bolt.DB
 	stopCleanup chan bool
@@ -127,21 +127,6 @@ func (bs *BoltStore) startCleanup(cleanupInterval time.Duration) {
 // the cleanup goroutine (which will run forever) will prevent the BoltStore object
 // from being garbage collected even after the test function has finished. You
 // can prevent this by manually calling StopCleanup.
-//
-// Example:
-//
-//	func TestExample(t *testing.T) {
-//		db, err := bolt.Open("testing.db", 0600, nil)
-//		if err != nil {
-//			t.Fatal(err)
-//		}
-//		defer db.Close()
-//
-//		engine := boltstore.New(db, time.Second)
-//		defer engine.StopCleanup()
-//
-//		// Run test...
-//	}
 func (bs *BoltStore) StopCleanup() {
 	if bs.stopCleanup != nil {
 		bs.stopCleanup <- true

@@ -1,34 +1,7 @@
-// Package dynamostore is a DynamoDB-based storage engine for the SCS session package.
+// Package dynamostore is a DynamoDB-based session store for the SCS session package.
 //
 // The dynamostore package relis on the aws-sdk-go client.
 // (https://godoc.org/github.com/aws/aws-sdk-go/service/dynamodb)
-//
-// Usage:
-//
-//		package main
-//
-//		import (
-//			"net/http"
-//
-//			"github.com/alexedwards/scs/session"
-//			"github.com/alexedwards/scs/engine/dynamostore"
-//			"github.com/aws/aws-sdk-go/aws"
-//			"github.com/aws/aws-sdk-go/aws/endpoints"
-//			awsSession "github.com/aws/aws-sdk-go/aws/session"
-//			"github.com/aws/aws-sdk-go/service/dynamodb"
-//		)
-//
-//		func main() {
-//			// Create a DynamoDB client.
-//			conf := &aws.Config{Region: aws.String(endpoints.UsEast1RegionID)}
-//			dynamo := dynamodb.New(awsSession.New(), conf)
-//
-//			// Create a new DynamoStore instance using the DynamoDB client.
-//			engine := dynamostore.New(dynamo)
-//
-//			sessionManager := session.Manage(engine)
-//			http.ListenAndServe(":4000", sessionManager(http.DefaultServeMux))
-//		}
 package dynamostore
 
 import (
@@ -39,7 +12,7 @@ import (
 	"github.com/aws/aws-sdk-go/service/dynamodb"
 )
 
-// DynamoStore represents the currently configured session storage engine. It is essentially
+// DynamoStore represents the currently configured session session store. It is essentially
 // a wrapper around a DynamoDB client. And table is a table name session stored. token, data,
 // expiry are key names.
 type DynamoStore struct {

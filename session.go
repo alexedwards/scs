@@ -1,7 +1,8 @@
-package session
+package scs
 
 import (
 	"bytes"
+	"crypto/rand"
 	"encoding/base64"
 	"encoding/gob"
 	"encoding/json"
@@ -9,6 +10,7 @@ import (
 	"net/http"
 	"sort"
 	"strconv"
+	"sync"
 	"time"
 )
 
@@ -16,12 +18,122 @@ import (
 // received value could not be type asserted or converted into the required type.
 var ErrTypeAssertionFailed = errors.New("type assertion failed")
 
+// Session contains data for the current session.
+type Session struct {
+	token    string
+	data     map[string]interface{}
+	deadline time.Time
+	store    Store
+	opts     *options
+	loadErr  error
+	mu       sync.Mutex
+}
+
+func newSession(store Store, opts *options) *Session {
+	return &Session{
+		data:     make(map[string]interface{}),
+		deadline: time.Now().Add(opts.lifetime),
+		store:    store,
+		opts:     opts,
+	}
+}
+
+func load(r *http.Request, store Store, opts *options) *Session {
+	cookie, err := r.Cookie(CookieName)
+	if err == http.ErrNoCookie {
+		return newSession(store, opts)
+	} else if err != nil {
+		return &Session{loadErr: err}
+	}
+
+	if cookie.Value == "" {
+		return newSession(store, opts)
+	}
+	token := cookie.Value
+
+	j, found, err := store.Find(token)
+	if err != nil {
+		return &Session{loadErr: err}
+	}
+	if found == false {
+		return newSession(store, opts)
+	}
+
+	data, deadline, err := decodeFromJSON(j)
+	if err != nil {
+		return &Session{loadErr: err}
+	}
+
+	s := &Session{
+		token:    token,
+		data:     data,
+		deadline: deadline,
+		store:    store,
+		opts:     opts,
+	}
+
+	return s
+}
+
+func (s *Session) write(w http.ResponseWriter) error {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+
+	j, err := encodeToJSON(s.data, s.deadline)
+	if err != nil {
+		return err
+	}
+
+	expiry := s.deadline
+	if s.opts.idleTimeout > 0 {
+		ie := time.Now().Add(s.opts.idleTimeout)
+		if ie.Before(expiry) {
+			expiry = ie
+		}
+	}
+
+	if ce, ok := s.store.(cookieStore); ok {
+		s.token, err = ce.MakeToken(j, expiry)
+		if err != nil {
+			return err
+		}
+	} else {
+		if s.token == "" {
+			s.token, err = generateToken()
+			if err != nil {
+				return err
+			}
+		}
+		err = s.store.Save(s.token, j, expiry)
+		if err != nil {
+			return err
+		}
+	}
+
+	cookie := &http.Cookie{
+		Name:     CookieName,
+		Value:    s.token,
+		Path:     s.opts.path,
+		Domain:   s.opts.domain,
+		Secure:   s.opts.secure,
+		HttpOnly: s.opts.httpOnly,
+	}
+	if s.opts.persist == true {
+		// Round up expiry time to the nearest second.
+		cookie.Expires = time.Unix(expiry.Unix()+1, 0)
+		cookie.MaxAge = int(expiry.Sub(time.Now()).Seconds() + 1)
+	}
+	http.SetCookie(w, cookie)
+
+	return nil
+}
+
 // GetString returns the string value for a given key from the session data. The
 // zero value for a string ("") is returned if the key does not exist. An ErrTypeAssertionFailed
 // error is returned if the value could not be type asserted or converted to a
 // string.
-func GetString(r *http.Request, key string) (string, error) {
-	v, exists, err := get(r, key)
+func (s *Session) GetString(key string) (string, error) {
+	v, exists, err := s.get(key)
 	if err != nil {
 		return "", err
 	}
@@ -38,16 +150,16 @@ func GetString(r *http.Request, key string) (string, error) {
 
 // PutString adds a string value and corresponding key to the the session data.
 // Any existing value for the key will be replaced.
-func PutString(r *http.Request, key string, val string) error {
-	return put(r, key, val)
+func (s *Session) PutString(w http.ResponseWriter, key string, val string) error {
+	return s.put(w, key, val)
 }
 
 // PopString removes the string value for a given key from the session data
 // and returns it. The zero value for a string ("") is returned if the key does
 // not exist. An ErrTypeAssertionFailed error is returned if the value could not
 // be type asserted to a string.
-func PopString(r *http.Request, key string) (string, error) {
-	v, exists, err := pop(r, key)
+func (s *Session) PopString(w http.ResponseWriter, key string) (string, error) {
+	v, exists, err := s.pop(w, key)
 	if err != nil {
 		return "", err
 	}
@@ -65,8 +177,8 @@ func PopString(r *http.Request, key string) (string, error) {
 // GetBool returns the bool value for a given key from the session data. The
 // zero value for a bool (false) is returned if the key does not exist. An ErrTypeAssertionFailed
 // error is returned if the value could not be type asserted to a bool.
-func GetBool(r *http.Request, key string) (bool, error) {
-	v, exists, err := get(r, key)
+func (s *Session) GetBool(key string) (bool, error) {
+	v, exists, err := s.get(key)
 	if err != nil {
 		return false, err
 	}
@@ -83,16 +195,16 @@ func GetBool(r *http.Request, key string) (bool, error) {
 
 // PutBool adds a bool value and corresponding key to the session data. Any existing
 // value for the key will be replaced.
-func PutBool(r *http.Request, key string, val bool) error {
-	return put(r, key, val)
+func (s *Session) PutBool(w http.ResponseWriter, key string, val bool) error {
+	return s.put(w, key, val)
 }
 
 // PopBool removes the bool value for a given key from the session data and returns
 // it. The zero value for a bool (false) is returned if the key does not exist.
 // An ErrTypeAssertionFailed error is returned if the value could not be type
 // asserted to a bool.
-func PopBool(r *http.Request, key string) (bool, error) {
-	v, exists, err := pop(r, key)
+func (s *Session) PopBool(w http.ResponseWriter, key string) (bool, error) {
+	v, exists, err := s.pop(w, key)
 	if err != nil {
 		return false, err
 	}
@@ -110,8 +222,8 @@ func PopBool(r *http.Request, key string) (bool, error) {
 // GetInt returns the int value for a given key from the session data. The zero
 // value for an int (0) is returned if the key does not exist. An ErrTypeAssertionFailed
 // error is returned if the value could not be type asserted or converted to a int.
-func GetInt(r *http.Request, key string) (int, error) {
-	v, exists, err := get(r, key)
+func (s *Session) GetInt(key string) (int, error) {
+	v, exists, err := s.get(key)
 	if err != nil {
 		return 0, err
 	}
@@ -130,16 +242,16 @@ func GetInt(r *http.Request, key string) (int, error) {
 
 // PutInt adds an int value and corresponding key to the session data. Any existing
 // value for the key will be replaced.
-func PutInt(r *http.Request, key string, val int) error {
-	return put(r, key, val)
+func (s *Session) PutInt(w http.ResponseWriter, key string, val int) error {
+	return s.put(w, key, val)
 }
 
 // PopInt removes the int value for a given key from the session data and returns
 // it. The zero value for an int (0) is returned if the key does not exist. An
 // ErrTypeAssertionFailed error is returned if the value could not be type asserted
 // or converted to a int.
-func PopInt(r *http.Request, key string) (int, error) {
-	v, exists, err := pop(r, key)
+func (s *Session) PopInt(w http.ResponseWriter, key string) (int, error) {
+	v, exists, err := s.pop(w, key)
 	if err != nil {
 		return 0, err
 	}
@@ -156,13 +268,11 @@ func PopInt(r *http.Request, key string) (int, error) {
 	return 0, ErrTypeAssertionFailed
 }
 
-//
-
 // GetInt64 returns the int64 value for a given key from the session data. The
 // zero value for an int (0) is returned if the key does not exist. An ErrTypeAssertionFailed
 // error is returned if the value could not be type asserted or converted to a int64.
-func GetInt64(r *http.Request, key string) (int64, error) {
-	v, exists, err := get(r, key)
+func (s *Session) GetInt64(key string) (int64, error) {
+	v, exists, err := s.get(key)
 	if err != nil {
 		return 0, err
 	}
@@ -181,16 +291,16 @@ func GetInt64(r *http.Request, key string) (int64, error) {
 
 // PutInt64 adds an int64 value and corresponding key to the session data. Any existing
 // value for the key will be replaced.
-func PutInt64(r *http.Request, key string, val int64) error {
-	return put(r, key, val)
+func (s *Session) PutInt64(w http.ResponseWriter, key string, val int64) error {
+	return s.put(w, key, val)
 }
 
 // PopInt64 remvoes the int64 value for a given key from the session data
 // and returns it. The zero value for an int (0) is returned if the key does not
 // exist. An ErrTypeAssertionFailed error is returned if the value could not be
 // type asserted or converted to a int64.
-func PopInt64(r *http.Request, key string) (int64, error) {
-	v, exists, err := pop(r, key)
+func (s *Session) PopInt64(w http.ResponseWriter, key string) (int64, error) {
+	v, exists, err := s.pop(w, key)
 	if err != nil {
 		return 0, err
 	}
@@ -211,8 +321,8 @@ func PopInt64(r *http.Request, key string) (int64, error) {
 // zero value for an float (0) is returned if the key does not exist. An ErrTypeAssertionFailed
 // error is returned if the value could not be type asserted or converted to a
 // float64.
-func GetFloat(r *http.Request, key string) (float64, error) {
-	v, exists, err := get(r, key)
+func (s *Session) GetFloat(key string) (float64, error) {
+	v, exists, err := s.get(key)
 	if err != nil {
 		return 0, err
 	}
@@ -231,16 +341,16 @@ func GetFloat(r *http.Request, key string) (float64, error) {
 
 // PutFloat adds an float64 value and corresponding key to the session data. Any
 // existing value for the key will be replaced.
-func PutFloat(r *http.Request, key string, val float64) error {
-	return put(r, key, val)
+func (s *Session) PutFloat(w http.ResponseWriter, key string, val float64) error {
+	return s.put(w, key, val)
 }
 
 // PopFloat removes the float64 value for a given key from the session data
 // and returns it. The zero value for an float (0) is returned if the key does
 // not exist. An ErrTypeAssertionFailed error is returned if the value could not
 // be type asserted or converted to a float64.
-func PopFloat(r *http.Request, key string) (float64, error) {
-	v, exists, err := pop(r, key)
+func (s *Session) PopFloat(w http.ResponseWriter, key string) (float64, error) {
+	v, exists, err := s.pop(w, key)
 	if err != nil {
 		return 0, err
 	}
@@ -262,8 +372,8 @@ func PopFloat(r *http.Request, key string) (float64, error) {
 // can be checked for with the time.IsZero method). An ErrTypeAssertionFailed
 // error is returned if the value could not be type asserted or converted to a
 // time.Time.
-func GetTime(r *http.Request, key string) (time.Time, error) {
-	v, exists, err := get(r, key)
+func (s *Session) GetTime(key string) (time.Time, error) {
+	v, exists, err := s.get(key)
 	if err != nil {
 		return time.Time{}, err
 	}
@@ -282,8 +392,8 @@ func GetTime(r *http.Request, key string) (time.Time, error) {
 
 // PutTime adds an time.Time value and corresponding key to the session data. Any
 // existing value for the key will be replaced.
-func PutTime(r *http.Request, key string, val time.Time) error {
-	return put(r, key, val)
+func (s *Session) PutTime(w http.ResponseWriter, key string, val time.Time) error {
+	return s.put(w, key, val)
 }
 
 // PopTime removes the time.Time value for a given key from the session data
@@ -291,8 +401,8 @@ func PutTime(r *http.Request, key string, val time.Time) error {
 // does not exist (this can be checked for with the time.IsZero method). An ErrTypeAssertionFailed
 // error is returned if the value could not be type asserted or converted to a
 // time.Time.
-func PopTime(r *http.Request, key string) (time.Time, error) {
-	v, exists, err := pop(r, key)
+func (s *Session) PopTime(w http.ResponseWriter, key string) (time.Time, error) {
+	v, exists, err := s.pop(w, key)
 	if err != nil {
 		return time.Time{}, err
 	}
@@ -313,8 +423,8 @@ func PopTime(r *http.Request, key string) (time.Time, error) {
 // data. The zero value for a slice (nil) is returned if the key does not exist.
 // An ErrTypeAssertionFailed error is returned if the value could not be type
 // asserted or converted to []byte.
-func GetBytes(r *http.Request, key string) ([]byte, error) {
-	v, exists, err := get(r, key)
+func (s *Session) GetBytes(key string) ([]byte, error) {
+	v, exists, err := s.get(key)
 	if err != nil {
 		return nil, err
 	}
@@ -333,20 +443,20 @@ func GetBytes(r *http.Request, key string) ([]byte, error) {
 
 // PutBytes adds a byte slice ([]byte) value and corresponding key to the the
 // session data. Any existing value for the key will be replaced.
-func PutBytes(r *http.Request, key string, val []byte) error {
+func (s *Session) PutBytes(w http.ResponseWriter, key string, val []byte) error {
 	if val == nil {
 		return errors.New("value must not be nil")
 	}
 
-	return put(r, key, val)
+	return s.put(w, key, val)
 }
 
 // PopBytes removes the byte slice ([]byte) value for a given key from the session
 // data and returns it. The zero value for a slice (nil) is returned if the key
 // does not exist. An ErrTypeAssertionFailed error is returned if the value could
 // not be type asserted or converted to a []byte.
-func PopBytes(r *http.Request, key string) ([]byte, error) {
-	v, exists, err := pop(r, key)
+func (s *Session) PopBytes(w http.ResponseWriter, key string) ([]byte, error) {
+	v, exists, err := s.pop(w, key)
 	if err != nil {
 		return nil, err
 	}
@@ -363,41 +473,14 @@ func PopBytes(r *http.Request, key string) ([]byte, error) {
 	return nil, ErrTypeAssertionFailed
 }
 
-/*
-GetObject reads the data for a given session key into an arbitrary object
-(represented by the dst parameter). It should only be used to retrieve custom
-data types that have been stored using PutObject. The object represented by dst
-will remain unchanged if the key does not exist.
-
-The dst parameter must be a pointer.
-
-Usage:
-
-	// Note that the fields on the custom type are all exported.
-	type User struct {
-	    Name  string
-	    Email string
-	}
-
-	func getHandler(w http.ResponseWriter, r *http.Request) {
-	    // Register the type with the encoding/gob package. Usually this would be
-	    // done in an init() function.
-	    gob.Register(User{})
-
-	    // Initialise a pointer to a new, empty, custom object.
-	    user := &User{}
-
-	    // Read the custom object data from the session into the pointer.
-	    err := session.GetObject(r, "user", user)
-	    if err != nil {
-	        http.Error(w, err.Error(), 500)
-	        return
-	    }
-	    fmt.Fprintf(w, "Name: %s, Email: %s", user.Name, user.Email)
-	}
-*/
-func GetObject(r *http.Request, key string, dst interface{}) error {
-	b, err := GetBytes(r, key)
+// GetObject reads the data for a given session key into an arbitrary object
+// (represented by the dst parameter). It should only be used to retrieve custom
+// data types that have been stored using PutObject. The object represented by dst
+// will remain unchanged if the key does not exist.
+//
+// The dst parameter must be a pointer.
+func (s *Session) GetObject(key string, dst interface{}) error {
+	b, err := s.GetBytes(key)
 	if err != nil {
 		return err
 	}
@@ -408,45 +491,20 @@ func GetObject(r *http.Request, key string, dst interface{}) error {
 	return gobDecode(b, dst)
 }
 
-/*
-PutObject adds an arbitrary object and corresponding key to the the session data.
-Any existing value for the key will be replaced.
-
-The val parameter must be a pointer to your object.
-
-PutObject is typically used to store custom data types. It encodes the object
-into a gob and then into a base64-encoded string which is persisted by the
-storage engine. This makes PutObject (and the accompanying GetObject and PopObject
-functions) comparatively expensive operations.
-
-Because gob encoding is used, the fields on custom types must be exported in
-order to be persisted correctly. Custom data types must also be registered with
-gob.Register before PutObject is called (see https://golang.org/pkg/encoding/gob/#Register).
-
-Usage:
-
-  type User struct {
-      Name  string
-      Email string
-  }
-
-  func putHandler(w http.ResponseWriter, r *http.Request) {
-      // Register the type with the encoding/gob package. Usually this would be
-      // done in an init() function.
-      gob.Register(User{})
-
-      // Initialise a pointer to a new custom object.
-      user := &User{"Alice", "alice@example.com"}
-
-      // Store the custom object in the session data. Important: you should pass in
-      // a pointer to your object, not the value.
-      err := session.PutObject(r, "user", user)
-      if err != nil {
-          http.Error(w, err.Error(), 500)
-      }
-  }
-*/
-func PutObject(r *http.Request, key string, val interface{}) error {
+// PutObject adds an arbitrary object and corresponding key to the the session data.
+// Any existing value for the key will be replaced.
+//
+// The val parameter must be a pointer to your object.
+//
+// PutObject is typically used to store custom data types. It encodes the object
+// into a gob and then into a base64-encoded string which is persisted by the
+// session store. This makes PutObject (and the accompanying GetObject and PopObject
+// functions) comparatively expensive operations.
+//
+// Because gob encoding is used, the fields on custom types must be exported in
+// order to be persisted correctly. Custom data types must also be registered with
+// gob.Register before PutObject is called (see https://golang.org/pkg/encoding/gob/#Register).
+func (s *Session) PutObject(w http.ResponseWriter, key string, val interface{}) error {
 	if val == nil {
 		return errors.New("value must not be nil")
 	}
@@ -456,7 +514,7 @@ func PutObject(r *http.Request, key string, val interface{}) error {
 		return err
 	}
 
-	return PutBytes(r, key, b)
+	return s.PutBytes(w, key, b)
 }
 
 // PopObject removes the data for a given session key and reads it into a custom
@@ -465,8 +523,8 @@ func PutObject(r *http.Request, key string, val interface{}) error {
 // by dst will remain unchanged if the key does not exist.
 //
 // The dst parameter must be a pointer.
-func PopObject(r *http.Request, key string, dst interface{}) error {
-	b, err := PopBytes(r, key)
+func (s *Session) PopObject(w http.ResponseWriter, key string, dst interface{}) error {
+	b, err := s.PopBytes(w, key)
 	if err != nil {
 		return err
 	}
@@ -480,141 +538,214 @@ func PopObject(r *http.Request, key string, dst interface{}) error {
 // Keys returns a slice of all key names present in the session data, sorted
 // alphabetically. If the session contains no data then an empty slice will be
 // returned.
-func Keys(r *http.Request) ([]string, error) {
-	s, err := sessionFromContext(r)
-	if err != nil {
-		return nil, err
+func (s *Session) Keys() ([]string, error) {
+	if s.loadErr != nil {
+		return nil, s.loadErr
 	}
 
 	s.mu.Lock()
+	defer s.mu.Unlock()
+
 	keys := make([]string, len(s.data))
 	i := 0
 	for k := range s.data {
 		keys[i] = k
 		i++
 	}
-	s.mu.Unlock()
 
 	sort.Strings(keys)
 	return keys, nil
 }
 
 // Exists returns true if the given key is present in the session data.
-func Exists(r *http.Request, key string) (bool, error) {
-	s, err := sessionFromContext(r)
-	if err != nil {
-		return false, err
+func (s *Session) Exists(key string) (bool, error) {
+	if s.loadErr != nil {
+		return false, s.loadErr
 	}
 
 	s.mu.Lock()
-	_, exists := s.data[key]
-	s.mu.Unlock()
+	defer s.mu.Unlock()
 
+	_, exists := s.data[key]
 	return exists, nil
 }
 
 // Remove deletes the given key and corresponding value from the session data.
 // If the key is not present this operation is a no-op.
-func Remove(r *http.Request, key string) error {
-	s, err := sessionFromContext(r)
-	if err != nil {
-		return err
+func (s *Session) Remove(w http.ResponseWriter, key string) error {
+	if s.loadErr != nil {
+		return s.loadErr
 	}
 
 	s.mu.Lock()
-	defer s.mu.Unlock()
-
-	if s.written == true {
-		return ErrAlreadyWritten
-	}
 
 	_, exists := s.data[key]
 	if exists == false {
+		s.mu.Unlock()
 		return nil
 	}
 
 	delete(s.data, key)
-	s.modified = true
-	return nil
+	s.mu.Unlock()
+
+	return s.write(w)
 }
 
 // Clear removes all data for the current session. The session token and lifetime
 // are unaffected. If there is no data in the current session this operation is
 // a no-op.
-func Clear(r *http.Request) error {
-	s, err := sessionFromContext(r)
-	if err != nil {
-		return err
+func (s *Session) Clear(w http.ResponseWriter) error {
+	if s.loadErr != nil {
+		return s.loadErr
 	}
 
 	s.mu.Lock()
-	defer s.mu.Unlock()
-
-	if s.written == true {
-		return ErrAlreadyWritten
-	}
 
 	if len(s.data) == 0 {
+		s.mu.Unlock()
 		return nil
 	}
 
 	for key := range s.data {
 		delete(s.data, key)
 	}
-	s.modified = true
-	return nil
+	s.mu.Unlock()
+
+	return s.write(w)
 }
 
-func get(r *http.Request, key string) (interface{}, bool, error) {
-	s, err := sessionFromContext(r)
-	if err != nil {
-		return nil, false, err
+// RenewToken creates a new session token while retaining the current session
+// data. The session lifetime is also reset.
+//
+// The old session token and accompanying data are deleted from the session store.
+//
+// To mitigate the risk of session fixation attacks, it's important that you call
+// RenewToken before making any changes to privilege levels (e.g. login and
+// logout operations). See https://www.owasp.org/index.php/Session_fixation for
+// additional information.
+func (s *Session) RenewToken(w http.ResponseWriter) error {
+	if s.loadErr != nil {
+		return s.loadErr
 	}
 
 	s.mu.Lock()
-	v, exists := s.data[key]
+
+	err := s.store.Delete(s.token)
+	if err != nil {
+		s.mu.Unlock()
+		return err
+	}
+
+	token, err := generateToken()
+	if err != nil {
+		s.mu.Unlock()
+		return err
+	}
+
+	s.token = token
+	s.deadline = time.Now().Add(s.opts.lifetime)
 	s.mu.Unlock()
 
-	return v, exists, nil
+	return s.write(w)
 }
 
-func put(r *http.Request, key string, val interface{}) error {
-	s, err := sessionFromContext(r)
+// Destroy deletes the current session. The session token and accompanying
+// data are deleted from the session store, and the client is instructed to
+// delete the session cookie.
+//
+// Any further operations on the session in the same request cycle will result in a
+// new session being created.
+//
+// A new empty session will be created for any client that subsequently tries
+// to use the destroyed session token.
+func (s *Session) Destroy(w http.ResponseWriter) error {
+	if s.loadErr != nil {
+		return s.loadErr
+	}
+
+	s.mu.Lock()
+	defer s.mu.Unlock()
+
+	err := s.store.Delete(s.token)
 	if err != nil {
 		return err
 	}
 
-	s.mu.Lock()
-	defer s.mu.Unlock()
-
-	if s.written == true {
-		return ErrAlreadyWritten
+	s.token = ""
+	for key := range s.data {
+		delete(s.data, key)
 	}
-	s.data[key] = val
-	s.modified = true
+
+	cookie := &http.Cookie{
+		Name:     CookieName,
+		Value:    "",
+		Path:     s.opts.path,
+		Domain:   s.opts.domain,
+		Secure:   s.opts.secure,
+		HttpOnly: s.opts.httpOnly,
+		Expires:  time.Unix(1, 0),
+		MaxAge:   -1,
+	}
+	http.SetCookie(w, cookie)
+
 	return nil
 }
 
-func pop(r *http.Request, key string) (interface{}, bool, error) {
-	s, err := sessionFromContext(r)
-	if err != nil {
-		return "", false, err
+func (s *Session) get(key string) (interface{}, bool, error) {
+	if s.loadErr != nil {
+		return nil, false, s.loadErr
 	}
 
 	s.mu.Lock()
 	defer s.mu.Unlock()
 
-	if s.written == true {
-		return "", false, ErrAlreadyWritten
+	v, exists := s.data[key]
+	return v, exists, nil
+}
+
+func (s *Session) put(w http.ResponseWriter, key string, val interface{}) error {
+	if s.loadErr != nil {
+		return s.loadErr
 	}
+
+	s.mu.Lock()
+	s.data[key] = val
+	s.mu.Unlock()
+
+	return s.write(w)
+}
+
+func (s *Session) pop(w http.ResponseWriter, key string) (interface{}, bool, error) {
+	if s.loadErr != nil {
+		return nil, false, s.loadErr
+	}
+
+	s.mu.Lock()
+
 	v, exists := s.data[key]
 	if exists == false {
+		s.mu.Unlock()
 		return nil, false, nil
 	}
 
 	delete(s.data, key)
-	s.modified = true
+	s.mu.Unlock()
+
+	err := s.write(w)
+	if err != nil {
+		return nil, false, err
+	}
+
 	return v, true, nil
+}
+
+func generateToken() (string, error) {
+	b := make([]byte, 32)
+	_, err := rand.Read(b)
+	if err != nil {
+		return "", err
+	}
+	return base64.RawURLEncoding.EncodeToString(b), nil
 }
 
 func gobEncode(v interface{}) ([]byte, error) {
@@ -629,4 +760,29 @@ func gobEncode(v interface{}) ([]byte, error) {
 func gobDecode(b []byte, dst interface{}) error {
 	buf := bytes.NewBuffer(b)
 	return gob.NewDecoder(buf).Decode(dst)
+}
+
+func encodeToJSON(data map[string]interface{}, deadline time.Time) ([]byte, error) {
+	return json.Marshal(&struct {
+		Data     map[string]interface{} `json:"data"`
+		Deadline int64                  `json:"deadline"`
+	}{
+		Data:     data,
+		Deadline: deadline.UnixNano(),
+	})
+}
+
+func decodeFromJSON(j []byte) (map[string]interface{}, time.Time, error) {
+	aux := struct {
+		Data     map[string]interface{} `json:"data"`
+		Deadline int64                  `json:"deadline"`
+	}{}
+
+	dec := json.NewDecoder(bytes.NewReader(j))
+	dec.UseNumber()
+	err := dec.Decode(&aux)
+	if err != nil {
+		return nil, time.Time{}, err
+	}
+	return aux.Data, time.Unix(0, aux.Deadline), nil
 }

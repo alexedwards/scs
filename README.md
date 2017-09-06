@@ -77,6 +77,8 @@ func getHandler(w http.ResponseWriter, r *http.Request) {
 }
 ```
 
+Please note: If you are calling `session.Load()` multiple times in the same request cycle you must wrap your handlers with the [`manager.Multi()`](https://godoc.org/github.com/alexedwards/scs#Manager.Multi) middleware.
+
 SCS provides a wide range of functions for working with session data.
 
 * `Put…` and `Get…` methods for storing and retrieving a variety of common data types and custom objects.

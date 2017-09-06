@@ -7,6 +7,7 @@ import (
 	"encoding/gob"
 	"encoding/json"
 	"errors"
+	"fmt"
 	"net/http"
 	"sort"
 	"strconv"
@@ -39,6 +40,16 @@ func newSession(store Store, opts *options) *Session {
 }
 
 func load(r *http.Request, store Store, opts *options) *Session {
+	// Check to see if there is a session already in the request
+	val := r.Context().Value("scs.session")
+	if val != nil {
+		s, ok := val.(*Session)
+		if !ok {
+			return &Session{loadErr: fmt.Errorf("scs: can not assert %T to *Session", val)}
+		}
+		return s
+	}
+
 	cookie, err := r.Cookie(CookieName)
 	if err == http.ErrNoCookie {
 		return newSession(store, opts)

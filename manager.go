@@ -1,6 +1,7 @@
 package scs
 
 import (
+	"context"
 	"net/http"
 	"time"
 
@@ -95,4 +96,11 @@ func (m *Manager) Load(r *http.Request) *Session {
 func NewCookieManager(key string) *Manager {
 	store := cookiestore.New([]byte(key))
 	return NewManager(store)
+}
+
+func (m *Manager) Multi(next http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		ctx := context.WithValue(r.Context(), "scs.session", m.Load(r))
+		next.ServeHTTP(w, r.WithContext(ctx))
+	})
 }

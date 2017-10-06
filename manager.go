@@ -2,6 +2,7 @@ package scs
 
 import (
 	"context"
+	"log"
 	"net/http"
 	"time"
 
@@ -101,6 +102,24 @@ func NewCookieManager(key string) *Manager {
 func (m *Manager) Multi(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		ctx := context.WithValue(r.Context(), "scs.session", m.Load(r))
+		next.ServeHTTP(w, r.WithContext(ctx))
+	})
+}
+
+func (m *Manager) Use(next http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		session := m.Load(r)
+
+		if m.opts.idleTimeout > 0 {
+			err := session.Touch(w)
+			if err != nil {
+				log.Println(err)
+				http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
+				return
+			}
+		}
+
+		ctx := context.WithValue(r.Context(), "scs.session", session)
 		next.ServeHTTP(w, r.WithContext(ctx))
 	})
 }

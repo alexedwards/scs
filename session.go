@@ -702,6 +702,14 @@ func (s *Session) Destroy(w http.ResponseWriter) error {
 	return nil
 }
 
+func (s *Session) Touch(w http.ResponseWriter) error {
+	if s.loadErr != nil {
+		return s.loadErr
+	}
+
+	return s.write(w)
+}
+
 func (s *Session) get(key string) (interface{}, bool, error) {
 	if s.loadErr != nil {
 		return nil, false, s.loadErr

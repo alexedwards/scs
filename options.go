@@ -4,9 +4,8 @@ import (
 	"time"
 )
 
-// CookieName changes the name of the session cookie issued to clients. Note that
-// cookie names should not contain whitespace, commas, semicolons, backslashes
-// or control characters as per RFC6265.
+// Deprecated: Please use the Manager.Name() method to change the name of the
+// session cookie.
 var CookieName = "session"
 
 type options struct {
@@ -14,6 +13,7 @@ type options struct {
 	httpOnly    bool
 	idleTimeout time.Duration
 	lifetime    time.Duration
+	name        string
 	path        string
 	persist     bool
 	secure      bool

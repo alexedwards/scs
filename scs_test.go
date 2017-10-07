@@ -28,7 +28,7 @@ func testRequest(t *testing.T, h http.Handler, cookie string) (int, string, stri
 
 func extractTokenFromCookie(c string) string {
 	parts := strings.Split(c, ";")
-	return strings.TrimPrefix(parts[0], fmt.Sprintf("%s=", CookieName))
+	return strings.SplitN(parts[0], "=", 2)[1]
 }
 
 // Test Handlers

@@ -41,7 +41,7 @@ func newSession(store Store, opts *options) *Session {
 
 func load(r *http.Request, store Store, opts *options) *Session {
 	// Check to see if there is a session already in the request
-	val := r.Context().Value("scs.session")
+	val := r.Context().Value(opts.name)
 	if val != nil {
 		s, ok := val.(*Session)
 		if !ok {
@@ -50,7 +50,7 @@ func load(r *http.Request, store Store, opts *options) *Session {
 		return s
 	}
 
-	cookie, err := r.Cookie(CookieName)
+	cookie, err := r.Cookie(opts.name)
 	if err == http.ErrNoCookie {
 		return newSession(store, opts)
 	} else if err != nil {
@@ -122,7 +122,7 @@ func (s *Session) write(w http.ResponseWriter) error {
 	}
 
 	cookie := &http.Cookie{
-		Name:     CookieName,
+		Name:     s.opts.name,
 		Value:    s.token,
 		Path:     s.opts.path,
 		Domain:   s.opts.domain,
@@ -688,7 +688,7 @@ func (s *Session) Destroy(w http.ResponseWriter) error {
 	}
 
 	cookie := &http.Cookie{
-		Name:     CookieName,
+		Name:     s.opts.name,
 		Value:    "",
 		Path:     s.opts.path,
 		Domain:   s.opts.domain,

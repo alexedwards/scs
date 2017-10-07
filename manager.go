@@ -22,6 +22,7 @@ func NewManager(store Store) *Manager {
 		httpOnly:    true,
 		idleTimeout: 0,
 		lifetime:    24 * time.Hour,
+		name:        "session",
 		path:        "/",
 		persist:     false,
 		secure:      false,
@@ -64,6 +65,13 @@ func (m *Manager) Lifetime(t time.Duration) {
 	m.opts.lifetime = t
 }
 
+// Name sets the name of the session cookie. This name should not contain whitespace,
+// commas, semicolons, backslashes, the equals sign or control characters as per
+// RFC6265.
+func (m *Manager) Name(s string) {
+	m.opts.name = s
+}
+
 // Path sets the 'Path' attribute on the session cookie. The default value is "/".
 // Passing the empty string "" will result in it being set to the path that the
 // cookie was issued from.
@@ -101,7 +109,7 @@ func NewCookieManager(key string) *Manager {
 
 func (m *Manager) Multi(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		ctx := context.WithValue(r.Context(), "scs.session", m.Load(r))
+		ctx := context.WithValue(r.Context(), m.opts.name, m.Load(r))
 		next.ServeHTTP(w, r.WithContext(ctx))
 	})
 }
@@ -119,7 +127,7 @@ func (m *Manager) Use(next http.Handler) http.Handler {
 			}
 		}
 
-		ctx := context.WithValue(r.Context(), "scs.session", session)
+		ctx := context.WithValue(r.Context(), m.opts.name, session)
 		next.ServeHTTP(w, r.WithContext(ctx))
 	})
 }

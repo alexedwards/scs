@@ -133,21 +133,17 @@ func TestPersist(t *testing.T) {
 	}
 }
 
-func TestCookieName(t *testing.T) {
-	oldCookieName := CookieName
-	CookieName = "custom_cookie_name"
-
+func TestName(t *testing.T) {
 	manager := NewManager(newMockStore())
+	manager.Name("foo")
 
 	_, _, cookie := testRequest(t, testPutString(manager), "")
-	if strings.HasPrefix(cookie, "custom_cookie_name=") == false {
-		t.Fatalf("got %q: expected prefix %q", cookie, "custom_cookie_name=")
+	if strings.HasPrefix(cookie, "foo=") == false {
+		t.Fatalf("got %q: expected prefix %q", cookie, "foo=")
 	}
 
 	_, body, _ := testRequest(t, testGetString(manager), cookie)
 	if body != "lorem ipsum" {
 		t.Fatalf("got %q: expected %q", body, "lorem ipsum")
 	}
-
-	CookieName = oldCookieName
 }

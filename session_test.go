@@ -93,8 +93,8 @@ func TestDestroy(t *testing.T) {
 	if body != "OK" {
 		t.Fatalf("got %q: expected %q", body, "OK")
 	}
-	if strings.HasPrefix(cookie, fmt.Sprintf("%s=;", CookieName)) == false {
-		t.Fatalf("got %q: expected prefix %q", cookie, fmt.Sprintf("%s=;", CookieName))
+	if strings.HasPrefix(cookie, fmt.Sprintf("%s=;", manager.opts.name)) == false {
+		t.Fatalf("got %q: expected prefix %q", cookie, fmt.Sprintf("%s=;", manager.opts.name))
 	}
 	if strings.Contains(cookie, "Expires=Thu, 01 Jan 1970 00:00:01 GMT") == false {
 		t.Fatalf("got %q: expected to contain %q", cookie, "Expires=Thu, 01 Jan 1970 00:00:01 GMT")
@@ -191,5 +191,37 @@ func TestLoadFailure(t *testing.T) {
 	_, body, _ := testRequest(t, testPutString(manager), cookie.String())
 	if body != "forced-error\n" {
 		t.Fatalf("got %q: expected %q", body, "forced-error\n")
+	}
+}
+
+func TestMultipleSessions(t *testing.T) {
+	manager1 := NewManager(newMockStore())
+	manager1.Name("foo")
+
+	_, _, cookie1 := testRequest(t, testPutString(manager1), "")
+
+	manager2 := NewManager(newMockStore())
+	manager2.Name("bar")
+
+	_, _, cookie2 := testRequest(t, testPutBool(manager2), "")
+
+	_, body, _ := testRequest(t, testGetString(manager1), cookie1)
+	if body != "lorem ipsum" {
+		t.Fatalf("got %q: expected %q", body, "lorem ipsum")
+	}
+
+	_, body, _ = testRequest(t, testGetBool(manager2), cookie2)
+	if body != "true" {
+		t.Fatalf("got %q: expected %q", body, "true")
+	}
+
+	_, body, _ = testRequest(t, testGetString(manager2), cookie2)
+	if body != "" {
+		t.Fatalf("got %q: expected %q", body, "")
+	}
+
+	_, body, _ = testRequest(t, testGetBool(manager1), cookie1)
+	if body != "false" {
+		t.Fatalf("got %q: expected %q", body, "false")
 	}
 }

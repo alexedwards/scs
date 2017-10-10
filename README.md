@@ -44,7 +44,8 @@ func main() {
     mux.HandleFunc("/put", putHandler)
     mux.HandleFunc("/get", getHandler)
 
-    http.ListenAndServe(":4000", mux)
+    // Wrap your handlers with the session manager middleware.
+    http.ListenAndServe(":4000", sessionManager.Use(mux))
 }
 
 func putHandler(w http.ResponseWriter, r *http.Request) {
@@ -76,8 +77,6 @@ func getHandler(w http.ResponseWriter, r *http.Request) {
     io.WriteString(w, message)
 }
 ```
-
-Please note: If you are calling `session.Load()` multiple times in the same request cycle you must wrap your handlers with the [`manager.Multi()`](https://godoc.org/github.com/alexedwards/scs#Manager.Multi) middleware.
 
 SCS provides a wide range of functions for working with session data.
 

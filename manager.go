@@ -108,10 +108,7 @@ func NewCookieManager(key string) *Manager {
 }
 
 func (m *Manager) Multi(next http.Handler) http.Handler {
-	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		ctx := context.WithValue(r.Context(), m.opts.name, m.Load(r))
-		next.ServeHTTP(w, r.WithContext(ctx))
-	})
+	return m.Use(next)
 }
 
 func (m *Manager) Use(next http.Handler) http.Handler {

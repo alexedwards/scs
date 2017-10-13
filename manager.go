@@ -124,7 +124,7 @@ func (m *Manager) Use(next http.Handler) http.Handler {
 			}
 		}
 
-		ctx := context.WithValue(r.Context(), m.opts.name, session)
+		ctx := context.WithValue(r.Context(), sessionName(m.opts.name), session)
 		next.ServeHTTP(w, r.WithContext(ctx))
 	})
 }

@@ -15,6 +15,9 @@ import (
 	"time"
 )
 
+// sessionName is a custom type for the request context key.
+type sessionName string
+
 // ErrTypeAssertionFailed is returned by operations on session data where the
 // received value could not be type asserted or converted into the required type.
 var ErrTypeAssertionFailed = errors.New("type assertion failed")
@@ -40,8 +43,8 @@ func newSession(store Store, opts *options) *Session {
 }
 
 func load(r *http.Request, store Store, opts *options) *Session {
-	// Check to see if there is a session already in the request
-	val := r.Context().Value(opts.name)
+	// Check to see if there is an already loaded session in the request context.
+	val := r.Context().Value(sessionName(opts.name))
 	if val != nil {
 		s, ok := val.(*Session)
 		if !ok {

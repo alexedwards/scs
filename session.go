@@ -11,6 +11,7 @@ import (
 	"net/http"
 	"sort"
 	"strconv"
+	"strings"
 	"sync"
 	"time"
 )
@@ -137,7 +138,20 @@ func (s *Session) write(w http.ResponseWriter) error {
 		cookie.Expires = time.Unix(expiry.Unix()+1, 0)
 		cookie.MaxAge = int(expiry.Sub(time.Now()).Seconds() + 1)
 	}
-	http.SetCookie(w, cookie)
+
+	// Overwrite any existing cookie header for the session...
+	var set bool
+	for i, h := range w.Header()["Set-Cookie"] {
+		if strings.HasPrefix(h, fmt.Sprintf("%s=", s.opts.name)) {
+			w.Header()["Set-Cookie"][i] = cookie.String()
+			set = true
+			break
+		}
+	}
+	// Or set a new one if necessary.
+	if !set {
+		http.SetCookie(w, cookie)
+	}
 
 	return nil
 }

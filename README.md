@@ -99,7 +99,7 @@ The session manager can be configured to customize its behavior. For example:
 sessionManager = scs.NewCookieManager("u46IpCV9y5Vlur8YvODJEhgOY8m9JVE4")
 sessionManager.Lifetime(time.Hour) // Set the maximum session lifetime to 1 hour.
 sessionManager.Persist(true) // Persist the session after a user has closed their browser.
-sessionManager.Secure() // Set the Secure flag on the session cookie.
+sessionManager.Secure(true) // Set the Secure flag on the session cookie.
 ```
 
 A full list of available settings can be found in [the GoDoc](https://godoc.org/github.com/alexedwards/scs/#pkg-index).
@@ -110,10 +110,13 @@ The above examples use encrypted cookies to store session data, but SCS also sup
 
 | Package                                                                               |                                                                                   |
 |:------------------------------------------------------------------------------------- |-----------------------------------------------------------------------------------|
-| [stores/memstore](https://godoc.org/github.com/alexedwards/scs/stores/memstore)       | In-memory session store                                                         |
-| [stores/cookiestore](https://godoc.org/github.com/alexedwards/scs/stores/cookiestore) | Encrypted-cookie based session store             |
-| [stores/pgstore](https://godoc.org/github.com/alexedwards/scs/stores/pgstore)         | PostgreSQL based storage eninge                                                   |
-| [stores/mysqlstore](https://godoc.org/github.com/alexedwards/scs/stores/mysqlstore)   | MySQL based session store                        |
-| [stores/redisstore](https://godoc.org/github.com/alexedwards/scs/stores/redisstore)   | Redis based session store                        |
-| [stores/boltstore](https://godoc.org/github.com/alexedwards/scs/stores/boltstore)     | BoltDB based session store                       |
+| [stores/boltstore](https://godoc.org/github.com/alexedwards/scs/stores/boltstore)     | BoltDB-based session store                       |
 | [stores/buntstore](https://godoc.org/github.com/alexedwards/scs/stores/buntstore)     | BuntDB based session store                       |
+| [stores/cookiestore](https://godoc.org/github.com/alexedwards/scs/stores/cookiestore) | Encrypted-cookie session store             |
+| [stores/dynamostore](https://godoc.org/github.com/alexedwards/scs/stores/dynamostore) | DynamoDB-based session store                                                         |
+| [stores/memstore](https://godoc.org/github.com/alexedwards/scs/stores/memstore)       | In-memory session store                                                         |
+| [stores/mysqlstore](https://godoc.org/github.com/alexedwards/scs/stores/mysqlstore)   | MySQL-based session store                        |
+| [stores/pgstore](https://godoc.org/github.com/alexedwards/scs/stores/pgstore)         | PostgreSQL-based storage eninge                                                   |
+| [stores/qlstore](https://godoc.org/github.com/alexedwards/scs/stores/qlstore)         | QL-based session store                        |
+| [stores/redisstore](https://godoc.org/github.com/alexedwards/scs/stores/redisstore)   | Redis-based session store                        |
+

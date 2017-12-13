@@ -25,7 +25,7 @@ var errTypeAssertionFailed = errors.New("type assertion failed: could not conver
 // MemStore represents the currently configured session session store. It is essentially
 // a wrapper around a go-cache instance (see https://github.com/patrickmn/go-cache).
 type MemStore struct {
-	*cache.Cache
+	cache *cache.Cache
 }
 
 // New returns a new MemStore instance.
@@ -42,7 +42,7 @@ func New(cleanupInterval time.Duration) *MemStore {
 // Find returns the data for a given session token from the MemStore instance. If the session
 // token is not found or is expired, the returned exists flag will be set to false.
 func (m *MemStore) Find(token string) (b []byte, exists bool, err error) {
-	v, exists := m.Cache.Get(token)
+	v, exists := m.cache.Get(token)
 	if exists == false {
 		return nil, exists, nil
 	}
@@ -58,12 +58,12 @@ func (m *MemStore) Find(token string) (b []byte, exists bool, err error) {
 // Save adds a session token and data to the MemStore instance with the given expiry time.
 // If the session token already exists then the data and expiry time are updated.
 func (m *MemStore) Save(token string, b []byte, expiry time.Time) error {
-	m.Cache.Set(token, b, expiry.Sub(time.Now()))
+	m.cache.Set(token, b, expiry.Sub(time.Now()))
 	return nil
 }
 
 // Delete removes a session token and corresponding data from the MemStore instance.
 func (m *MemStore) Delete(token string) error {
-	m.Cache.Delete(token)
+	m.cache.Delete(token)
 	return nil
 }

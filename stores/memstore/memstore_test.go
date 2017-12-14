@@ -9,7 +9,7 @@ import (
 
 func TestFind(t *testing.T) {
 	m := New(time.Minute)
-	m.Cache.Set("session_token", []byte("encoded_data"), 0)
+	m.cache.Set("session_token", []byte("encoded_data"), 0)
 
 	b, found, err := m.Find("session_token")
 	if err != nil {
@@ -37,7 +37,7 @@ func TestFindMissing(t *testing.T) {
 
 func TestFindBadData(t *testing.T) {
 	m := New(time.Minute)
-	m.Cache.Set("session_token", "not_a_byte_slice", 0)
+	m.cache.Set("session_token", "not_a_byte_slice", 0)
 
 	_, _, err := m.Find("session_token")
 	if err != errTypeAssertionFailed {
@@ -53,7 +53,7 @@ func TestSaveNew(t *testing.T) {
 		t.Fatalf("got %v: expected %v", err, nil)
 	}
 
-	v, found := m.Cache.Get("session_token")
+	v, found := m.cache.Get("session_token")
 	if found != true {
 		t.Fatalf("got %v: expected %v", found, true)
 	}
@@ -68,7 +68,7 @@ func TestSaveNew(t *testing.T) {
 
 func TestSaveUpdated(t *testing.T) {
 	m := New(time.Minute)
-	m.Cache.Set("session_token", []byte("encoded_data"), 0)
+	m.cache.Set("session_token", []byte("encoded_data"), 0)
 
 	err := m.Save("session_token", []byte("encoded_data"), time.Now().Add(time.Minute))
 	if err != nil {
@@ -80,7 +80,7 @@ func TestSaveUpdated(t *testing.T) {
 		t.Fatalf("got %v: expected %v", err, nil)
 	}
 
-	v, _ := m.Cache.Get("session_token")
+	v, _ := m.cache.Get("session_token")
 	b, ok := v.([]byte)
 	if ok == false {
 		t.Fatal("could not convert to []byte")
@@ -112,14 +112,14 @@ func TestExpiry(t *testing.T) {
 
 func TestDelete(t *testing.T) {
 	m := New(time.Minute)
-	m.Cache.Set("session_token", []byte("encoded_data"), 0)
+	m.cache.Set("session_token", []byte("encoded_data"), 0)
 
 	err := m.Delete("session_token")
 	if err != nil {
 		t.Fatalf("got %v: expected %v", err, nil)
 	}
 
-	_, found := m.Cache.Get("session_token")
+	_, found := m.cache.Get("session_token")
 	if found != false {
 		t.Fatalf("got %v: expected %v", found, false)
 	}

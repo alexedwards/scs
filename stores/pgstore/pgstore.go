@@ -26,7 +26,7 @@ import (
 
 // PGStore represents the currently configured session session store.
 type PGStore struct {
-	*sql.DB
+	db          *sql.DB
 	stopCleanup chan bool
 }
 
@@ -36,7 +36,7 @@ type PGStore struct {
 // is removed by the background cleanup goroutine. Setting it to 0 prevents
 // the cleanup goroutine from running (i.e. expired sessions will not be removed).
 func New(db *sql.DB, cleanupInterval time.Duration) *PGStore {
-	p := &PGStore{DB: db}
+	p := &PGStore{db: db}
 	if cleanupInterval > 0 {
 		go p.startCleanup(cleanupInterval)
 	}
@@ -47,7 +47,7 @@ func New(db *sql.DB, cleanupInterval time.Duration) *PGStore {
 // the session token is not found or is expired, the returned exists flag will
 // be set to false.
 func (p *PGStore) Find(token string) (b []byte, exists bool, err error) {
-	row := p.DB.QueryRow("SELECT data FROM sessions WHERE token = $1 AND current_timestamp < expiry", token)
+	row := p.db.QueryRow("SELECT data FROM sessions WHERE token = $1 AND current_timestamp < expiry", token)
 	err = row.Scan(&b)
 	if err == sql.ErrNoRows {
 		return nil, false, nil
@@ -60,7 +60,7 @@ func (p *PGStore) Find(token string) (b []byte, exists bool, err error) {
 // Save adds a session token and data to the PGStore instance with the given expiry time.
 // If the session token already exists then the data and expiry time are updated.
 func (p *PGStore) Save(token string, b []byte, expiry time.Time) error {
-	_, err := p.DB.Exec("INSERT INTO sessions (token, data, expiry) VALUES ($1, $2, $3) ON CONFLICT (token) DO UPDATE SET data = EXCLUDED.data, expiry = EXCLUDED.expiry", token, b, expiry)
+	_, err := p.db.Exec("INSERT INTO sessions (token, data, expiry) VALUES ($1, $2, $3) ON CONFLICT (token) DO UPDATE SET data = EXCLUDED.data, expiry = EXCLUDED.expiry", token, b, expiry)
 	if err != nil {
 		return err
 	}
@@ -69,7 +69,7 @@ func (p *PGStore) Save(token string, b []byte, expiry time.Time) error {
 
 // Delete removes a session token and corresponding data from the PGStore instance.
 func (p *PGStore) Delete(token string) error {
-	_, err := p.DB.Exec("DELETE FROM sessions WHERE token = $1", token)
+	_, err := p.db.Exec("DELETE FROM sessions WHERE token = $1", token)
 	return err
 }
 
@@ -107,6 +107,6 @@ func (p *PGStore) StopCleanup() {
 }
 
 func (p *PGStore) deleteExpired() error {
-	_, err := p.DB.Exec("DELETE FROM sessions WHERE expiry < current_timestamp")
+	_, err := p.db.Exec("DELETE FROM sessions WHERE expiry < current_timestamp")
 	return err
 }

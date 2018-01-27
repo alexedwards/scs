@@ -147,3 +147,47 @@ func TestName(t *testing.T) {
 		t.Fatalf("got %q: expected %q", body, "lorem ipsum")
 	}
 }
+
+func TestInterfaceGetters(t *testing.T) {
+	manager := NewManager(newMockStore())
+	manager.Domain("example.org")
+	manager.HttpOnly(false)
+	manager.IdleTimeout(time.Hour)
+	manager.Lifetime(time.Hour)
+	manager.Name("foo")
+	manager.Path("/foo")
+	manager.Persist(true)
+	manager.Secure(true)
+
+	if manager.Opts().Domain() != "example.org" {
+		t.Fatalf("got %q: expected prefix %q", manager.Opts().Domain(), "example.org")
+	}
+
+	if manager.Opts().HttpOnly() != false {
+		t.Fatalf("got %q: expected prefix %q", manager.Opts().HttpOnly(), false)
+	}
+
+	if manager.Opts().IdleTimeout() != time.Hour {
+		t.Fatalf("got %q: expected prefix %q", manager.Opts().IdleTimeout(), time.Hour)
+	}
+
+	if manager.Opts().Lifetime() != time.Hour {
+		t.Fatalf("got %q: expected prefix %q", manager.Opts().Lifetime(), time.Hour)
+	}
+
+	if manager.Opts().Name() != "foo" {
+		t.Fatalf("got %q: expected prefix %q", manager.Opts().Name(), "foo")
+	}
+
+	if manager.Opts().Path() != "/foo" {
+		t.Fatalf("got %q: expected prefix %q", manager.Opts().Path(), "/foo")
+	}
+
+	if manager.Opts().Persist() != true {
+		t.Fatalf("got %q: expected prefix %q", manager.Opts().Persist(), true)
+	}
+
+	if manager.Opts().Secure() != true {
+		t.Fatalf("got %q: expected prefix %q", manager.Opts().Secure(), true)
+	}
+}

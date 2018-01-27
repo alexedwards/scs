@@ -18,3 +18,46 @@ type options struct {
 	persist     bool
 	secure      bool
 }
+
+type Options interface {
+	Domain() string
+	HttpOnly() bool
+	IdleTimeout() time.Duration
+	Lifetime() time.Duration
+	Name() string
+	Path() string
+	Persist() bool
+	Secure() bool
+}
+
+func (o *options) Domain() string {
+	return o.domain
+}
+
+func (o *options) HttpOnly() bool {
+	return o.httpOnly
+}
+
+func (o *options) IdleTimeout() time.Duration {
+	return o.idleTimeout
+}
+
+func (o *options) Lifetime() time.Duration {
+	return o.lifetime
+}
+
+func (o *options) Name() string {
+	return o.name
+}
+
+func (o *options) Path() string {
+	return o.path
+}
+
+func (o *options) Persist() bool {
+	return o.persist
+}
+
+func (o *options) Secure() bool {
+	return o.secure
+}

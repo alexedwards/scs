@@ -34,6 +34,11 @@ func NewManager(store Store) *Manager {
 	}
 }
 
+// Returns an interface for Options to allow access to private opts properties.
+func (m *Manager) Opts() Options {
+	return m.opts
+}
+
 // Domain sets the 'Domain' attribute on the session cookie. By default it will
 // be set to the domain name that the cookie was issued from.
 func (m *Manager) Domain(s string) {

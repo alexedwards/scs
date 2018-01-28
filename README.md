@@ -120,3 +120,6 @@ The above examples use encrypted cookies to store session data, but SCS also sup
 | [stores/qlstore](https://godoc.org/github.com/alexedwards/scs/stores/qlstore)         | QL-based session store                        |
 | [stores/redisstore](https://godoc.org/github.com/alexedwards/scs/stores/redisstore)   | Redis-based session store                        |
 
+### Examples
+
+* [RequireLogin middleware](https://gist.github.com/alexedwards/6eac2f19b9b5c064ca90f756c32f94cc)

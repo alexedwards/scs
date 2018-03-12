@@ -3,7 +3,7 @@
 
 SCS is a fast and lightweight HTTP session manager for Go. It features:
 
-* Built-in PostgreSQL, MySQL, Redis, encrypted cookie and in-memory storage engines. Custom storage engines are also supported.
+* Built-in PostgreSQL, MySQL, Redis, Memcached, encrypted cookie and in-memory storage engines. Custom storage engines are also supported.
 * Supports OWASP good-practices, including absolute and idle session timeouts and easy regeneration of session tokens.
 * Fast and very memory-efficient performance.
 * Type-safe and sensible API for managing session data. Safe for concurrent use.
@@ -110,15 +110,16 @@ The above examples use encrypted cookies to store session data, but SCS also sup
 
 | Package                                                                               |                                                                                   |
 |:------------------------------------------------------------------------------------- |-----------------------------------------------------------------------------------|
-| [stores/boltstore](https://godoc.org/github.com/alexedwards/scs/stores/boltstore)     | BoltDB-based session store                       |
-| [stores/buntstore](https://godoc.org/github.com/alexedwards/scs/stores/buntstore)     | BuntDB based session store                       |
-| [stores/cookiestore](https://godoc.org/github.com/alexedwards/scs/stores/cookiestore) | Encrypted-cookie session store             |
-| [stores/dynamostore](https://godoc.org/github.com/alexedwards/scs/stores/dynamostore) | DynamoDB-based session store                                                         |
-| [stores/memstore](https://godoc.org/github.com/alexedwards/scs/stores/memstore)       | In-memory session store                                                         |
-| [stores/mysqlstore](https://godoc.org/github.com/alexedwards/scs/stores/mysqlstore)   | MySQL-based session store                        |
+| [stores/boltstore](https://godoc.org/github.com/alexedwards/scs/stores/boltstore)     | BoltDB-based session store                                                        |
+| [stores/buntstore](https://godoc.org/github.com/alexedwards/scs/stores/buntstore)     | BuntDB based session store                                                        |
+| [stores/cookiestore](https://godoc.org/github.com/alexedwards/scs/stores/cookiestore) | Encrypted-cookie session store                                                    |
+| [stores/dynamostore](https://godoc.org/github.com/alexedwards/scs/stores/dynamostore) | DynamoDB-based session store                                                      |
+| [stores/memstore](https://godoc.org/github.com/alexedwards/scs/stores/memstore)       | In-memory session store                                                           |
+| [stores/mysqlstore](https://godoc.org/github.com/alexedwards/scs/stores/mysqlstore)   | MySQL-based session store                                                         |
 | [stores/pgstore](https://godoc.org/github.com/alexedwards/scs/stores/pgstore)         | PostgreSQL-based storage eninge                                                   |
-| [stores/qlstore](https://godoc.org/github.com/alexedwards/scs/stores/qlstore)         | QL-based session store                        |
-| [stores/redisstore](https://godoc.org/github.com/alexedwards/scs/stores/redisstore)   | Redis-based session store                        |
+| [stores/qlstore](https://godoc.org/github.com/alexedwards/scs/stores/qlstore)         | QL-based session store                                                            |
+| [stores/redisstore](https://godoc.org/github.com/alexedwards/scs/stores/redisstore)   | Redis-based session store                                                         |
+| [stores/memcached](https://godoc.org/github.com/alexedwards/scs/stores/memcachedstore)| Memcached-based session store                                                     |
 
 ### Examples
 

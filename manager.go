@@ -2,6 +2,7 @@ package scs
 
 import (
 	"context"
+	"fmt"
 	"log"
 	"net/http"
 	"time"
@@ -102,6 +103,25 @@ func (m *Manager) Load(r *http.Request) *Session {
 	return load(r, m.store, m.opts)
 }
 
+// LoadFromContext returns session data from a given context.Context object.
+func (m *Manager) LoadFromContext(ctx context.Context) *Session {
+	val := ctx.Value(sessionName(m.opts.name))
+	if val == nil {
+		return &Session{loadErr: fmt.Errorf("scs: value %s not in context", m.opts.name)}
+	}
+
+	s, ok := val.(*Session)
+	if !ok {
+		return &Session{loadErr: fmt.Errorf("scs: can not assert %T to *Session", val)}
+	}
+	return s
+}
+
+// AddToContext adds session data to a given context.Context object.
+func (m *Manager) AddToContext(ctx context.Context, session *Session) context.Context {
+	return context.WithValue(ctx, sessionName(m.opts.name), session)
+}
+
 func NewCookieManager(key string) *Manager {
 	store := cookiestore.New([]byte(key))
 	return NewManager(store)
@@ -124,7 +144,7 @@ func (m *Manager) Use(next http.Handler) http.Handler {
 			}
 		}
 
-		ctx := context.WithValue(r.Context(), sessionName(m.opts.name), session)
+		ctx := m.AddToContext(r.Context(), session)
 		next.ServeHTTP(w, r.WithContext(ctx))
 	})
 }

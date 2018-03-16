@@ -719,12 +719,16 @@ func (s *Session) Destroy(w http.ResponseWriter) error {
 	return nil
 }
 
+// Touch writes the session data in order to update the expiry time when an
+// Idle Timeout has been set. If IdleTimeout is not > 0, then Touch is a no-op.
 func (s *Session) Touch(w http.ResponseWriter) error {
 	if s.loadErr != nil {
 		return s.loadErr
 	}
-
-	return s.write(w)
+	if s.opts.idleTimeout > 0 {
+		return s.write(w)
+	}
+	return nil
 }
 
 func (s *Session) get(key string) (interface{}, bool, error) {

@@ -135,13 +135,11 @@ func (m *Manager) Use(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		session := m.Load(r)
 
-		if m.opts.idleTimeout > 0 {
-			err := session.Touch(w)
-			if err != nil {
-				log.Println(err)
-				http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
-				return
-			}
+		err := session.Touch(w)
+		if err != nil {
+			log.Println(err)
+			http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
+			return
 		}
 
 		ctx := m.AddToContext(r.Context(), session)

@@ -1,7 +1,9 @@
 package memcachedstore
 
 import (
+	"bytes"
 	"os"
+	"reflect"
 	"testing"
 	"time"
 
@@ -9,64 +11,158 @@ import (
 )
 
 func TestFind(t *testing.T) {
-	store := New(memcache.New(os.Getenv("SESSION_MEMCACHED_TEST_ADDR")))
+	mc := memcache.New(os.Getenv("SESSION_MEMCACHED_TEST_ADDR"))
 
-	store.Save("session_token", []byte("encoded_data"), time.Now().AddDate(0, 0, 5))
-	val, found, err := store.Find("session_token")
-
-	if string(val) != "encoded_data" {
-		t.Errorf("Expected \"encoded_data\", got %q", val)
-	}
-
-	if !found {
-		t.Errorf("Expected found to be true, but got %t", found)
-	}
-
+	err := mc.DeleteAll()
 	if err != nil {
-		t.Errorf("Encountered error %+v", err)
+		t.Fatal(err)
 	}
 
-	store.Delete("session_token")
+	mc.Set(&memcache.Item{
+		Key:        Prefix + "session_token",
+		Value:      []byte("encoded_data"),
+		Expiration: 60,
+	})
+
+	m := New(mc)
+
+	b, found, err := m.Find("session_token")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if found != true {
+		t.Fatalf("got %v: expected %v", found, true)
+	}
+	if bytes.Equal(b, []byte("encoded_data")) == false {
+		t.Fatalf("got %v: expected %v", b, []byte("encoded_data"))
+	}
 }
 
-func TestDelete(t *testing.T) {
-	store := New(memcache.New(os.Getenv("SESSION_MEMCACHED_TEST_ADDR")))
+func TestFindMissing(t *testing.T) {
+	mc := memcache.New(os.Getenv("SESSION_MEMCACHED_TEST_ADDR"))
 
-	store.Save("session_token", []byte("encoded_data"), time.Now().AddDate(0, 2, 0))
-	store.Delete("session_token")
-	val, found, err := store.Find("session_token")
-
-	if val != nil {
-		t.Errorf("Expected nil, got %q", val)
+	err := mc.DeleteAll()
+	if err != nil {
+		t.Fatal(err)
 	}
 
-	if found {
-		t.Errorf("Expected found to be false, but got %t", found)
+	m := New(mc)
+
+	_, found, err := m.Find("missing_session_token")
+	if err != nil {
+		t.Fatalf("got %v: expected %v", err, nil)
+	}
+	if found != false {
+		t.Fatalf("got %v: expected %v", found, false)
+	}
+}
+
+func TestSaveNew(t *testing.T) {
+	mc := memcache.New(os.Getenv("SESSION_MEMCACHED_TEST_ADDR"))
+
+	err := mc.DeleteAll()
+	if err != nil {
+		t.Fatal(err)
 	}
 
-	if err != memcache.ErrCacheMiss {
-		t.Errorf("Delete did not cause cache miss error: %+v", err)
+	m := New(mc)
+
+	err = m.Save("session_token", []byte("encoded_data"), time.Now().Add(time.Minute))
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	item, err := mc.Get(Prefix + "session_token")
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	if reflect.DeepEqual(item.Value, []byte("encoded_data")) == false {
+		t.Fatalf("got %v: expected %v", item.Value, []byte("encoded_data"))
+	}
+}
+
+func TestSaveUpdated(t *testing.T) {
+	mc := memcache.New(os.Getenv("SESSION_MEMCACHED_TEST_ADDR"))
+
+	err := mc.DeleteAll()
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	mc.Set(&memcache.Item{
+		Key:        Prefix + "session_token",
+		Value:      []byte("encoded_data"),
+		Expiration: 60,
+	})
+
+	m := New(mc)
+
+	err = m.Save("session_token", []byte("new_encoded_data"), time.Now().Add(time.Minute))
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	item, err := mc.Get(Prefix + "session_token")
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	if reflect.DeepEqual(item.Value, []byte("new_encoded_data")) == false {
+		t.Fatalf("got %v: expected %v", item.Value, []byte("new_encoded_data"))
 	}
 }
 
 func TestExpiry(t *testing.T) {
-	store := New(memcache.New(os.Getenv("SESSION_MEMCACHED_TEST_ADDR")))
+	mc := memcache.New(os.Getenv("SESSION_MEMCACHED_TEST_ADDR"))
 
-	exp := time.Duration(time.Second * 2)	// memcached is fickle if you test at the bare minimum of 1 second
-
-	store.Save("session_token", []byte("encoded_data"), time.Now().Add(exp))
-	time.Sleep(exp)
-	val, found, err := store.Find("session_token")
-
-	if val != nil {
-		t.Errorf("Expected nil, got %q", val)
+	err := mc.DeleteAll()
+	if err != nil {
+		t.Fatal(err)
 	}
 
-	if found {
-		t.Errorf("Expected found to be false, but got %t", found)
+	m := New(mc)
+
+	err = m.Save("session_token", []byte("encoded_data"), time.Now().Add(2*time.Second))
+	if err != nil {
+		t.Fatal(err)
 	}
 
+	_, found, _ := m.Find("session_token")
+	if found != true {
+		t.Fatalf("got %v: expected %v", found, true)
+	}
+
+	time.Sleep(2 * time.Second)
+	_, found, _ = m.Find("session_token")
+	if found != false {
+		t.Fatalf("got %v: expected %v", found, false)
+	}
+}
+
+func TestDelete(t *testing.T) {
+	mc := memcache.New(os.Getenv("SESSION_MEMCACHED_TEST_ADDR"))
+
+	err := mc.DeleteAll()
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	mc.Set(&memcache.Item{
+		Key:        Prefix + "session_token",
+		Value:      []byte("encoded_data"),
+		Expiration: 60,
+	})
+
+	m := New(mc)
+
+	err = m.Delete("session_token")
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	_, err = mc.Get(Prefix + "session_token")
 	if err != memcache.ErrCacheMiss {
-		t.Errorf("Expiration did not cause cache miss error: %+v", err)
+		t.Fatalf("got %v: expected %v", err, memcache.ErrCacheMiss)
 	}
 }

@@ -20,12 +20,15 @@ func New(client *memcache.Client) *MemcachedStore {
 	return &MemcachedStore{client}
 }
 
-// Find returns the data for a given session token from the MemcachedStore instance.
-// If the session token is not found or is expired, the returned exists flag will be set to false.
+// Find return the data for a session token from the MemcachedStore instance.
+// If the session token is not found or is expired, the found return value
+// is false (and the err return value is nil).
 func (m *MemcachedStore) Find(token string) (b []byte, found bool, err error) {
 	item, err := m.client.Get(Prefix + token)
-
 	if err != nil {
+		if err == memcache.ErrCacheMiss {
+			return nil, false, nil
+		}
 		return nil, false, err
 	}
 

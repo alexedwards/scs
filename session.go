@@ -156,6 +156,13 @@ func (s *Session) write(w http.ResponseWriter) error {
 	return nil
 }
 
+// Token returns the token value that represents given session data.
+// NOTE: The method returns the empty string if session hasn't yet been written to the store.
+// If you're using the CookieStore this token will change each time the session is modified.
+func (s *Session) Token() string {
+	return s.token
+}
+
 // GetString returns the string value for a given key from the session data. The
 // zero value for a string ("") is returned if the key does not exist. An ErrTypeAssertionFailed
 // error is returned if the value could not be type asserted or converted to a

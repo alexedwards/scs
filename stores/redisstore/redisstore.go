@@ -5,13 +5,13 @@
 // the package to avoid compatibility problems in the future.
 //
 // The redisstore package relies on the the popular Redigo Redis client
-// (https://github.com/garyburd/redigo).
+// (github.com/gomodule/redigo/redis).
 package redisstore
 
 import (
 	"time"
 
-	"github.com/garyburd/redigo/redis"
+	"github.com/gomodule/redigo/redis"
 )
 
 // Prefix controls the Redis key prefix. You should only need to change this if there is

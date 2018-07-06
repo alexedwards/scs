@@ -121,6 +121,12 @@ The above examples use encrypted cookies to store session data, but SCS also sup
 | [stores/redisstore](https://godoc.org/github.com/alexedwards/scs/stores/redisstore)   | Redis-based session store                                                         |
 | [stores/memcached](https://godoc.org/github.com/alexedwards/scs/stores/memcachedstore)| Memcached-based session store                                                     |
 
+### Compatibility
+
+SCS is designed to be compatible with Go's `net/http` package and the `http.Handler` interface.
+
+If you're using the [Echo](https://echo.labstack.com/) framework, the [official session middleware](https://echo.labstack.com/middleware/session) for Echo is likely to be a better fit for your application.
+
 ### Examples
 
 * [RequireLogin middleware](https://gist.github.com/alexedwards/6eac2f19b9b5c064ca90f756c32f94cc)

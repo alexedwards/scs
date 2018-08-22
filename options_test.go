@@ -11,16 +11,19 @@ func TestCookieOptions(t *testing.T) {
 
 	_, _, cookie := testRequest(t, testPutString(manager), "")
 	if strings.Contains(cookie, "Path=/") == false {
-		t.Fatalf("got %q: expected to contain %q", cookie, "Path=/")
+		t.Errorf("got %q: expected to contain %q", cookie, "Path=/")
 	}
 	if strings.Contains(cookie, "Domain=") == true {
-		t.Fatalf("got %q: expected to not contain %q", cookie, "Domain=")
+		t.Errorf("got %q: expected to not contain %q", cookie, "Domain=")
 	}
 	if strings.Contains(cookie, "Secure") == true {
-		t.Fatalf("got %q: expected to not contain %q", cookie, "Secure")
+		t.Errorf("got %q: expected to not contain %q", cookie, "Secure")
 	}
 	if strings.Contains(cookie, "HttpOnly") == false {
-		t.Fatalf("got %q: expected to contain %q", cookie, "HttpOnly")
+		t.Errorf("got %q: expected to contain %q", cookie, "HttpOnly")
+	}
+	if strings.Contains(cookie, "SameSite") == true {
+		t.Errorf("got %q: expected to not contain %q", cookie, "SameSite")
 	}
 
 	manager = NewManager(newMockStore())
@@ -30,25 +33,29 @@ func TestCookieOptions(t *testing.T) {
 	manager.HttpOnly(false)
 	manager.Lifetime(time.Hour)
 	manager.Persist(true)
+	manager.SameSite("Lax")
 
 	_, _, cookie = testRequest(t, testPutString(manager), "")
 	if strings.Contains(cookie, "Path=/foo") == false {
-		t.Fatalf("got %q: expected to contain %q", cookie, "Path=/foo")
+		t.Errorf("got %q: expected to contain %q", cookie, "Path=/foo")
 	}
 	if strings.Contains(cookie, "Domain=example.org") == false {
-		t.Fatalf("got %q: expected to contain %q", cookie, "Domain=example.org")
+		t.Errorf("got %q: expected to contain %q", cookie, "Domain=example.org")
 	}
 	if strings.Contains(cookie, "Secure") == false {
-		t.Fatalf("got %q: expected to contain %q", cookie, "Secure")
+		t.Errorf("got %q: expected to contain %q", cookie, "Secure")
 	}
 	if strings.Contains(cookie, "HttpOnly") == true {
-		t.Fatalf("got %q: expected to not contain %q", cookie, "HttpOnly")
+		t.Errorf("got %q: expected to not contain %q", cookie, "HttpOnly")
 	}
 	if strings.Contains(cookie, "Max-Age=3600") == false {
-		t.Fatalf("got %q: expected to contain %q:", cookie, "Max-Age=86400")
+		t.Errorf("got %q: expected to contain %q:", cookie, "Max-Age=86400")
 	}
 	if strings.Contains(cookie, "Expires=") == false {
-		t.Fatalf("got %q: expected to contain %q:", cookie, "Expires")
+		t.Errorf("got %q: expected to contain %q:", cookie, "Expires")
+	}
+	if strings.Contains(cookie, "SameSite=Lax") == false {
+		t.Errorf("got %q: expected to contain %q", cookie, "SameSite=Lax")
 	}
 
 	manager = NewManager(newMockStore())
@@ -56,10 +63,25 @@ func TestCookieOptions(t *testing.T) {
 
 	_, _, cookie = testRequest(t, testPutString(manager), "")
 	if strings.Contains(cookie, "Max-Age=") == true {
-		t.Fatalf("got %q: expected not to contain %q:", cookie, "Max-Age=")
+		t.Errorf("got %q: expected not to contain %q:", cookie, "Max-Age=")
 	}
 	if strings.Contains(cookie, "Expires=") == true {
-		t.Fatalf("got %q: expected not to contain %q:", cookie, "Expires")
+		t.Errorf("got %q: expected not to contain %q:", cookie, "Expires")
+	}
+
+	manager = NewManager(newMockStore())
+	manager.SameSite("Strict")
+	_, _, cookie = testRequest(t, testPutString(manager), "")
+	if strings.Contains(cookie, "SameSite=Strict") == false {
+		t.Errorf("got %q: expected to contain %q", cookie, "SameSite=Strict")
+	}
+
+	manager = NewManager(newMockStore())
+	// empty string disables
+	manager.SameSite("")
+	_, _, cookie = testRequest(t, testPutString(manager), "")
+	if strings.Contains(cookie, "SameSite") == true {
+		t.Errorf("got %q: expected to not contain %q", cookie, "SameSite")
 	}
 }
 

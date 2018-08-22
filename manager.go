@@ -27,6 +27,7 @@ func NewManager(store Store) *Manager {
 		path:        "/",
 		persist:     false,
 		secure:      false,
+		sameSite:    "",
 	}
 
 	return &Manager{
@@ -96,6 +97,15 @@ func (m *Manager) Persist(b bool) {
 // over HTTPS in production environments.
 func (m *Manager) Secure(b bool) {
 	m.opts.secure = b
+}
+
+// SameSite sets the 'SameSite' attribute on the session cookie. The default value
+// is nil; setting no SameSite attribute. Allowed values are "Lax" and "Strict".
+// Note that "" (empty-string) causes SameSite to NOT be set -- don't confuse this
+// with the cookie's 'SameSite' attribute (without Lax/Strict), which would default
+// to "Strict".
+func (m *Manager) SameSite(s string) {
+	m.opts.sameSite = s
 }
 
 // Load returns the session data for the current request.

@@ -17,4 +17,5 @@ type options struct {
 	path        string
 	persist     bool
 	secure      bool
+	sameSite    string
 }

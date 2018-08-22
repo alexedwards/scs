@@ -34,6 +34,20 @@ type Session struct {
 	mu       sync.Mutex
 }
 
+// cookie wraps http.Cookie, adding SameSite support
+type cookie struct {
+	std      *http.Cookie // "stdlib cookie"
+	sameSite string
+}
+
+func (c *cookie) String() string {
+	v := c.std.String()
+	if c.sameSite != "" {
+		v = v + "; SameSite=" + c.sameSite
+	}
+	return v
+}
+
 func newSession(store Store, opts *options) *Session {
 	return &Session{
 		data:     make(map[string]interface{}),
@@ -125,18 +139,21 @@ func (s *Session) write(w http.ResponseWriter) error {
 		}
 	}
 
-	cookie := &http.Cookie{
-		Name:     s.opts.name,
-		Value:    s.token,
-		Path:     s.opts.path,
-		Domain:   s.opts.domain,
-		Secure:   s.opts.secure,
-		HttpOnly: s.opts.httpOnly,
+	cookie := &cookie{
+		std: &http.Cookie{
+			Name:     s.opts.name,
+			Value:    s.token,
+			Path:     s.opts.path,
+			Domain:   s.opts.domain,
+			Secure:   s.opts.secure,
+			HttpOnly: s.opts.httpOnly,
+		},
+		sameSite: s.opts.sameSite,
 	}
 	if s.opts.persist == true {
 		// Round up expiry time to the nearest second.
-		cookie.Expires = time.Unix(expiry.Unix()+1, 0)
-		cookie.MaxAge = int(expiry.Sub(time.Now()).Seconds() + 1)
+		cookie.std.Expires = time.Unix(expiry.Unix()+1, 0)
+		cookie.std.MaxAge = int(expiry.Sub(time.Now()).Seconds() + 1)
 	}
 
 	// Overwrite any existing cookie header for the session...
@@ -150,7 +167,7 @@ func (s *Session) write(w http.ResponseWriter) error {
 	}
 	// Or set a new one if necessary.
 	if !set {
-		http.SetCookie(w, cookie)
+		w.Header().Add("Set-Cookie", cookie.String())
 	}
 
 	return nil

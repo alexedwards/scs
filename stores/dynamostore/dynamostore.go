@@ -1,6 +1,6 @@
 // Package dynamostore is a DynamoDB-based session store for the SCS session package.
 //
-// The dynamostore package relis on the aws-sdk-go client.
+// The dynamostore package relies on the aws-sdk-go client.
 // (https://godoc.org/github.com/aws/aws-sdk-go/service/dynamodb)
 package dynamostore
 
@@ -85,7 +85,7 @@ func (d *DynamoStore) Find(token string) (b []byte, found bool, err error) {
 	return resp.Item[d.DataName()].B, true, nil
 }
 
-// Save adds a session token and data to the RedisStore instance with the given expiry time.
+// Save adds a session token and data to the DynamoStore instance with the given expiry time.
 // If the session token already exists then the data and expiry time are updated.
 func (d *DynamoStore) Save(token string, b []byte, expiry time.Time) error {
 	params := &dynamodb.PutItemInput{
@@ -112,7 +112,7 @@ func (d *DynamoStore) Save(token string, b []byte, expiry time.Time) error {
 	return err
 }
 
-// Delete removes a session token and corresponding data from the ResisStore instance.
+// Delete removes a session token and corresponding data from the DynamoStore instance.
 func (d *DynamoStore) Delete(token string) error {
 	params := &dynamodb.DeleteItemInput{
 		TableName: aws.String(d.TableName()),

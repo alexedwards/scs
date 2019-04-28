@@ -86,18 +86,18 @@ However, there may be occasions when your use of a session store instance is tra
 
 ```go
 func TestExample(t *testing.T) {
-    db, err := sql.Open("mysql", "user:pass@/db?parseTime=true")
-    if err != nil {
-        t.Fatal(err)
-    }
-    defer db.Close()
+	db, err := sql.Open("mysql", "user:pass@/db?parseTime=true")
+	if err != nil {
+	    t.Fatal(err)
+	}
+	defer db.Close()
 
-    store := mysqlstore.New(db)
-    defer store.StopCleanup()
+	store := mysqlstore.New(db)
+	defer store.StopCleanup()
 
-    session = scs.NewSession()
+	session = scs.NewSession()
 	session.Store = store
 
-    // Run test...
+	// Run test...
 }
 ```

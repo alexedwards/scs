@@ -63,12 +63,12 @@ However, there may be occasions when your use of a session store instance is tra
 
 ```go
 func TestExample(t *testing.T) {
-    store := memstore.New()
-    defer store.StopCleanup()
+	store := memstore.New()
+	defer store.StopCleanup()
 
-    session = scs.NewSession()
+	session = scs.NewSession()
 	session.Store = store
 
-    // Run test...
+	// Run test...
 }
 ```

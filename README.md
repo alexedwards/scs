@@ -37,25 +37,25 @@ import (
 var session *scs.Session
 
 func main() {
-    // Initialize the session manager.
+	// Initialize the session manager.
 	session = scs.NewSession()
 
 	mux := http.NewServeMux()
 	mux.HandleFunc("/put", putHandler)
 	mux.HandleFunc("/get", getHandler)
 
-    // Wrap your handlers with the LoadAndSave() middleware.
+	// Wrap your handlers with the LoadAndSave() middleware.
 	http.ListenAndServe(":4000", session.LoadAndSave(mux))
 }
 
 func putHandler(w http.ResponseWriter, r *http.Request) {
-    // Store a new key and value in the session data.
+	// Store a new key and value in the session data.
 	session.Put(r.Context(), "message", "Hello from a session!")
 }
 
 func getHandler(w http.ResponseWriter, r *http.Request) {
-    // Use the GetString helper to retrieve the string value associated with a
-    // key. The zero value is returned if the key does not exist.
+	// Use the GetString helper to retrieve the string value associated with a
+	// key. The zero value is returned if the key does not exist.
 	msg := session.GetString(r.Context(), "message")
 	io.WriteString(w, msg)
 }

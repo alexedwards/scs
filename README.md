@@ -1,132 +1,314 @@
-# SCS: A HTTP Session Manager
-[![godoc](https://godoc.org/github.com/alexedwards/scs?status.png)](https://godoc.org/github.com/alexedwards/scs) [![go report card](https://goreportcard.com/badge/github.com/alexedwards/scs)](https://goreportcard.com/report/github.com/alexedwards/scs)
+# SCS: HTTP Session Management for Go
 
-SCS is a fast and lightweight HTTP session manager for Go. It features:
+* [Installation](#installation)
+* [The Basics](#the-basics)
+* [Configuring Session Behavior](#configuring-session-behavior)
+* [Working with Session Data](#working-with-session-data)
+* [Loading and Saving Sessions](#loading-and-saving-sessions)
+* [Configuring the Session Store](#configuring-the-session-store)
+    * [Using with PostgreSQL](#using-with-postgresql)
+    * [Using with MySQL](#using-with-mysql)
+    * [Using Custom Session Stores](#using-custom-session-stores)
+* [Preventing Session Fixation](#preventing-session-fixation)
+* [Multiple Sessions per Request](#multiple-sessions-per-request)
+* [Compatibility](#compatibility)
 
-* Built-in PostgreSQL, MySQL, Redis, Memcached, encrypted cookie and in-memory storage engines. Custom storage engines are also supported.
-* Supports OWASP good-practices, including absolute and idle session timeouts and easy regeneration of session tokens.
-* Fast and very memory-efficient performance.
-* Type-safe and sensible API for managing session data. Safe for concurrent use.
-* Automatic saving of session data.
 
-**Recent changes:** Release v1.0.0 made breaking changes to the package layout and API. If you need the old version please vendor [release v0.1.1](https://github.com/alexedwards/scs/releases/tag/v0.1.1).
+## Installation
 
-## Installation &amp; Usage
-
-Install with `go get`:
-
-```sh
-$ go get github.com/alexedwards/scs
+```
+$ go get github.com/alexedwards/scs/v2
 ```
 
-### Basic use
+## The Basics
+
+SCS implements a session management pattern following the [OWASP security guidelines](https://github.com/OWASP/CheatSheetSeries/blob/master/cheatsheets/Session_Management_Cheat_Sheet.md). Session data is stored on the server, and a randomly-generated unique session token (or *session ID*) is communicated to and from the client in a session cookie.
 
 ```go
 package main
 
 import (
-    "io"
-    "net/http"
+	"io"
+	"net/http"
 
-    "github.com/alexedwards/scs"
+	"github.com/alexedwards/scs/v2"
 )
 
-// Initialize a new encrypted-cookie based session manager and store it in a global
-// variable. In a real application, you might inject the session manager as a
-// dependency to your handlers instead. The parameter to the NewCookieManager()
-// function is a 32 character long random key, which is used to encrypt and
-// authenticate the session cookies.
-var sessionManager = scs.NewCookieManager("u46IpCV9y5Vlur8YvODJEhgOY8m9JVE4")
+var session *scs.Session
 
 func main() {
-    // Set up your HTTP handlers in the normal way.
-    mux := http.NewServeMux()
-    mux.HandleFunc("/put", putHandler)
-    mux.HandleFunc("/get", getHandler)
+    // Initialize the session manager.
+	session = scs.NewSession()
 
-    // Wrap your handlers with the session manager middleware.
-    http.ListenAndServe(":4000", sessionManager.Use(mux))
+	mux := http.NewServeMux()
+	mux.HandleFunc("/put", putHandler)
+	mux.HandleFunc("/get", getHandler)
+
+    // Wrap your handlers with the LoadAndSave() middleware.
+	http.ListenAndServe(":4000", session.LoadAndSave(mux))
 }
 
 func putHandler(w http.ResponseWriter, r *http.Request) {
-    // Load the session data for the current request. Any errors are deferred
-    // until you actually use the session data.
-    session := sessionManager.Load(r)
-
-    // Use the PutString() method to add a new key and associated string value
-    // to the session data. Methods for many other common data types are also
-    // provided. The session data is automatically saved.
-    err := session.PutString(w, "message", "Hello world!")
-    if err != nil {
-        http.Error(w, err.Error(), 500)
-    }
+    // Store a new key and value in the session data.
+	session.Put(r.Context(), "message", "Hello from a session!")
 }
 
 func getHandler(w http.ResponseWriter, r *http.Request) {
-    // Load the session data for the current request.
-    session := sessionManager.Load(r)
-
-    // Use the GetString() helper to retrieve the string value for the "message"
-    // key from the session data. The zero value for a string is returned if the
-    // key does not exist.
-    message, err := session.GetString("message")
-    if err != nil {
-        http.Error(w, err.Error(), 500)
-    }
-
-    io.WriteString(w, message)
+    // Use the GetString helper to retrieve the string value associated with a
+    // key. The zero value is returned if the key does not exist.
+	msg := session.GetString(r.Context(), "message")
+	io.WriteString(w, msg)
 }
 ```
 
-SCS provides a wide range of functions for working with session data.
+```
+$ curl -i --cookie-jar cj --cookie cj localhost:4000/put
+HTTP/1.1 200 OK
+Cache-Control: no-cache="Set-Cookie"
+Set-Cookie: session=lHqcPNiQp_5diPxumzOklsSdE-MJ7zyU6kjch1Ee0UM; Path=/; Expires=Sat, 27 Apr 2019 10:28:20 GMT; Max-Age=86400; HttpOnly; SameSite=Lax
+Vary: Cookie
+Date: Fri, 26 Apr 2019 10:28:19 GMT
+Content-Length: 0
 
-* `Put…` and `Get…` methods for storing and retrieving a variety of common data types and custom objects.
-* `Pop…` methods for one-time retrieval of common data types (and custom objects) from the session data.
-* `Keys` returns an alphabetically-sorted slice of all keys in the session data.
-* `Exists` returns whether a specific key exists in the session data.
-* `Remove` removes an individual key and value from the session data.
-* `Clear` removes all data for the current session.
-* `RenewToken` creates a new session token. This should be used before privilege changes to help avoid session fixation.
-* `Destroy` deletes the current session and instructs the browser to delete the session cookie.
+$ curl -i --cookie-jar cj --cookie cj localhost:4000/get
+HTTP/1.1 200 OK
+Date: Fri, 26 Apr 2019 10:28:24 GMT
+Content-Length: 21
+Content-Type: text/plain; charset=utf-8
 
-A full list of available functions can be found in [the GoDoc](https://godoc.org/github.com/alexedwards/scs/#pkg-index).
-
-### Customizing the session manager
-
-The session manager can be configured to customize its behavior. For example:
-
-```go
-sessionManager = scs.NewCookieManager("u46IpCV9y5Vlur8YvODJEhgOY8m9JVE4")
-sessionManager.Lifetime(time.Hour) // Set the maximum session lifetime to 1 hour.
-sessionManager.Persist(true) // Persist the session after a user has closed their browser.
-sessionManager.Secure(true) // Set the Secure flag on the session cookie.
+Hello from a session!
 ```
 
-A full list of available settings can be found in [the GoDoc](https://godoc.org/github.com/alexedwards/scs/#pkg-index).
+## Configuring Session Behavior
 
-### Using a different session store
+Session behavior can be configured via the `Session` fields. For example:
 
-The above examples use encrypted cookies to store session data, but SCS also supports a range of server-side stores.
+```go
+session = scs.NewSession()
+session.Lifetime = 3 * time.Hour
+session.IdleTimeout = 20 * time.Minute
+session.Cookie.Persist = false
+session.Cookie.SameSite = http.SameSiteStrictMode
+session.Cookie.Secure = true
+```
 
-| Package                                                                               |                                                                                   |
-|:------------------------------------------------------------------------------------- |-----------------------------------------------------------------------------------|
-| [stores/boltstore](https://godoc.org/github.com/alexedwards/scs/stores/boltstore)     | BoltDB-based session store                                                        |
-| [stores/buntstore](https://godoc.org/github.com/alexedwards/scs/stores/buntstore)     | BuntDB based session store                                                        |
-| [stores/cookiestore](https://godoc.org/github.com/alexedwards/scs/stores/cookiestore) | Encrypted-cookie session store                                                    |
-| [stores/dynamostore](https://godoc.org/github.com/alexedwards/scs/stores/dynamostore) | DynamoDB-based session store                                                      |
-| [stores/memstore](https://godoc.org/github.com/alexedwards/scs/stores/memstore)       | In-memory session store                                                           |
-| [stores/mysqlstore](https://godoc.org/github.com/alexedwards/scs/stores/mysqlstore)   | MySQL-based session store                                                         |
-| [stores/pgstore](https://godoc.org/github.com/alexedwards/scs/stores/pgstore)         | PostgreSQL-based storage eninge                                                   |
-| [stores/qlstore](https://godoc.org/github.com/alexedwards/scs/stores/qlstore)         | QL-based session store                                                            |
-| [stores/redisstore](https://godoc.org/github.com/alexedwards/scs/stores/redisstore)   | Redis-based session store                                                         |
-| [stores/memcached](https://godoc.org/github.com/alexedwards/scs/stores/memcachedstore)| Memcached-based session store                                                     |
+Documentation for all available settings and their default values can be [found here](https://godoc.org/github.com/alexedwards/scs#Session).
 
-### Compatibility
+## Working with Session Data
 
-SCS is designed to be compatible with Go's `net/http` package and the `http.Handler` interface.
+Data can be set using the [`Put()`](https://godoc.org/github.com/alexedwards/scs#Session.Put) method and retrieved with the [`Get()`](https://godoc.org/github.com/alexedwards/scs#Session.Get) method. A variety of helper methods like [`GetString()`](https://godoc.org/github.com/alexedwards/scs#Session.GetString), [`GetInt()`](https://godoc.org/github.com/alexedwards/scs#Session.GetInt) and [`GetBytes()`](https://godoc.org/github.com/alexedwards/scs#Session.GetBytes) are included for common data types. Please see [the documentation](https://godoc.org/github.com/alexedwards/scs#pkg-index) for a full list of helper methods.
 
-If you're using the [Echo](https://echo.labstack.com/) framework, the [official session middleware](https://echo.labstack.com/middleware/session) for Echo is likely to be a better fit for your application.
+The [`Pop()`](https://godoc.org/github.com/alexedwards/scs#Session.Pop) method (and accompanying helpers for common data types) act like a one-time `Get()`, retrieving the data and removing it from the session in one step. These are useful if you want to implement 'flash' message functionality in your application, where messages are displayed to the user once only.
 
-### Examples
+Some other useful functions are [`Exists()`](https://godoc.org/github.com/alexedwards/scs#Session.Exists) (which returns a `bool` indicating whether or not a given key exists in the session data) and [`Keys()`](https://godoc.org/github.com/alexedwards/scs#Session.Keys) (which returns a sorted slice of keys in the session data).
 
-* [RequireLogin middleware](https://gist.github.com/alexedwards/6eac2f19b9b5c064ca90f756c32f94cc)
+Individual data items can be deleted from the session using the [`Remove()`](https://godoc.org/github.com/alexedwards/scs#Session.Remove) method. Alternatively, all session data can de deleted by using the [`Destroy()`](https://godoc.org/github.com/alexedwards/scs#Session.Destroy) method. After calling `Destroy()`, any further operations in the same request cycle will result in a new session being created --- with a new session token and a new lifetime.
+
+## Loading and Saving Sessions
+
+Most applications will use the [`LoadAndSave()`](https://godoc.org/github.com/alexedwards/scs#Session.LoadAndSave) middleware. This middleware takes care of loading and committing session data to the session store, and communicating the session token to/from the client in a cookie as necessary.
+
+If you want to communicate the session token to/from the client in a different way (for example in a different HTTP header) you are encouraged to create your own alternative middleware using the code in [`LoadAndSave()`](https://godoc.org/github.com/alexedwards/scs#Session.LoadAndSave) as a template. An example is [given here](https://gist.github.com/alexedwards/cc6190195acfa466bf27f05aa5023f50).
+
+Or for more fine-grained control you can load and save sessions within your individual handlers (or from anywhere in your application). [See here](https://gist.github.com/alexedwards/0570e5a59677e278e13acb8ea53a3b30) for an example.
+
+## Configuring the Session Store
+
+By default SCS uses an in-memory store for session data. This is convenient (no setup!) and very fast, but all session data will be lost when your application is stopped or restarted. Therefore it's useful for applications where data loss is an acceptable trade off for fast performance, or for prototyping and testing purposes. In most production applications you will want to use a persistent session store like PostgreSQL or MySQL instead.
+
+The session stores currently included are:
+
+| Package                                                                               |                                                                                  |
+|:------------------------------------------------------------------------------------- |----------------------------------------------------------------------------------|
+| [memstore](https://github.com/alexedwards/scs/tree/master/memstore)       			| In-memory session store (default)                                                |
+| [mysqlstore](https://github.com/alexedwards/scs/tree/master/mysqlstore)   			| MySQL based session store                                                        |
+| [postgresstore](https://github.com/alexedwards/scs/tree/master/postgresstore)         | PostgreSQL based session store                                                   |
+
+Custom session stores are also supported. Please [see here](#using-custom-session-stores) for more information.
+
+### Using with PostgreSQL
+
+Please see the `postgresstore` [package documentation](https://github.com/alexedwards/scs/tree/master/postgresstore) for full information and sample code. But in summary...
+
+You'll need to create a `sessions` table:
+
+```sql
+CREATE TABLE sessions (
+	token TEXT PRIMARY KEY,
+	data BYTEA NOT NULL,
+	expiry TIMESTAMPTZ NOT NULL
+);
+
+CREATE INDEX sessions_expiry_idx ON sessions (expiry);
+```
+
+And then you can then use it like this:
+
+```go
+package main
+
+import (
+	"database/sql"
+	"io"
+	"log"
+	"net/http"
+
+	"github.com/alexedwards/scs/v2"
+	"github.com/alexedwards/scs/v2/postgresstore"
+
+	_ "github.com/lib/pq"
+)
+
+var session *scs.Session
+
+func main() {
+	db, err := sql.Open("postgres", "postgres://user:pass@localhost/db")
+	if err != nil {
+		log.Fatal(err)
+	}
+	defer db.Close()
+
+	// Initialize a new session manager and configure it to use PostgreSQL as
+	// the session store.
+	session = scs.NewSession()
+	session.Store = postgresstore.New(db)
+
+	mux := http.NewServeMux()
+	mux.HandleFunc("/put", putHandler)
+	mux.HandleFunc("/get", getHandler)
+
+	http.ListenAndServe(":4000", session.LoadAndSave(mux))
+}
+
+func putHandler(w http.ResponseWriter, r *http.Request) {
+	session.Put(r.Context(), "message", "Hello from a session!")
+}
+
+func getHandler(w http.ResponseWriter, r *http.Request) {
+	msg := session.GetString(r.Context(), "message")
+	io.WriteString(w, msg)
+}
+```
+
+A background 'cleanup' goroutine is automatically run to delete expired session data. This stops the database table from holding on to invalid sessions indefinitely and growing unnecessarily large. By default the cleanup will run every 5 minutes.
+
+### Using with MySQL
+
+Please see the `mysqlstore` [package documentation](https://github.com/alexedwards/scs/tree/master/mysqlstore) for full information and sample code. But in summary...
+
+You'll need to create a `sessions` table:
+
+```sql
+CREATE TABLE sessions (
+	token CHAR(43) PRIMARY KEY,
+	data BLOB NOT NULL,
+	expiry TIMESTAMP(6) NOT NULL
+);
+
+CREATE INDEX sessions_expiry_idx ON sessions (expiry);
+```
+
+And then you can then use it like this:
+
+```go
+package main
+
+import (
+	"database/sql"
+	"io"
+	"log"
+	"net/http"
+
+	"github.com/alexedwards/scs/v2"
+	"github.com/alexedwards/scs/v2/mysqlstore"
+
+	_ "github.com/go-sql-driver/mysql"
+)
+
+var session *scs.Session
+
+func main() {
+	db, err := sql.Open("mysql", "user:pass@/db?parseTime=true")
+	if err != nil {
+		log.Fatal(err)
+	}
+	defer db.Close()
+
+	// Initialize a new session manager and configure it to use PostgreSQL as
+	// the session store.
+	session = scs.NewSession()
+	session.Store = mysqlstore.New(db)
+
+	mux := http.NewServeMux()
+	mux.HandleFunc("/put", putHandler)
+	mux.HandleFunc("/get", getHandler)
+
+	http.ListenAndServe(":4000", session.LoadAndSave(mux))
+}
+
+func putHandler(w http.ResponseWriter, r *http.Request) {
+	session.Put(r.Context(), "message", "Hello from a session!")
+}
+
+func getHandler(w http.ResponseWriter, r *http.Request) {
+	msg := session.GetString(r.Context(), "message")
+	io.WriteString(w, msg)
+}
+```
+
+A background 'cleanup' goroutine is automatically run to delete expired session data. This stops the database table from holding on to invalid sessions indefinitely and growing unnecessarily large. By default the cleanup will run every 5 minutes.
+
+### Using Custom Session Stores
+
+[`scs.Store`](https://godoc.org/github.com/alexedwards/scs#Store) defines the interface for custom session stores. Any object that implements this interface can be set as the store when configuring the session.
+
+```go
+type Store interface {
+	// Delete should remove the session token and corresponding data from the
+	// session store. If the token does not exist then Delete should be a no-op
+	// and return nil (not an error).
+	Delete(token string) (err error)
+
+	// Find should return the data for a session token from the store. If the
+	// session token is not found or is expired, the found return value should
+	// be false (and the err return value should be nil). Similarly, tampered
+	// or malformed tokens should result in a found return value of false and a
+	// nil err value. The err return value should be used for system errors only.
+	Find(token string) (b []byte, found bool, err error)
+
+	// Commit should add the session token and data to the store, with the given
+	// expiry time. If the session token already exists, then the data and
+	// expiry time should be overwritten.
+	Commit(token string, b []byte, expiry time.Time) (err error)
+}
+```
+
+## Preventing Session Fixation
+
+To help prevent session fixation attacks you should [renew the session token after any privilege level change](https://github.com/OWASP/CheatSheetSeries/blob/master/cheatsheets/Session_Management_Cheat_Sheet.md#renew-the-session-id-after-any-privilege-level-change). Commonly, this means that the session token must to be changed when a user logs in or out of your application. You can do this using the [`RenewToken()`](https://godoc.org/github.com/alexedwards/scs#Session.RenewToken) method like so:
+
+```go
+func loginHandler(w http.ResponseWriter, r *http.Request) {
+	userID := 123
+
+	// First renew the session token...
+	err := session.RenewToken(r.Context())
+	if err != nil {
+		http.Error(w, err.Error(), 500)
+		return
+	}
+
+	// Then make the privilege-level change.
+	session.Put(r.Context(), "userID", userID)
+}
+```
+
+## Multiple Sessions per Request
+
+It is possible for an application to support multiple sessions per request, with different lifetime lengths and even different stores. Please [see here for an example](https://gist.github.com/alexedwards/22535f758356bfaf96038fffad154824).
+
+## Compatibility
+
+This package requires Go 1.11 or newer.
+
+It is not compatible with the [Echo](https://echo.labstack.com/) framework. Please consider using the [Echo session manager](https://echo.labstack.com/middleware/session) instead.

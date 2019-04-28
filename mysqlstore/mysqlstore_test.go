@@ -1,4 +1,4 @@
-package pgstore
+package mysqlstore
 
 import (
 	"bytes"
@@ -7,11 +7,13 @@ import (
 	"reflect"
 	"testing"
 	"time"
+
+	_ "github.com/go-sql-driver/mysql"
 )
 
 func TestFind(t *testing.T) {
-	dsn := os.Getenv("SESSION_PG_TEST_DSN")
-	db, err := sql.Open("postgres", dsn)
+	dsn := os.Getenv("SCS_MYSQL_TEST_DSN")
+	db, err := sql.Open("mysql", dsn)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -23,14 +25,14 @@ func TestFind(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	_, err = db.Exec("INSERT INTO sessions VALUES('session_token', 'encoded_data', current_timestamp + interval '1 minute')")
+	_, err = db.Exec("INSERT INTO sessions VALUES('session_token', 'encoded_data', UTC_TIMESTAMP(6) + INTERVAL 1 MINUTE)")
 	if err != nil {
 		t.Fatal(err)
 	}
 
-	p := New(db, 0)
+	m := NewWithCleanupInterval(db, 0)
 
-	b, found, err := p.Find("session_token")
+	b, found, err := m.Find("session_token")
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -43,8 +45,8 @@ func TestFind(t *testing.T) {
 }
 
 func TestFindMissing(t *testing.T) {
-	dsn := os.Getenv("SESSION_PG_TEST_DSN")
-	db, err := sql.Open("postgres", dsn)
+	dsn := os.Getenv("SCS_MYSQL_TEST_DSN")
+	db, err := sql.Open("mysql", dsn)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -57,9 +59,9 @@ func TestFindMissing(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	p := New(db, 0)
+	m := NewWithCleanupInterval(db, 0)
 
-	_, found, err := p.Find("missing_session_token")
+	_, found, err := m.Find("missing_session_token")
 	if err != nil {
 		t.Fatalf("got %v: expected %v", err, nil)
 	}
@@ -69,8 +71,8 @@ func TestFindMissing(t *testing.T) {
 }
 
 func TestSaveNew(t *testing.T) {
-	dsn := os.Getenv("SESSION_PG_TEST_DSN")
-	db, err := sql.Open("postgres", dsn)
+	dsn := os.Getenv("SCS_MYSQL_TEST_DSN")
+	db, err := sql.Open("mysql", dsn)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -83,9 +85,9 @@ func TestSaveNew(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	p := New(db, 0)
+	m := NewWithCleanupInterval(db, 0)
 
-	err = p.Save("session_token", []byte("encoded_data"), time.Now().Add(time.Minute))
+	err = m.Commit("session_token", []byte("encoded_data"), time.Now().Add(time.Minute))
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -102,8 +104,8 @@ func TestSaveNew(t *testing.T) {
 }
 
 func TestSaveUpdated(t *testing.T) {
-	dsn := os.Getenv("SESSION_PG_TEST_DSN")
-	db, err := sql.Open("postgres", dsn)
+	dsn := os.Getenv("SCS_MYSQL_TEST_DSN")
+	db, err := sql.Open("mysql", dsn)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -115,14 +117,14 @@ func TestSaveUpdated(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	_, err = db.Exec("INSERT INTO sessions VALUES('session_token', 'encoded_data', current_timestamp + interval '1 minute')")
+	_, err = db.Exec("INSERT INTO sessions VALUES('session_token', 'encoded_data', UTC_TIMESTAMP(6) + INTERVAL 1 MINUTE)")
 	if err != nil {
 		t.Fatal(err)
 	}
 
-	p := New(db, 0)
+	m := NewWithCleanupInterval(db, 0)
 
-	err = p.Save("session_token", []byte("new_encoded_data"), time.Now().Add(time.Minute))
+	err = m.Commit("session_token", []byte("new_encoded_data"), time.Now().Add(time.Minute))
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -139,8 +141,8 @@ func TestSaveUpdated(t *testing.T) {
 }
 
 func TestExpiry(t *testing.T) {
-	dsn := os.Getenv("SESSION_PG_TEST_DSN")
-	db, err := sql.Open("postgres", dsn)
+	dsn := os.Getenv("SCS_MYSQL_TEST_DSN")
+	db, err := sql.Open("mysql", dsn)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -153,28 +155,28 @@ func TestExpiry(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	p := New(db, 0)
+	m := NewWithCleanupInterval(db, 0)
 
-	err = p.Save("session_token", []byte("encoded_data"), time.Now().Add(100*time.Millisecond))
+	err = m.Commit("session_token", []byte("encoded_data"), time.Now().Add(100*time.Millisecond))
 	if err != nil {
 		t.Fatal(err)
 	}
 
-	_, found, _ := p.Find("session_token")
+	_, found, _ := m.Find("session_token")
 	if found != true {
 		t.Fatalf("got %v: expected %v", found, true)
 	}
 
 	time.Sleep(100 * time.Millisecond)
-	_, found, _ = p.Find("session_token")
+	_, found, _ = m.Find("session_token")
 	if found != false {
 		t.Fatalf("got %v: expected %v", found, false)
 	}
 }
 
 func TestDelete(t *testing.T) {
-	dsn := os.Getenv("SESSION_PG_TEST_DSN")
-	db, err := sql.Open("postgres", dsn)
+	dsn := os.Getenv("SCS_MYSQL_TEST_DSN")
+	db, err := sql.Open("mysql", dsn)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -186,14 +188,14 @@ func TestDelete(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	_, err = db.Exec("INSERT INTO sessions VALUES('session_token', 'encoded_data', current_timestamp + interval '1 minute')")
+	_, err = db.Exec("INSERT INTO sessions VALUES('session_token', 'encoded_data', UTC_TIMESTAMP(6) + INTERVAL 1 MINUTE)")
 	if err != nil {
 		t.Fatal(err)
 	}
 
-	p := New(db, 0)
+	m := NewWithCleanupInterval(db, 0)
 
-	err = p.Delete("session_token")
+	err = m.Delete("session_token")
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -210,8 +212,8 @@ func TestDelete(t *testing.T) {
 }
 
 func TestCleanup(t *testing.T) {
-	dsn := os.Getenv("SESSION_PG_TEST_DSN")
-	db, err := sql.Open("postgres", dsn)
+	dsn := os.Getenv("SCS_MYSQL_TEST_DSN")
+	db, err := sql.Open("mysql", dsn)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -224,10 +226,10 @@ func TestCleanup(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	p := New(db, 200*time.Millisecond)
-	defer p.StopCleanup()
+	m := NewWithCleanupInterval(db, 200*time.Millisecond)
+	defer m.StopCleanup()
 
-	err = p.Save("session_token", []byte("encoded_data"), time.Now().Add(100*time.Millisecond))
+	err = m.Commit("session_token", []byte("encoded_data"), time.Now().Add(100*time.Millisecond))
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -254,8 +256,8 @@ func TestCleanup(t *testing.T) {
 }
 
 func TestStopNilCleanup(t *testing.T) {
-	dsn := os.Getenv("SESSION_PG_TEST_DSN")
-	db, err := sql.Open("postgres", dsn)
+	dsn := os.Getenv("SCS_MYSQL_TEST_DSN")
+	db, err := sql.Open("mysql", dsn)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -264,8 +266,8 @@ func TestStopNilCleanup(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	p := New(db, 0)
+	m := NewWithCleanupInterval(db, 0)
 	time.Sleep(100 * time.Millisecond)
 	// A send to a nil channel will block forever
-	p.StopCleanup()
+	m.StopCleanup()
 }

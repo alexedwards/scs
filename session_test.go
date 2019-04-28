@@ -1,100 +1,194 @@
 package scs
 
 import (
-	"encoding/gob"
 	"fmt"
+	"io/ioutil"
 	"net/http"
-	"regexp"
+	"net/http/cookiejar"
+	"net/http/httptest"
 	"strings"
 	"testing"
+	"time"
 )
 
-type testUser struct {
-	Name string
-	Age  int
+type testServer struct {
+	*httptest.Server
 }
 
-func init() {
-	gob.Register(new(testUser))
+func newTestServer(t *testing.T, h http.Handler) *testServer {
+	ts := httptest.NewTLSServer(h)
+
+	jar, err := cookiejar.New(nil)
+	if err != nil {
+		t.Fatal(err)
+	}
+	ts.Client().Jar = jar
+
+	ts.Client().CheckRedirect = func(req *http.Request, via []*http.Request) error {
+		return http.ErrUseLastResponse
+	}
+
+	return &testServer{ts}
 }
 
-func TestGenerateToken(t *testing.T) {
-	id, err := generateToken()
+func (ts *testServer) execute(t *testing.T, urlPath string) (http.Header, string) {
+	rs, err := ts.Client().Get(ts.URL + urlPath)
 	if err != nil {
 		t.Fatal(err)
 	}
 
-	match, err := regexp.MatchString("^[0-9a-zA-Z_\\-]{43}$", id)
+	defer rs.Body.Close()
+	body, err := ioutil.ReadAll(rs.Body)
 	if err != nil {
 		t.Fatal(err)
 	}
-	if match == false {
-		t.Errorf("got %q: should match %q", id, "^[0-9a-zA-Z_\\-]{43}$")
+
+	return rs.Header, string(body)
+}
+
+func extractTokenFromCookie(c string) string {
+	parts := strings.Split(c, ";")
+	return strings.SplitN(parts[0], "=", 2)[1]
+}
+
+func TestEnable(t *testing.T) {
+	session := NewSession()
+
+	mux := http.NewServeMux()
+	mux.HandleFunc("/put", http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		session.Put(r.Context(), "foo", "bar")
+	}))
+	mux.HandleFunc("/get", http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		s := session.Get(r.Context(), "foo").(string)
+		w.Write([]byte(s))
+	}))
+
+	ts := newTestServer(t, session.LoadAndSave(mux))
+	defer ts.Close()
+
+	header, _ := ts.execute(t, "/put")
+	token1 := extractTokenFromCookie(header.Get("Set-Cookie"))
+
+	header, body := ts.execute(t, "/get")
+	if body != "bar" {
+		t.Errorf("want %q; got %q", "bar", body)
+	}
+	if header.Get("Set-Cookie") != "" {
+		t.Errorf("want %q; got %q", "", header.Get("Set-Cookie"))
+	}
+
+	header, _ = ts.execute(t, "/put")
+	token2 := extractTokenFromCookie(header.Get("Set-Cookie"))
+	if token1 != token2 {
+		t.Error("want tokens to be the same")
 	}
 }
 
-func TestString(t *testing.T) {
-	manager := NewManager(newMockStore())
+func TestLifetime(t *testing.T) {
+	session := NewSession()
+	session.Lifetime = 500 * time.Millisecond
 
-	_, body, cookie := testRequest(t, testPutString(manager), "")
-	if body != "OK" {
-		t.Fatalf("got %q: expected %q", body, "OK")
+	mux := http.NewServeMux()
+	mux.HandleFunc("/put", http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		session.Put(r.Context(), "foo", "bar")
+	}))
+	mux.HandleFunc("/get", http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		v := session.Get(r.Context(), "foo")
+		if v == nil {
+			http.Error(w, "foo does not exist in session", 500)
+			return
+		}
+		w.Write([]byte(v.(string)))
+	}))
+
+	ts := newTestServer(t, session.LoadAndSave(mux))
+	defer ts.Close()
+
+	ts.execute(t, "/put")
+
+	_, body := ts.execute(t, "/get")
+	if body != "bar" {
+		t.Errorf("want %q; got %q", "bar", body)
 	}
+	time.Sleep(time.Second)
 
-	_, body, _ = testRequest(t, testGetString(manager), cookie)
-	if body != "lorem ipsum" {
-		t.Fatalf("got %q: expected %q", body, "lorem ipsum")
-	}
-
-	_, body, cookie = testRequest(t, testPopString(manager), cookie)
-	if body != "lorem ipsum" {
-		t.Fatalf("got %q: expected %q", body, "lorem ipsum")
-	}
-
-	_, body, _ = testRequest(t, testGetString(manager), cookie)
-	if body != "" {
-		t.Fatalf("got %q: expected %q", body, "")
+	_, body = ts.execute(t, "/get")
+	if body != "foo does not exist in session\n" {
+		t.Errorf("want %q; got %q", "foo does not exist in session\n", body)
 	}
 }
 
-func TestObject(t *testing.T) {
-	manager := NewManager(newMockStore())
+func TestIdleTimeout(t *testing.T) {
+	session := NewSession()
+	session.IdleTimeout = 200 * time.Millisecond
+	session.Lifetime = time.Second
 
-	_, body, cookie := testRequest(t, testPutObject(manager), "")
-	if body != "OK" {
-		t.Fatalf("got %q: expected %q", body, "OK")
+	mux := http.NewServeMux()
+	mux.HandleFunc("/put", http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		session.Put(r.Context(), "foo", "bar")
+	}))
+	mux.HandleFunc("/get", http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		v := session.Get(r.Context(), "foo")
+		if v == nil {
+			http.Error(w, "foo does not exist in session", 500)
+			return
+		}
+		w.Write([]byte(v.(string)))
+	}))
+
+	ts := newTestServer(t, session.LoadAndSave(mux))
+	defer ts.Close()
+
+	ts.execute(t, "/put")
+
+	time.Sleep(100 * time.Millisecond)
+	ts.execute(t, "/get")
+
+	time.Sleep(150 * time.Millisecond)
+	_, body := ts.execute(t, "/get")
+	if body != "bar" {
+		t.Errorf("want %q; got %q", "bar", body)
 	}
 
-	_, body, _ = testRequest(t, testGetObject(manager), cookie)
-	if body != "alice: 21" {
-		t.Fatalf("got %q: expected %q", body, "alice: 21")
-	}
-
-	_, body, cookie = testRequest(t, testPopObject(manager), cookie)
-	if body != "alice: 21" {
-		t.Fatalf("got %q: expected %q", body, "alice: 21")
-	}
-
-	_, body, _ = testRequest(t, testGetObject(manager), cookie)
-	if body != ": 0" {
-		t.Fatalf("got %q: expected %q", body, ": 0")
+	time.Sleep(200 * time.Millisecond)
+	_, body = ts.execute(t, "/get")
+	if body != "foo does not exist in session\n" {
+		t.Errorf("want %q; got %q", "foo does not exist in session\n", body)
 	}
 }
 
 func TestDestroy(t *testing.T) {
-	store := newMockStore()
-	manager := NewManager(store)
+	session := NewSession()
 
-	_, _, cookie := testRequest(t, testPutString(manager), "")
-	oldToken := extractTokenFromCookie(cookie)
+	mux := http.NewServeMux()
+	mux.HandleFunc("/put", http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		session.Put(r.Context(), "foo", "bar")
+	}))
+	mux.HandleFunc("/destroy", http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		err := session.Destroy(r.Context())
+		if err != nil {
+			http.Error(w, err.Error(), 500)
+			return
+		}
+	}))
+	mux.HandleFunc("/get", http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		v := session.Get(r.Context(), "foo")
+		if v == nil {
+			http.Error(w, "foo does not exist in session", 500)
+			return
+		}
+		w.Write([]byte(v.(string)))
+	}))
 
-	_, body, cookie := testRequest(t, testDestroy(manager), cookie)
+	ts := newTestServer(t, session.LoadAndSave(mux))
+	defer ts.Close()
 
-	if body != "OK" {
-		t.Fatalf("got %q: expected %q", body, "OK")
-	}
-	if strings.HasPrefix(cookie, fmt.Sprintf("%s=;", manager.opts.name)) == false {
-		t.Fatalf("got %q: expected prefix %q", cookie, fmt.Sprintf("%s=;", manager.opts.name))
+	ts.execute(t, "/put")
+	header, _ := ts.execute(t, "/destroy")
+	cookie := header.Get("Set-Cookie")
+
+	if strings.HasPrefix(cookie, fmt.Sprintf("%s=;", session.Cookie.Name)) == false {
+		t.Fatalf("got %q: expected prefix %q", cookie, fmt.Sprintf("%s=;", session.Cookie.Name))
 	}
 	if strings.Contains(cookie, "Expires=Thu, 01 Jan 1970 00:00:01 GMT") == false {
 		t.Fatalf("got %q: expected to contain %q", cookie, "Expires=Thu, 01 Jan 1970 00:00:01 GMT")
@@ -102,126 +196,9 @@ func TestDestroy(t *testing.T) {
 	if strings.Contains(cookie, "Max-Age=0") == false {
 		t.Fatalf("got %q: expected to contain %q", cookie, "Max-Age=0")
 	}
-	_, found, _ := store.Find(oldToken)
-	if found != false {
-		t.Fatalf("got %v: expected %v", found, false)
-	}
-}
 
-func TestRenewToken(t *testing.T) {
-	store := newMockStore()
-	manager := NewManager(store)
-
-	_, _, cookie := testRequest(t, testPutString(manager), "")
-	oldToken := extractTokenFromCookie(cookie)
-
-	_, body, cookie := testRequest(t, testRenewToken(manager), cookie)
-	if body != "OK" {
-		t.Fatalf("got %q: expected %q", body, "OK")
-	}
-	newToken := extractTokenFromCookie(cookie)
-	if newToken == oldToken {
-		t.Fatal("expected a difference")
-	}
-	_, found, _ := store.Find(oldToken)
-	if found != false {
-		t.Fatalf("got %v: expected %v", found, false)
-	}
-
-	_, body, _ = testRequest(t, testGetString(manager), cookie)
-	if body != "lorem ipsum" {
-		t.Fatalf("got %q: expected %q", body, "lorem ipsum")
-	}
-}
-
-func TestClear(t *testing.T) {
-	manager := NewManager(newMockStore())
-
-	_, _, cookie := testRequest(t, testPutString(manager), "")
-	_, _, cookie = testRequest(t, testPutBool(manager), cookie)
-
-	_, body, cookie := testRequest(t, testClear(manager), cookie)
-	if body != "OK" {
-		t.Fatalf("got %q: expected %q", body, "OK")
-	}
-
-	_, body, _ = testRequest(t, testGetString(manager), cookie)
-	if body != "" {
-		t.Fatalf("got %q: expected %q", body, "")
-	}
-
-	_, body, _ = testRequest(t, testGetBool(manager), cookie)
-	if body != "false" {
-		t.Fatalf("got %q: expected %q", body, "false")
-	}
-
-	// Check that it's a no-op if there is no data in the session
-	_, _, cookie = testRequest(t, testClear(manager), cookie)
-	if cookie != "" {
-		t.Fatalf("got %q: expected %q", cookie, "")
-	}
-}
-
-func TestKeys(t *testing.T) {
-	manager := NewManager(newMockStore())
-
-	_, _, cookie := testRequest(t, testPutString(manager), "")
-	_, _, _ = testRequest(t, testPutBool(manager), cookie)
-
-	_, body, _ := testRequest(t, testKeys(manager), cookie)
-	if body != "[test_bool test_string]" {
-		t.Fatalf("got %q: expected %q", body, "[test_bool test_string]")
-	}
-
-	_, _, _ = testRequest(t, testClear(manager), cookie)
-	_, body, _ = testRequest(t, testKeys(manager), cookie)
-	if body != "[]" {
-		t.Fatalf("got %q: expected %q", body, "[]")
-	}
-}
-
-func TestLoadFailure(t *testing.T) {
-	manager := NewManager(newMockStore())
-
-	cookie := http.Cookie{
-		Name:  "session",
-		Value: "force-error",
-	}
-
-	_, body, _ := testRequest(t, testPutString(manager), cookie.String())
-	if body != "forced-error\n" {
-		t.Fatalf("got %q: expected %q", body, "forced-error\n")
-	}
-}
-
-func TestMultipleSessions(t *testing.T) {
-	manager1 := NewManager(newMockStore())
-	manager1.Name("foo")
-
-	_, _, cookie1 := testRequest(t, testPutString(manager1), "")
-
-	manager2 := NewManager(newMockStore())
-	manager2.Name("bar")
-
-	_, _, cookie2 := testRequest(t, testPutBool(manager2), "")
-
-	_, body, _ := testRequest(t, testGetString(manager1), cookie1)
-	if body != "lorem ipsum" {
-		t.Fatalf("got %q: expected %q", body, "lorem ipsum")
-	}
-
-	_, body, _ = testRequest(t, testGetBool(manager2), cookie2)
-	if body != "true" {
-		t.Fatalf("got %q: expected %q", body, "true")
-	}
-
-	_, body, _ = testRequest(t, testGetString(manager2), cookie2)
-	if body != "" {
-		t.Fatalf("got %q: expected %q", body, "")
-	}
-
-	_, body, _ = testRequest(t, testGetBool(manager1), cookie1)
-	if body != "false" {
-		t.Fatalf("got %q: expected %q", body, "false")
+	_, body := ts.execute(t, "/get")
+	if body != "foo does not exist in session\n" {
+		t.Errorf("want %q; got %q", "foo does not exist in session\n", body)
 	}
 }

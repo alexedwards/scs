@@ -1,18 +1,3 @@
-// Package mysqlstore is a MySQL-based session store for the SCS session package.
-//
-// A working MySQL database is required, containing a sessions table with
-// the definition:
-//
-//	CREATE TABLE sessions (
-//	  token CHAR(43) PRIMARY KEY,
-//	  data BLOB NOT NULL,
-//	  expiry TIMESTAMP(6) NOT NULL
-//	);
-//	CREATE INDEX sessions_expiry_idx ON sessions (expiry);
-//
-// The mysqlstore package provides a background 'cleanup' goroutine to delete expired
-// session data. This stops the database table from holding on to invalid sessions
-// forever and growing unnecessarily large.
 package mysqlstore
 
 import (
@@ -21,24 +6,26 @@ import (
 	"strconv"
 	"strings"
 	"time"
-
-	// Register go-sql-driver/mysql with database/sql
-	_ "github.com/go-sql-driver/mysql"
 )
 
-// MySQLStore represents the currently configured session session store.
+// MySQLStore represents the session store.
 type MySQLStore struct {
 	*sql.DB
 	version     string
 	stopCleanup chan bool
 }
 
-// New returns a new MySQLStore instance.
-//
-// The cleanupInterval parameter controls how frequently expired session data
-// is removed by the background cleanup goroutine. Setting it to 0 prevents
-// the cleanup goroutine from running (i.e. expired sessions will not be removed).
-func New(db *sql.DB, cleanupInterval time.Duration) *MySQLStore {
+// New returns a new MySQLStore instance, with a background cleanup goroutine
+// that runs every 5 minutes to remove expired session data.
+func New(db *sql.DB) *MySQLStore {
+	return NewWithCleanupInterval(db, 5*time.Minute)
+}
+
+// NewWithCleanupInterval returns a new MySQLStore instance. The cleanupInterval
+// parameter controls how frequently expired session data is removed by the
+// background cleanup goroutine. Setting it to 0 prevents the cleanup goroutine
+// from running (i.e. expired sessions will not be removed).
+func NewWithCleanupInterval(db *sql.DB, cleanupInterval time.Duration) *MySQLStore {
 	m := &MySQLStore{
 		DB:      db,
 		version: getVersion(db),
@@ -51,9 +38,9 @@ func New(db *sql.DB, cleanupInterval time.Duration) *MySQLStore {
 	return m
 }
 
-// Find returns the data for a given session token from the MySQLStore instance. If
-// the session token is not found or is expired, the returned exists flag will be
-// set to false.
+// Find returns the data for a given session token from the MySQLStore instance.
+// If the session token is not found or is expired, the returned exists flag will
+// be set to false.
 func (m *MySQLStore) Find(token string) ([]byte, bool, error) {
 	var b []byte
 	var stmt string
@@ -74,9 +61,10 @@ func (m *MySQLStore) Find(token string) ([]byte, bool, error) {
 	return b, true, nil
 }
 
-// Save adds a session token and data to the MySQLStore instance with the given expiry
-// time. If the session token already exists then the data and expiry time are updated.
-func (m *MySQLStore) Save(token string, b []byte, expiry time.Time) error {
+// Commit adds a session token and data to the MySQLStore instance with the given
+// expiry time. If the session token already exists, then the data and expiry
+// time are updated.
+func (m *MySQLStore) Commit(token string, b []byte, expiry time.Time) error {
 	_, err := m.DB.Exec("INSERT INTO sessions (token, data, expiry) VALUES (?, ?, ?) ON DUPLICATE KEY UPDATE data = VALUES(data), expiry = VALUES(expiry)", token, b, expiry.UTC())
 	if err != nil {
 		return err
@@ -84,7 +72,8 @@ func (m *MySQLStore) Save(token string, b []byte, expiry time.Time) error {
 	return nil
 }
 
-// Delete removes a session token and corresponding data from the MySQLStore instance.
+// Delete removes a session token and corresponding data from the MySQLStore
+// instance.
 func (m *MySQLStore) Delete(token string) error {
 	_, err := m.DB.Exec("DELETE FROM sessions WHERE token = ?", token)
 	return err
@@ -107,16 +96,16 @@ func (m *MySQLStore) startCleanup(interval time.Duration) {
 	}
 }
 
-// StopCleanup terminates the background cleanup goroutine for the MySQLStore instance.
-// It's rare to terminate this; generally MySQLStore instances and their cleanup
-// goroutines are intended to be long-lived and run for the lifetime of  your
-// application.
+// StopCleanup terminates the background cleanup goroutine for the MySQLStore
+// instance. It's rare to terminate this; generally MySQLStore instances and
+// their cleanup goroutines are intended to be long-lived and run for the lifetime
+// of your application.
 //
-// There may be occasions though when your use of the MySQLStore is transient. An
-// example is creating a new MySQLStore instance in a test function. In this scenario,
-// the cleanup goroutine (which will run forever) will prevent the MySQLStore object
-// from being garbage collected even after the test function has finished. You
-// can prevent this by manually calling StopCleanup.
+// There may be occasions though when your use of the MySQLStore is transient.
+// An example is creating a new MySQLStore instance in a test function. In this
+// scenario, the cleanup goroutine (which will run forever) will prevent the
+// MySQLStore object from being garbage collected even after the test function
+// has finished. You can prevent this by manually calling StopCleanup.
 func (m *MySQLStore) StopCleanup() {
 	if m.stopCleanup != nil {
 		m.stopCleanup <- true

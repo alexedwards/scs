@@ -154,7 +154,7 @@ import (
 	"net/http"
 
 	"github.com/alexedwards/scs/v2"
-	"github.com/alexedwards/scs/v2/postgresstore"
+	"github.com/alexedwards/scs/postgresstore"
 
 	_ "github.com/lib/pq"
 )
@@ -220,7 +220,7 @@ import (
 	"net/http"
 
 	"github.com/alexedwards/scs/v2"
-	"github.com/alexedwards/scs/v2/mysqlstore"
+	"github.com/alexedwards/scs/mysqlstore"
 
 	_ "github.com/go-sql-driver/mysql"
 )

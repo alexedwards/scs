@@ -1,4 +1,4 @@
-module github.com/alexedwards/scs/v2/postgresstore
+module github.com/alexedwards/scs/postgresstore
 
 go 1.12
 

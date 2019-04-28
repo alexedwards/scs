@@ -30,7 +30,7 @@ import (
 	"net/http"
 
 	"github.com/alexedwards/scs/v2"
-	"github.com/alexedwards/scs/v2/postgresstore"
+	"github.com/alexedwards/scs/postgresstore"
 
 	_ "github.com/lib/pq"
 )

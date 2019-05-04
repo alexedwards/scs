@@ -126,7 +126,7 @@ func (s *Session) Commit(ctx context.Context) (string, time.Time, error) {
 }
 
 // Destroy deletes the session data from the session store and sets the session
-// status to Destroyed. Any futher operations in the same request cycle will
+// status to Destroyed. Any further operations in the same request cycle will
 // result in a new session being created.
 func (s *Session) Destroy(ctx context.Context) error {
 	sd := s.getSessionDataFromContext(ctx)

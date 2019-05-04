@@ -18,7 +18,7 @@ func New(pool *redis.Pool) *RedisStore {
 	return NewWithPrefix(pool, "scs:session:")
 }
 
-// New returns a new RedisStore instance. The pool parameter should be a pointer
+// NewWithPrefix returns a new RedisStore instance. The pool parameter should be a pointer
 // to a redigo connection pool. The prefix parameter controls the Redis key
 // prefix, which can be used to avoid naming clashes if necessary.
 func NewWithPrefix(pool *redis.Pool, prefix string) *RedisStore {

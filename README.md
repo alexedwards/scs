@@ -1,5 +1,9 @@
 # SCS: HTTP Session Management for Go
 
+[![GoDoc](https://godoc.org/github.com/alexedwards/scs?status.png)](https://godoc.org/github.com/alexedwards/scs)
+[![Build status](https://travis-ci.org/alexedwards/stack.svg?branch=master)](https://travis-ci.org/alexedwards/stack)
+[![Go report card](https://goreportcard.com/badge/github.com/alexedwards/scs)](https://goreportcard.com/report/github.com/alexedwards/scs)
+
 * [Installation](#installation)
 * [The Basics](#the-basics)
 * [Configuring Session Behavior](#configuring-session-behavior)

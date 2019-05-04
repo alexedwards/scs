@@ -6,14 +6,10 @@
 * [Working with Session Data](#working-with-session-data)
 * [Loading and Saving Sessions](#loading-and-saving-sessions)
 * [Configuring the Session Store](#configuring-the-session-store)
-    * [Using with PostgreSQL](#using-with-postgresql)
-    * [Using with MySQL](#using-with-mysql)
-    * [Using with Redis](#using-with-redis)
     * [Using Custom Session Stores](#using-custom-session-stores)
 * [Preventing Session Fixation](#preventing-session-fixation)
 * [Multiple Sessions per Request](#multiple-sessions-per-request)
 * [Compatibility](#compatibility)
-
 
 ## Installation
 
@@ -117,198 +113,17 @@ Or for more fine-grained control you can load and save sessions within your indi
 
 By default SCS uses an in-memory store for session data. This is convenient (no setup!) and very fast, but all session data will be lost when your application is stopped or restarted. Therefore it's useful for applications where data loss is an acceptable trade off for fast performance, or for prototyping and testing purposes. In most production applications you will want to use a persistent session store like PostgreSQL or MySQL instead.
 
-The session stores currently included are shown in the table below.
+The session stores currently included are shown in the table below. Please click the links for usage instructions and examples.
 
 | Package                                                                               |                                                                                  |
 |:------------------------------------------------------------------------------------- |----------------------------------------------------------------------------------|
+| [boltstore](https://github.com/alexedwards/scs/tree/master/boltstore)       			| BoltDB based session store  		                                               |
 | [memstore](https://github.com/alexedwards/scs/tree/master/memstore)       			| In-memory session store (default)                                                |
 | [mysqlstore](https://github.com/alexedwards/scs/tree/master/mysqlstore)   			| MySQL based session store                                                        |
 | [postgresstore](https://github.com/alexedwards/scs/tree/master/postgresstore)         | PostgreSQL based session store                                                   |
 | [redisstore](https://github.com/alexedwards/scs/tree/master/redisstore)       		| Redis based session store                                                        |
 
 Custom session stores are also supported. Please [see here](#using-custom-session-stores) for more information.
-
-### Using with PostgreSQL
-
-Please see the `postgresstore` [package documentation](https://github.com/alexedwards/scs/tree/master/postgresstore) for full information and sample code. But in summary...
-
-You'll need to create a `sessions` table:
-
-```sql
-CREATE TABLE sessions (
-	token TEXT PRIMARY KEY,
-	data BYTEA NOT NULL,
-	expiry TIMESTAMPTZ NOT NULL
-);
-
-CREATE INDEX sessions_expiry_idx ON sessions (expiry);
-```
-
-And then you can then use it like this:
-
-```go
-package main
-
-import (
-	"database/sql"
-	"io"
-	"log"
-	"net/http"
-
-	"github.com/alexedwards/scs/v2"
-	"github.com/alexedwards/scs/postgresstore"
-
-	_ "github.com/lib/pq"
-)
-
-var session *scs.Session
-
-func main() {
-	db, err := sql.Open("postgres", "postgres://user:pass@localhost/db")
-	if err != nil {
-		log.Fatal(err)
-	}
-	defer db.Close()
-
-	// Initialize a new session manager and configure it to use PostgreSQL as
-	// the session store.
-	session = scs.NewSession()
-	session.Store = postgresstore.New(db)
-
-	mux := http.NewServeMux()
-	mux.HandleFunc("/put", putHandler)
-	mux.HandleFunc("/get", getHandler)
-
-	http.ListenAndServe(":4000", session.LoadAndSave(mux))
-}
-
-func putHandler(w http.ResponseWriter, r *http.Request) {
-	session.Put(r.Context(), "message", "Hello from a session!")
-}
-
-func getHandler(w http.ResponseWriter, r *http.Request) {
-	msg := session.GetString(r.Context(), "message")
-	io.WriteString(w, msg)
-}
-```
-
-A background 'cleanup' goroutine is automatically run to delete expired session data. This stops the database table from holding on to invalid sessions indefinitely and growing unnecessarily large. By default the cleanup will run every 5 minutes.
-
-### Using with MySQL
-
-Please see the `mysqlstore` [package documentation](https://github.com/alexedwards/scs/tree/master/mysqlstore) for full information and sample code. But in summary...
-
-You'll need to create a `sessions` table:
-
-```sql
-CREATE TABLE sessions (
-	token CHAR(43) PRIMARY KEY,
-	data BLOB NOT NULL,
-	expiry TIMESTAMP(6) NOT NULL
-);
-
-CREATE INDEX sessions_expiry_idx ON sessions (expiry);
-```
-
-And then you can then use it like this:
-
-```go
-package main
-
-import (
-	"database/sql"
-	"io"
-	"log"
-	"net/http"
-
-	"github.com/alexedwards/scs/v2"
-	"github.com/alexedwards/scs/mysqlstore"
-
-	_ "github.com/go-sql-driver/mysql"
-)
-
-var session *scs.Session
-
-func main() {
-	db, err := sql.Open("mysql", "user:pass@/db?parseTime=true")
-	if err != nil {
-		log.Fatal(err)
-	}
-	defer db.Close()
-
-	// Initialize a new session manager and configure it to use PostgreSQL as
-	// the session store.
-	session = scs.NewSession()
-	session.Store = mysqlstore.New(db)
-
-	mux := http.NewServeMux()
-	mux.HandleFunc("/put", putHandler)
-	mux.HandleFunc("/get", getHandler)
-
-	http.ListenAndServe(":4000", session.LoadAndSave(mux))
-}
-
-func putHandler(w http.ResponseWriter, r *http.Request) {
-	session.Put(r.Context(), "message", "Hello from a session!")
-}
-
-func getHandler(w http.ResponseWriter, r *http.Request) {
-	msg := session.GetString(r.Context(), "message")
-	io.WriteString(w, msg)
-}
-```
-
-A background 'cleanup' goroutine is automatically run to delete expired session data. This stops the database table from holding on to invalid sessions indefinitely and growing unnecessarily large. By default the cleanup will run every 5 minutes.
-
-
-### Using with Redis
-
-Please see the `redisstore` [package documentation](https://github.com/alexedwards/scs/tree/master/redisstore) for full information and sample code. But in summary...
-
-```go
-package main
-
-import (
-	"io"
-	"net/http"
-
-	"github.com/alexedwards/scs/v2"
-	"github.com/alexedwards/scs/redisstore"
-	"github.com/gomodule/redigo/redis"
-)
-
-var session *scs.Session
-
-func main() {
-	// Establish a redigo connection pool.
-	pool := &redis.Pool{
-		MaxIdle: 10,
-		Dial: func() (redis.Conn, error) {
-			return redis.Dial("tcp", "localhost:6379")
-		},
-	}
-
-	// Initialize a new session manager and configure it to use redisstore as
-	// the session store.
-	session = scs.NewSession()
-	session.Store = redisstore.New(pool)
-
-	mux := http.NewServeMux()
-	mux.HandleFunc("/put", putHandler)
-	mux.HandleFunc("/get", getHandler)
-
-	http.ListenAndServe(":4000", session.LoadAndSave(mux))
-}
-
-func putHandler(w http.ResponseWriter, r *http.Request) {
-	session.Put(r.Context(), "message", "Hello from a session!")
-}
-
-func getHandler(w http.ResponseWriter, r *http.Request) {
-	msg := session.GetString(r.Context(), "message")
-	io.WriteString(w, msg)
-}
-```
 
 ### Using Custom Session Stores
 

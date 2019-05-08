@@ -105,6 +105,8 @@ Some other useful functions are [`Exists()`](https://godoc.org/github.com/alexed
 
 Individual data items can be deleted from the session using the [`Remove()`](https://godoc.org/github.com/alexedwards/scs#Session.Remove) method. Alternatively, all session data can de deleted by using the [`Destroy()`](https://godoc.org/github.com/alexedwards/scs#Session.Destroy) method. After calling `Destroy()`, any further operations in the same request cycle will result in a new session being created --- with a new session token and a new lifetime.
 
+Behind the scenes SCS uses gob encoding to store session data, so if you want to store custom types in the session data they must be [registered](https://golang.org/pkg/encoding/gob/#Register) with the encoding/gob package first. Struct fields of custom types must also be exported so that they are visible to the encoding/gob package. Please [see here](https://gist.github.com/alexedwards/d6eca7136f98ec12ad606e774d3abad3) for a working example.
+
 ## Loading and Saving Sessions
 
 Most applications will use the [`LoadAndSave()`](https://godoc.org/github.com/alexedwards/scs#Session.LoadAndSave) middleware. This middleware takes care of loading and committing session data to the session store, and communicating the session token to/from the client in a cookie as necessary.

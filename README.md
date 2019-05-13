@@ -15,17 +15,19 @@
 ## Instructions
 
 * [Installation](#installation)
-* [The Basics](#the-basics)
+* [Basic Use](#basic-use)
 * [Configuring Session Behavior](#configuring-session-behavior)
 * [Working with Session Data](#working-with-session-data)
 * [Loading and Saving Sessions](#loading-and-saving-sessions)
 * [Configuring the Session Store](#configuring-the-session-store)
-    * [Using Custom Session Stores](#using-custom-session-stores)
+* [Using Custom Session Stores](#using-custom-session-stores)
 * [Preventing Session Fixation](#preventing-session-fixation)
 * [Multiple Sessions per Request](#multiple-sessions-per-request)
 * [Compatibility](#compatibility)
 
-## Installation
+### Installation
+
+This package requires Go 1.11 or newer.
 
 ```
 $ go get github.com/alexedwards/scs/v2@latest
@@ -34,7 +36,7 @@ $ go get github.com/alexedwards/scs/v2@latest
 Note: If you're using the traditional `GOPATH` mechanism to manage dependencies, instead of modules, you'll need to `go get` and `import` `github.com/alexedwards/scs` without the `v2` suffix.
 
 
-## The Basics
+### Basic Use
 
 SCS implements a session management pattern following the [OWASP security guidelines](https://github.com/OWASP/CheatSheetSeries/blob/master/cheatsheets/Session_Management_Cheat_Sheet.md). Session data is stored on the server, and a randomly-generated unique session token (or *session ID*) is communicated to and from the client in a session cookie.
 
@@ -51,8 +53,9 @@ import (
 var session *scs.Session
 
 func main() {
-	// Initialize the session manager.
+	// Initialize the session manager and configure the session lifetime.
 	session = scs.NewSession()
+	session.Lifetime = 24 * time.Hour
 
 	mux := http.NewServeMux()
 	mux.HandleFunc("/put", putHandler)
@@ -93,22 +96,26 @@ Content-Type: text/plain; charset=utf-8
 Hello from a session!
 ```
 
-## Configuring Session Behavior
+### Configuring Session Behavior
 
-Session behavior can be configured via the `Session` fields. For example:
+Session behavior can be configured via the `Session` fields.
 
 ```go
 session = scs.NewSession()
 session.Lifetime = 3 * time.Hour
 session.IdleTimeout = 20 * time.Minute
-session.Cookie.Persist = false
+session.Cookie.Name = "session_id"
+session.Cookie.Domain = "example.com"
+session.Cookie.HttpOnly = true
+session.Cookie.Path = "/example/"
+session.Cookie.Persist = true
 session.Cookie.SameSite = http.SameSiteStrictMode
 session.Cookie.Secure = true
 ```
 
 Documentation for all available settings and their default values can be [found here](https://godoc.org/github.com/alexedwards/scs#Session).
 
-## Working with Session Data
+### Working with Session Data
 
 Data can be set using the [`Put()`](https://godoc.org/github.com/alexedwards/scs#Session.Put) method and retrieved with the [`Get()`](https://godoc.org/github.com/alexedwards/scs#Session.Get) method. A variety of helper methods like [`GetString()`](https://godoc.org/github.com/alexedwards/scs#Session.GetString), [`GetInt()`](https://godoc.org/github.com/alexedwards/scs#Session.GetInt) and [`GetBytes()`](https://godoc.org/github.com/alexedwards/scs#Session.GetBytes) are included for common data types. Please see [the documentation](https://godoc.org/github.com/alexedwards/scs#pkg-index) for a full list of helper methods.
 
@@ -120,7 +127,7 @@ Individual data items can be deleted from the session using the [`Remove()`](htt
 
 Behind the scenes SCS uses gob encoding to store session data, so if you want to store custom types in the session data they must be [registered](https://golang.org/pkg/encoding/gob/#Register) with the encoding/gob package first. Struct fields of custom types must also be exported so that they are visible to the encoding/gob package. Please [see here](https://gist.github.com/alexedwards/d6eca7136f98ec12ad606e774d3abad3) for a working example.
 
-## Loading and Saving Sessions
+### Loading and Saving Sessions
 
 Most applications will use the [`LoadAndSave()`](https://godoc.org/github.com/alexedwards/scs#Session.LoadAndSave) middleware. This middleware takes care of loading and committing session data to the session store, and communicating the session token to/from the client in a cookie as necessary.
 
@@ -128,7 +135,7 @@ If you want to communicate the session token to/from the client in a different w
 
 Or for more fine-grained control you can load and save sessions within your individual handlers (or from anywhere in your application). [See here](https://gist.github.com/alexedwards/0570e5a59677e278e13acb8ea53a3b30) for an example.
 
-## Configuring the Session Store
+### Configuring the Session Store
 
 By default SCS uses an in-memory store for session data. This is convenient (no setup!) and very fast, but all session data will be lost when your application is stopped or restarted. Therefore it's useful for applications where data loss is an acceptable trade off for fast performance, or for prototyping and testing purposes. In most production applications you will want to use a persistent session store like PostgreSQL or MySQL instead.
 
@@ -169,7 +176,7 @@ type Store interface {
 }
 ```
 
-## Preventing Session Fixation
+### Preventing Session Fixation
 
 To help prevent session fixation attacks you should [renew the session token after any privilege level change](https://github.com/OWASP/CheatSheetSeries/blob/master/cheatsheets/Session_Management_Cheat_Sheet.md#renew-the-session-id-after-any-privilege-level-change). Commonly, this means that the session token must to be changed when a user logs in or out of your application. You can do this using the [`RenewToken()`](https://godoc.org/github.com/alexedwards/scs#Session.RenewToken) method like so:
 
@@ -189,11 +196,11 @@ func loginHandler(w http.ResponseWriter, r *http.Request) {
 }
 ```
 
-## Multiple Sessions per Request
+### Multiple Sessions per Request
 
 It is possible for an application to support multiple sessions per request, with different lifetime lengths and even different stores. Please [see here for an example](https://gist.github.com/alexedwards/22535f758356bfaf96038fffad154824).
 
-## Compatibility
+### Compatibility
 
 This package requires Go 1.11 or newer.
 

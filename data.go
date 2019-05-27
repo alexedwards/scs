@@ -221,6 +221,26 @@ func (s *Session) Remove(ctx context.Context, key string) {
 	sd.status = Modified
 }
 
+// Clear removes all data for the current session. The session token and
+// lifetime are unaffected. If there is no data in the current session this is
+// a no-op.
+func (s *Session) Clear(ctx context.Context) error {
+	sd := s.getSessionDataFromContext(ctx)
+
+	sd.mu.Lock()
+	defer sd.mu.Unlock()
+
+	if len(sd.Values) == 0 {
+		return nil
+	}
+
+	for key := range sd.Values {
+		delete(sd.Values, key)
+	}
+	sd.status = Modified
+	return nil
+}
+
 // Exists returns true if the given key is present in the session data.
 func (s *Session) Exists(ctx context.Context, key string) bool {
 	sd := s.getSessionDataFromContext(ctx)

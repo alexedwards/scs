@@ -93,6 +93,28 @@ func TestRemove(t *testing.T) {
 	}
 }
 
+func TestClear(t *testing.T) {
+	s := NewSession()
+	sd := newSessionData(time.Hour)
+	sd.Values["foo"] = "bar"
+	sd.Values["baz"] = "boz"
+	ctx := s.addSessionDataToContext(context.Background(), sd)
+
+	s.Clear(ctx)
+
+	if sd.Values["foo"] != nil {
+		t.Errorf("got %v: expected %v", sd.Values["foo"], nil)
+	}
+
+	if sd.Values["baz"] != nil {
+		t.Errorf("got %v: expected %v", sd.Values["baz"], nil)
+	}
+
+	if sd.status != Modified {
+		t.Errorf("got %v: expected %v", sd.status, "modified")
+	}
+}
+
 func TestExists(t *testing.T) {
 	s := NewSession()
 	sd := newSessionData(time.Hour)

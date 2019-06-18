@@ -9,11 +9,14 @@ import (
 	"github.com/alexedwards/scs/v2/memstore"
 )
 
-// Session holds the configuration settings for your sessions.
-type Session struct {
+// Deprecated: Session is a backwards-compatible alias for SessionManager.
+type Session = SessionManager
+
+// SessionManager holds the configuration settings for your sessions.
+type SessionManager struct {
 	// IdleTimeout controls the maximum length of time a session can be inactive
 	// before it expires. For example, some applications may wish to set this so
-	// there is a timeout after 20 minutes of inactivity.  By default IdleTimeout
+	// there is a timeout after 20 minutes of inactivity. By default IdleTimeout
 	// is not set and there is no inactivity timeout.
 	IdleTimeout time.Duration
 
@@ -75,10 +78,10 @@ type SessionCookie struct {
 	Secure bool
 }
 
-// NewSession returns a new session manager with the default options. It is
-// safe for concurrent use.
-func NewSession() *Session {
-	s := &Session{
+// New returns a new session manager with the default options. It is safe for
+// concurrent use.
+func New() *SessionManager {
+	s := &SessionManager{
 		IdleTimeout: 0,
 		Lifetime:    24 * time.Hour,
 		Store:       memstore.New(),
@@ -96,10 +99,16 @@ func NewSession() *Session {
 	return s
 }
 
+// Deprecated: NewSession is a backwards-compatible alias for New. Use the New
+// function instead.
+func NewSession() *SessionManager {
+	return New()
+}
+
 // LoadAndSave provides middleware which automatically loads and saves session
 // data for the current request, and communicates the session token to and from
 // the client in a cookie.
-func (s *Session) LoadAndSave(next http.Handler) http.Handler {
+func (s *SessionManager) LoadAndSave(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		var token string
 		cookie, err := r.Cookie(s.Cookie.Name)
@@ -138,7 +147,7 @@ func (s *Session) LoadAndSave(next http.Handler) http.Handler {
 	})
 }
 
-func (s *Session) writeSessionCookie(w http.ResponseWriter, token string, expiry time.Time) {
+func (s *SessionManager) writeSessionCookie(w http.ResponseWriter, token string, expiry time.Time) {
 	cookie := &http.Cookie{
 		Name:     s.Cookie.Name,
 		Value:    token,

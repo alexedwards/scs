@@ -18,7 +18,7 @@ import (
 	"github.com/gomodule/redigo/redis"
 )
 
-var session *scs.Session
+var sessionManager *scs.SessionManager
 
 func main() {
 	// Establish a redigo connection pool.
@@ -31,22 +31,22 @@ func main() {
 
 	// Initialize a new session manager and configure it to use redisstore as
 	// the session store.
-	session = scs.NewSession()
-	session.Store = redisstore.New(pool)
+	sessionManager = scs.New()
+	sessionManager.Store = redisstore.New(pool)
 
 	mux := http.NewServeMux()
 	mux.HandleFunc("/put", putHandler)
 	mux.HandleFunc("/get", getHandler)
 
-	http.ListenAndServe(":4000", session.LoadAndSave(mux))
+	http.ListenAndServe(":4000", sessionManager.LoadAndSave(mux))
 }
 
 func putHandler(w http.ResponseWriter, r *http.Request) {
-	session.Put(r.Context(), "message", "Hello from a session!")
+	sessionManager.Put(r.Context(), "message", "Hello from a session!")
 }
 
 func getHandler(w http.ResponseWriter, r *http.Request) {
-	msg := session.GetString(r.Context(), "message")
+	msg := sessionManager.GetString(r.Context(), "message")
 	io.WriteString(w, msg)
 }
 ```
@@ -73,9 +73,9 @@ pool := &redis.Pool{
     },
 }
 
-sessionOne = scs.NewSession()
-sessionOne.Store = redisstore.NewWithPrefix(pool, "scs:session:1:")
+sessionManagerOne = scs.New()
+sessionManagerOne.Store = redisstore.NewWithPrefix(pool, "scs:session:1:")
 
-sessionTwo = scs.NewSession()
-sessionTwo.Store = redisstore.NewWithPrefix(pool, "scs:session:2:")
+sessionManagerTwo = scs.New()
+sessionManagerTwo.Store = redisstore.NewWithPrefix(pool, "scs:session:2:")
 ```

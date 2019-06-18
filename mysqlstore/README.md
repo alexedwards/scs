@@ -35,7 +35,7 @@ import (
 	_ "github.com/go-sql-driver/mysql"
 )
 
-var session *scs.Session
+var sessionManager *scs.SessionManager
 
 func main() {
 	db, err := sql.Open("mysql", "user:pass@/db?parseTime=true")
@@ -46,22 +46,22 @@ func main() {
 
 	// Initialize a new session manager and configure it to use MySQL as
 	// the session store.
-	session = scs.NewSession()
-	session.Store = mysqlstore.New(db)
+	sessionManager = scs.New()
+	sessionManager.Store = mysqlstore.New(db)
 
 	mux := http.NewServeMux()
 	mux.HandleFunc("/put", putHandler)
 	mux.HandleFunc("/get", getHandler)
 
-	http.ListenAndServe(":4000", session.LoadAndSave(mux))
+	http.ListenAndServe(":4000", sessionManager.LoadAndSave(mux))
 }
 
 func putHandler(w http.ResponseWriter, r *http.Request) {
-	session.Put(r.Context(), "message", "Hello from a session!")
+	sessionManager.Put(r.Context(), "message", "Hello from a session!")
 }
 
 func getHandler(w http.ResponseWriter, r *http.Request) {
-	msg := session.GetString(r.Context(), "message")
+	msg := sessionManager.GetString(r.Context(), "message")
 	io.WriteString(w, msg)
 }
 ```
@@ -95,8 +95,8 @@ func TestExample(t *testing.T) {
 	store := mysqlstore.New(db)
 	defer store.StopCleanup()
 
-	session = scs.NewSession()
-	session.Store = store
+	sessionManager = scs.New()
+	sessionManager.Store = store
 
 	// Run test...
 }

@@ -46,34 +46,35 @@ package main
 import (
 	"io"
 	"net/http"
+	"time"
 
 	"github.com/alexedwards/scs/v2"
 )
 
-var session *scs.Session
+var sessionManager *scs.SessionManager
 
 func main() {
-	// Initialize the session manager and configure the session lifetime.
-	session = scs.NewSession()
-	session.Lifetime = 24 * time.Hour
+	// Initialize a new session manager and configure the session lifetime.
+	sessionManager = scs.New()
+	sessionManager.Lifetime = 24 * time.Hour
 
 	mux := http.NewServeMux()
 	mux.HandleFunc("/put", putHandler)
 	mux.HandleFunc("/get", getHandler)
 
 	// Wrap your handlers with the LoadAndSave() middleware.
-	http.ListenAndServe(":4000", session.LoadAndSave(mux))
+	http.ListenAndServe(":4000", sessionManager.LoadAndSave(mux))
 }
 
 func putHandler(w http.ResponseWriter, r *http.Request) {
 	// Store a new key and value in the session data.
-	session.Put(r.Context(), "message", "Hello from a session!")
+	sessionManager.Put(r.Context(), "message", "Hello from a session!")
 }
 
 func getHandler(w http.ResponseWriter, r *http.Request) {
 	// Use the GetString helper to retrieve the string value associated with a
 	// key. The zero value is returned if the key does not exist.
-	msg := session.GetString(r.Context(), "message")
+	msg := sessionManager.GetString(r.Context(), "message")
 	io.WriteString(w, msg)
 }
 ```
@@ -98,40 +99,40 @@ Hello from a session!
 
 ### Configuring Session Behavior
 
-Session behavior can be configured via the `Session` fields.
+Session behavior can be configured via the `SessionManager` fields.
 
 ```go
-session = scs.NewSession()
-session.Lifetime = 3 * time.Hour
-session.IdleTimeout = 20 * time.Minute
-session.Cookie.Name = "session_id"
-session.Cookie.Domain = "example.com"
-session.Cookie.HttpOnly = true
-session.Cookie.Path = "/example/"
-session.Cookie.Persist = true
-session.Cookie.SameSite = http.SameSiteStrictMode
-session.Cookie.Secure = true
+sessionManager = scs.New()
+sessionManager.Lifetime = 3 * time.Hour
+sessionManager.IdleTimeout = 20 * time.Minute
+sessionManager.Cookie.Name = "session_id"
+sessionManager.Cookie.Domain = "example.com"
+sessionManager.Cookie.HttpOnly = true
+sessionManager.Cookie.Path = "/example/"
+sessionManager.Cookie.Persist = true
+sessionManager.Cookie.SameSite = http.SameSiteStrictMode
+sessionManager.Cookie.Secure = true
 ```
 
-Documentation for all available settings and their default values can be [found here](https://godoc.org/github.com/alexedwards/scs#Session).
+Documentation for all available settings and their default values can be [found here](https://godoc.org/github.com/alexedwards/scs#SessionManager).
 
 ### Working with Session Data
 
-Data can be set using the [`Put()`](https://godoc.org/github.com/alexedwards/scs#Session.Put) method and retrieved with the [`Get()`](https://godoc.org/github.com/alexedwards/scs#Session.Get) method. A variety of helper methods like [`GetString()`](https://godoc.org/github.com/alexedwards/scs#Session.GetString), [`GetInt()`](https://godoc.org/github.com/alexedwards/scs#Session.GetInt) and [`GetBytes()`](https://godoc.org/github.com/alexedwards/scs#Session.GetBytes) are included for common data types. Please see [the documentation](https://godoc.org/github.com/alexedwards/scs#pkg-index) for a full list of helper methods.
+Data can be set using the [`Put()`](https://godoc.org/github.com/alexedwards/scs#SessionManager.Put) method and retrieved with the [`Get()`](https://godoc.org/github.com/alexedwards/scs#SessionManager.Get) method. A variety of helper methods like [`GetString()`](https://godoc.org/github.com/alexedwards/scs#SessionManager.GetString), [`GetInt()`](https://godoc.org/github.com/alexedwards/scs#SessionManager.GetInt) and [`GetBytes()`](https://godoc.org/github.com/alexedwards/scs#SessionManager.GetBytes) are included for common data types. Please see [the documentation](https://godoc.org/github.com/alexedwards/scs#pkg-index) for a full list of helper methods.
 
-The [`Pop()`](https://godoc.org/github.com/alexedwards/scs#Session.Pop) method (and accompanying helpers for common data types) act like a one-time `Get()`, retrieving the data and removing it from the session in one step. These are useful if you want to implement 'flash' message functionality in your application, where messages are displayed to the user once only.
+The [`Pop()`](https://godoc.org/github.com/alexedwards/scs#SessionManager.Pop) method (and accompanying helpers for common data types) act like a one-time `Get()`, retrieving the data and removing it from the session in one step. These are useful if you want to implement 'flash' message functionality in your application, where messages are displayed to the user once only.
 
-Some other useful functions are [`Exists()`](https://godoc.org/github.com/alexedwards/scs#Session.Exists) (which returns a `bool` indicating whether or not a given key exists in the session data) and [`Keys()`](https://godoc.org/github.com/alexedwards/scs#Session.Keys) (which returns a sorted slice of keys in the session data).
+Some other useful functions are [`Exists()`](https://godoc.org/github.com/alexedwards/scs#SessionManager.Exists) (which returns a `bool` indicating whether or not a given key exists in the session data) and [`Keys()`](https://godoc.org/github.com/alexedwards/scs#SessionManager.Keys) (which returns a sorted slice of keys in the session data).
 
-Individual data items can be deleted from the session using the [`Remove()`](https://godoc.org/github.com/alexedwards/scs#Session.Remove) method. Alternatively, all session data can de deleted by using the [`Destroy()`](https://godoc.org/github.com/alexedwards/scs#Session.Destroy) method. After calling `Destroy()`, any further operations in the same request cycle will result in a new session being created --- with a new session token and a new lifetime.
+Individual data items can be deleted from the session using the [`Remove()`](https://godoc.org/github.com/alexedwards/scs#SessionManager.Remove) method. Alternatively, all session data can de deleted by using the [`Destroy()`](https://godoc.org/github.com/alexedwards/scs#SessionManager.Destroy) method. After calling `Destroy()`, any further operations in the same request cycle will result in a new session being created --- with a new session token and a new lifetime.
 
 Behind the scenes SCS uses gob encoding to store session data, so if you want to store custom types in the session data they must be [registered](https://golang.org/pkg/encoding/gob/#Register) with the encoding/gob package first. Struct fields of custom types must also be exported so that they are visible to the encoding/gob package. Please [see here](https://gist.github.com/alexedwards/d6eca7136f98ec12ad606e774d3abad3) for a working example.
 
 ### Loading and Saving Sessions
 
-Most applications will use the [`LoadAndSave()`](https://godoc.org/github.com/alexedwards/scs#Session.LoadAndSave) middleware. This middleware takes care of loading and committing session data to the session store, and communicating the session token to/from the client in a cookie as necessary.
+Most applications will use the [`LoadAndSave()`](https://godoc.org/github.com/alexedwards/scs#SessionManager.LoadAndSave) middleware. This middleware takes care of loading and committing session data to the session store, and communicating the session token to/from the client in a cookie as necessary.
 
-If you want to communicate the session token to/from the client in a different way (for example in a different HTTP header) you are encouraged to create your own alternative middleware using the code in [`LoadAndSave()`](https://godoc.org/github.com/alexedwards/scs#Session.LoadAndSave) as a template. An example is [given here](https://gist.github.com/alexedwards/cc6190195acfa466bf27f05aa5023f50).
+If you want to communicate the session token to/from the client in a different way (for example in a different HTTP header) you are encouraged to create your own alternative middleware using the code in [`LoadAndSave()`](https://godoc.org/github.com/alexedwards/scs#SessionManager.LoadAndSave) as a template. An example is [given here](https://gist.github.com/alexedwards/cc6190195acfa466bf27f05aa5023f50).
 
 Or for more fine-grained control you can load and save sessions within your individual handlers (or from anywhere in your application). [See here](https://gist.github.com/alexedwards/0570e5a59677e278e13acb8ea53a3b30) for an example.
 
@@ -178,21 +179,21 @@ type Store interface {
 
 ### Preventing Session Fixation
 
-To help prevent session fixation attacks you should [renew the session token after any privilege level change](https://github.com/OWASP/CheatSheetSeries/blob/master/cheatsheets/Session_Management_Cheat_Sheet.md#renew-the-session-id-after-any-privilege-level-change). Commonly, this means that the session token must to be changed when a user logs in or out of your application. You can do this using the [`RenewToken()`](https://godoc.org/github.com/alexedwards/scs#Session.RenewToken) method like so:
+To help prevent session fixation attacks you should [renew the session token after any privilege level change](https://github.com/OWASP/CheatSheetSeries/blob/master/cheatsheets/Session_Management_Cheat_Sheet.md#renew-the-session-id-after-any-privilege-level-change). Commonly, this means that the session token must to be changed when a user logs in or out of your application. You can do this using the [`RenewToken()`](https://godoc.org/github.com/alexedwards/scs#SessionManager.RenewToken) method like so:
 
 ```go
 func loginHandler(w http.ResponseWriter, r *http.Request) {
 	userID := 123
 
 	// First renew the session token...
-	err := session.RenewToken(r.Context())
+	err := sessionManager.RenewToken(r.Context())
 	if err != nil {
 		http.Error(w, err.Error(), 500)
 		return
 	}
 
 	// Then make the privilege-level change.
-	session.Put(r.Context(), "userID", userID)
+	sessionManager.Put(r.Context(), "userID", userID)
 }
 ```
 

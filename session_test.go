@@ -52,18 +52,18 @@ func extractTokenFromCookie(c string) string {
 }
 
 func TestEnable(t *testing.T) {
-	session := NewSession()
+	sessionManager := New()
 
 	mux := http.NewServeMux()
 	mux.HandleFunc("/put", http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		session.Put(r.Context(), "foo", "bar")
+		sessionManager.Put(r.Context(), "foo", "bar")
 	}))
 	mux.HandleFunc("/get", http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		s := session.Get(r.Context(), "foo").(string)
+		s := sessionManager.Get(r.Context(), "foo").(string)
 		w.Write([]byte(s))
 	}))
 
-	ts := newTestServer(t, session.LoadAndSave(mux))
+	ts := newTestServer(t, sessionManager.LoadAndSave(mux))
 	defer ts.Close()
 
 	header, _ := ts.execute(t, "/put")
@@ -85,15 +85,15 @@ func TestEnable(t *testing.T) {
 }
 
 func TestLifetime(t *testing.T) {
-	session := NewSession()
-	session.Lifetime = 500 * time.Millisecond
+	sessionManager := New()
+	sessionManager.Lifetime = 500 * time.Millisecond
 
 	mux := http.NewServeMux()
 	mux.HandleFunc("/put", http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		session.Put(r.Context(), "foo", "bar")
+		sessionManager.Put(r.Context(), "foo", "bar")
 	}))
 	mux.HandleFunc("/get", http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		v := session.Get(r.Context(), "foo")
+		v := sessionManager.Get(r.Context(), "foo")
 		if v == nil {
 			http.Error(w, "foo does not exist in session", 500)
 			return
@@ -101,7 +101,7 @@ func TestLifetime(t *testing.T) {
 		w.Write([]byte(v.(string)))
 	}))
 
-	ts := newTestServer(t, session.LoadAndSave(mux))
+	ts := newTestServer(t, sessionManager.LoadAndSave(mux))
 	defer ts.Close()
 
 	ts.execute(t, "/put")
@@ -119,16 +119,16 @@ func TestLifetime(t *testing.T) {
 }
 
 func TestIdleTimeout(t *testing.T) {
-	session := NewSession()
-	session.IdleTimeout = 200 * time.Millisecond
-	session.Lifetime = time.Second
+	sessionManager := New()
+	sessionManager.IdleTimeout = 200 * time.Millisecond
+	sessionManager.Lifetime = time.Second
 
 	mux := http.NewServeMux()
 	mux.HandleFunc("/put", http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		session.Put(r.Context(), "foo", "bar")
+		sessionManager.Put(r.Context(), "foo", "bar")
 	}))
 	mux.HandleFunc("/get", http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		v := session.Get(r.Context(), "foo")
+		v := sessionManager.Get(r.Context(), "foo")
 		if v == nil {
 			http.Error(w, "foo does not exist in session", 500)
 			return
@@ -136,7 +136,7 @@ func TestIdleTimeout(t *testing.T) {
 		w.Write([]byte(v.(string)))
 	}))
 
-	ts := newTestServer(t, session.LoadAndSave(mux))
+	ts := newTestServer(t, sessionManager.LoadAndSave(mux))
 	defer ts.Close()
 
 	ts.execute(t, "/put")
@@ -158,21 +158,21 @@ func TestIdleTimeout(t *testing.T) {
 }
 
 func TestDestroy(t *testing.T) {
-	session := NewSession()
+	sessionManager := New()
 
 	mux := http.NewServeMux()
 	mux.HandleFunc("/put", http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		session.Put(r.Context(), "foo", "bar")
+		sessionManager.Put(r.Context(), "foo", "bar")
 	}))
 	mux.HandleFunc("/destroy", http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		err := session.Destroy(r.Context())
+		err := sessionManager.Destroy(r.Context())
 		if err != nil {
 			http.Error(w, err.Error(), 500)
 			return
 		}
 	}))
 	mux.HandleFunc("/get", http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		v := session.Get(r.Context(), "foo")
+		v := sessionManager.Get(r.Context(), "foo")
 		if v == nil {
 			http.Error(w, "foo does not exist in session", 500)
 			return
@@ -180,15 +180,15 @@ func TestDestroy(t *testing.T) {
 		w.Write([]byte(v.(string)))
 	}))
 
-	ts := newTestServer(t, session.LoadAndSave(mux))
+	ts := newTestServer(t, sessionManager.LoadAndSave(mux))
 	defer ts.Close()
 
 	ts.execute(t, "/put")
 	header, _ := ts.execute(t, "/destroy")
 	cookie := header.Get("Set-Cookie")
 
-	if strings.HasPrefix(cookie, fmt.Sprintf("%s=;", session.Cookie.Name)) == false {
-		t.Fatalf("got %q: expected prefix %q", cookie, fmt.Sprintf("%s=;", session.Cookie.Name))
+	if strings.HasPrefix(cookie, fmt.Sprintf("%s=;", sessionManager.Cookie.Name)) == false {
+		t.Fatalf("got %q: expected prefix %q", cookie, fmt.Sprintf("%s=;", sessionManager.Cookie.Name))
 	}
 	if strings.Contains(cookie, "Expires=Thu, 01 Jan 1970 00:00:01 GMT") == false {
 		t.Fatalf("got %q: expected to contain %q", cookie, "Expires=Thu, 01 Jan 1970 00:00:01 GMT")

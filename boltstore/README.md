@@ -20,7 +20,7 @@ import (
 	"go.etcd.io/bbolt"
 )
 
-var session *scs.Session
+var sessionManager *scs.SessionManager
 
 func main() {
     // Establish a Bolt database.
@@ -32,23 +32,23 @@ func main() {
 
 	// Initialize a new session manager and configure it to use boltstore as
 	// the session store.
-	session = scs.NewSession()
-	session.Store = boltstore.NewWithCleanupInterval(db, 20*time.Second)
-	session.Lifetime = time.Minute
+	sessionManager = scs.New()
+	sessionManager.Store = boltstore.NewWithCleanupInterval(db, 20*time.Second)
+	sessionManager.Lifetime = time.Minute
 
 	mux := http.NewServeMux()
 	mux.HandleFunc("/put", putHandler)
 	mux.HandleFunc("/get", getHandler)
 
-	http.ListenAndServe(":4000", session.LoadAndSave(mux))
+	http.ListenAndServe(":4000", sessionManager.LoadAndSave(mux))
 }
 
 func putHandler(w http.ResponseWriter, r *http.Request) {
-	session.Put(r.Context(), "message", "Hello from a session!")
+	sessionManager.Put(r.Context(), "message", "Hello from a session!")
 }
 
 func getHandler(w http.ResponseWriter, r *http.Request) {
-	msg := session.GetString(r.Context(), "message")
+	msg := sessionManager.GetString(r.Context(), "message")
 	io.WriteString(w, msg)
 }
 ```
@@ -82,8 +82,8 @@ func TestExample(t *testing.T) {
 	store := boltstore.New(db)
 	defer store.StopCleanup()
 
-	session = scs.NewSession()
-	session.Store = store
+	sessionManager = scs.New()
+	sessionManager.Store = store
 
 	// Run test...
 }

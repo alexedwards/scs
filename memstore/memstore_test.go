@@ -123,3 +123,20 @@ func TestDelete(t *testing.T) {
 		t.Fatalf("got %v: expected %v", found, false)
 	}
 }
+
+func TestCleanupInterval(t *testing.T) {
+	m := NewWithCleanupInterval(100 * time.Millisecond)
+	defer m.StopCleanup()
+	m.items["session_token"] = item{object: []byte("encoded_data"), expiration: time.Now().Add(500 * time.Millisecond).UnixNano()}
+
+	_, ok := m.items["session_token"]
+	if !ok {
+		t.Fatalf("got %v: expected %v", ok, true)
+	}
+
+	time.Sleep(time.Second)
+	_, ok = m.items["session_token"]
+	if ok {
+		t.Fatalf("got %v: expected %v", ok, false)
+	}
+}

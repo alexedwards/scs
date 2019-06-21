@@ -273,6 +273,137 @@ func TestPopString(t *testing.T) {
 	}
 }
 
+func TestPopBool(t *testing.T) {
+	s := NewSession()
+	sd := newSessionData(time.Hour)
+	sd.Values["foo"] = true
+	ctx := s.addSessionDataToContext(context.Background(), sd)
+
+	b := s.PopBool(ctx, "foo")
+	if b != true {
+		t.Errorf("got %v: expected %v", b, true)
+	}
+
+	_, ok := sd.Values["foo"]
+	if ok {
+		t.Errorf("got %v: expected %v", ok, false)
+	}
+
+	if sd.status != Modified {
+		t.Errorf("got %v: expected %v", sd.status, "modified")
+	}
+
+	b = s.PopBool(ctx, "bar")
+	if b != false {
+		t.Errorf("got %v: expected %v", b, false)
+	}
+}
+
+func TestPopInt(t *testing.T) {
+	s := NewSession()
+	sd := newSessionData(time.Hour)
+	sd.Values["foo"] = 123
+	ctx := s.addSessionDataToContext(context.Background(), sd)
+
+	i := s.PopInt(ctx, "foo")
+	if i != 123 {
+		t.Errorf("got %d: expected %d", i, 123)
+	}
+
+	_, ok := sd.Values["foo"]
+	if ok {
+		t.Errorf("got %v: expected %v", ok, false)
+	}
+
+	if sd.status != Modified {
+		t.Errorf("got %v: expected %v", sd.status, "modified")
+	}
+
+	i = s.PopInt(ctx, "bar")
+	if i != 0 {
+		t.Errorf("got %d: expected %d", i, 0)
+	}
+}
+
+func TestPopFloat(t *testing.T) {
+	s := NewSession()
+	sd := newSessionData(time.Hour)
+	sd.Values["foo"] = 123.456
+	ctx := s.addSessionDataToContext(context.Background(), sd)
+
+	f := s.PopFloat(ctx, "foo")
+	if f != 123.456 {
+		t.Errorf("got %f: expected %f", f, 123.456)
+	}
+
+	_, ok := sd.Values["foo"]
+	if ok {
+		t.Errorf("got %v: expected %v", ok, false)
+	}
+
+	if sd.status != Modified {
+		t.Errorf("got %v: expected %v", sd.status, "modified")
+	}
+
+	f = s.PopFloat(ctx, "bar")
+	if f != 0.0 {
+		t.Errorf("got %f: expected %f", f, 0.0)
+	}
+}
+
+func TestPopBytes(t *testing.T) {
+	s := NewSession()
+	sd := newSessionData(time.Hour)
+	sd.Values["foo"] = []byte("bar")
+	ctx := s.addSessionDataToContext(context.Background(), sd)
+
+	b := s.PopBytes(ctx, "foo")
+	if !bytes.Equal(b, []byte("bar")) {
+		t.Errorf("got %v: expected %v", b, []byte("bar"))
+	}
+	_, ok := sd.Values["foo"]
+	if ok {
+		t.Errorf("got %v: expected %v", ok, false)
+	}
+
+	if sd.status != Modified {
+		t.Errorf("got %v: expected %v", sd.status, "modified")
+	}
+
+	b = s.PopBytes(ctx, "bar")
+	if b != nil {
+		t.Errorf("got %v: expected %v", b, nil)
+	}
+}
+
+func TestPopTime(t *testing.T) {
+	now := time.Now()
+	s := NewSession()
+	sd := newSessionData(time.Hour)
+	sd.Values["foo"] = now
+	ctx := s.addSessionDataToContext(context.Background(), sd)
+
+	tm := s.PopTime(ctx, "foo")
+	if tm != now {
+		t.Errorf("got %v: expected %v", tm, now)
+	}
+
+	_, ok := sd.Values["foo"]
+	if ok {
+		t.Errorf("got %v: expected %v", ok, false)
+	}
+
+	if sd.status != Modified {
+		t.Errorf("got %v: expected %v", sd.status, "modified")
+	}
+
+	tm = s.PopTime(ctx, "baz")
+	if !tm.IsZero() {
+		t.Errorf("got %v: expected %v", tm, time.Time{})
+	}
+
+}
+
 func TestStatus(t *testing.T) {
 	s := NewSession()
 	sd := newSessionData(time.Hour)

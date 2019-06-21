@@ -202,3 +202,47 @@ func TestDestroy(t *testing.T) {
 		t.Errorf("want %q; got %q", "foo does not exist in session\n", body)
 	}
 }
+
+func TestRenewToken(t *testing.T) {
+	sessionManager := New()
+
+	mux := http.NewServeMux()
+	mux.HandleFunc("/put", http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		sessionManager.Put(r.Context(), "foo", "bar")
+	}))
+	mux.HandleFunc("/renew", http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		err := sessionManager.RenewToken(r.Context())
+		if err != nil {
+			http.Error(w, err.Error(), 500)
+			return
+		}
+	}))
+	mux.HandleFunc("/get", http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		v := sessionManager.Get(r.Context(), "foo")
+		if v == nil {
+			http.Error(w, "foo does not exist in session", 500)
+			return
+		}
+		w.Write([]byte(v.(string)))
+	}))
+
+	ts := newTestServer(t, sessionManager.LoadAndSave(mux))
+	defer ts.Close()
+
+	header, _ := ts.execute(t, "/put")
+	cookie := header.Get("Set-Cookie")
+	originalToken := extractTokenFromCookie(cookie)
+
+	header, _ = ts.execute(t, "/renew")
+	cookie = header.Get("Set-Cookie")
+	newToken := extractTokenFromCookie(cookie)
+
+	if newToken == originalToken {
+		t.Fatal("token has not changed")
+	}
+
+	header, body := ts.execute(t, "/get")
+	if body != "bar" {
+		t.Errorf("want %q; got %q", "bar", body)
+	}
+}

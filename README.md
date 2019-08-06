@@ -9,7 +9,7 @@
 ## Features
 
 * Automatic loading and saving of session data via middleware.
-* Choice of server-side session stores including PostgreSQL, MySQL, Redis and BoltDB. Custom session stores are also supported.
+* Choice of server-side session stores including PostgreSQL, MySQL, Redis, BadgerDB and BoltDB. Custom session stores are also supported.
 * Supports multiple sessions per request, 'flash' messages, session token regeneration, and idle and absolute session timeouts.
 * Easy to extend and customize. Communicate session tokens to/from clients in HTTP headers or request/response bodies.
 * Efficient design. Smaller, faster and uses less memory than [gorilla/sessions](https://github.com/gorilla/sessions).
@@ -146,6 +146,7 @@ The session stores currently included are shown in the table below. Please click
 
 | Package                                                                               |                                                                                  |
 |:------------------------------------------------------------------------------------- |----------------------------------------------------------------------------------|
+| [badgerstore](https://github.com/alexedwards/scs/tree/master/badgerstore)       		| BadgerDB based session store  		                                               |
 | [boltstore](https://github.com/alexedwards/scs/tree/master/boltstore)       			| BoltDB based session store  		                                               |
 | [memstore](https://github.com/alexedwards/scs/tree/master/memstore)       			| In-memory session store (default)                                                |
 | [mysqlstore](https://github.com/alexedwards/scs/tree/master/mysqlstore)   			| MySQL based session store                                                        |

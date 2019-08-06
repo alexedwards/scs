@@ -22,11 +22,11 @@ var sessionManager *scs.SessionManager
 
 func main() {
 	// Create a Badger database.
-  db, err := badger.Open(badger.DefaultOptions("tmp/badger"))
-  if err != nil {
-    log.Fatal(err)
-  }
-  defer db.Close()
+	db, err := badger.Open(badger.DefaultOptions("tmp/badger"))
+	if err != nil {
+		log.Fatal(err)
+	}
+	defer db.Close()
 
 	// Initialize a new session manager and configure it to use badgerstore as
 	// the session store.

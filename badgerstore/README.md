@@ -67,7 +67,7 @@ Because the token is highly unique, key collisions are not a concern. But if you
 ```go
 db, err := badger.Open(badger.DefaultOptions("tmp/badger"))
 if err != nil {
-  log.Fatal(err)
+	log.Fatal(err)
 }
 defer db.Close()
 

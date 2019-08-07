@@ -38,8 +38,10 @@ func (bs *BadgerStore) Find(token string) ([]byte, bool, error) {
 	defer txn.Discard()
 
 	item, err := txn.Get(key)
-	if err != nil {
+	if err == badger.ErrKeyNotFound {
 		return nil, false, nil
+	} else if err != nil {
+		return nil, false, err
 	}
 
 	data, err := item.ValueCopy(nil)

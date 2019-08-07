@@ -203,8 +203,10 @@ func TestDelete(t *testing.T) {
 
 	err = db.View(func(txn *badger.Txn) error {
 		item, err := txn.Get([]byte(store.prefix + "session_token"))
-		if err != nil {
+		if err == badger.ErrKeyNotFound {
 			return nil
+		} else if err != nil {
+			return err
 		}
 		t.Fatalf("got %v: expected %v", item, nil)
 		return nil

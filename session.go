@@ -1,8 +1,10 @@
 package scs
 
 import (
+	"bufio"
 	"bytes"
 	"log"
+	"net"
 	"net/http"
 	"time"
 
@@ -193,4 +195,9 @@ func (bw *bufferedResponseWriter) Write(b []byte) (int, error) {
 
 func (bw *bufferedResponseWriter) WriteHeader(code int) {
 	bw.code = code
+}
+
+func (bw *bufferedResponseWriter) Hijack() (net.Conn, *bufio.ReadWriter, error) {
+	hj := bw.ResponseWriter.(http.Hijacker)
+	return hj.Hijack()
 }

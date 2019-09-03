@@ -34,6 +34,11 @@ type SessionManager struct {
 	// Cookie contains the configuration settings for session cookies.
 	Cookie SessionCookie
 
+	// Codec controls the encoder/decoder used to transform session data to a
+	// byte slice for use by the session store. By default session data is
+	// encoded/decoded using encoding/gob.
+	Codec Codec
+
 	// contextKey is the key used to set and retrieve the session data from a
 	// context.Context. It's automatically generated to ensure uniqueness.
 	contextKey contextKey
@@ -87,6 +92,7 @@ func New() *SessionManager {
 		IdleTimeout: 0,
 		Lifetime:    24 * time.Hour,
 		Store:       memstore.New(),
+		Codec:       gobCodec{},
 		contextKey:  generateContextKey(),
 		Cookie: SessionCookie{
 			Name:     "session",

@@ -26,8 +26,8 @@ func TestPut(t *testing.T) {
 
 	s.Put(ctx, "foo", "bar")
 
-	if sd.Values["foo"] != "bar" {
-		t.Errorf("got %q: expected %q", sd.Values["foo"], "bar")
+	if sd.values["foo"] != "bar" {
+		t.Errorf("got %q: expected %q", sd.values["foo"], "bar")
 	}
 
 	if sd.status != Modified {
@@ -38,7 +38,7 @@ func TestPut(t *testing.T) {
 func TestGet(t *testing.T) {
 	s := NewSession()
 	sd := newSessionData(time.Hour)
-	sd.Values["foo"] = "bar"
+	sd.values["foo"] = "bar"
 	ctx := s.addSessionDataToContext(context.Background(), sd)
 
 	str, ok := s.Get(ctx, "foo").(string)
@@ -54,7 +54,7 @@ func TestGet(t *testing.T) {
 func TestPop(t *testing.T) {
 	s := NewSession()
 	sd := newSessionData(time.Hour)
-	sd.Values["foo"] = "bar"
+	sd.values["foo"] = "bar"
 	ctx := s.addSessionDataToContext(context.Background(), sd)
 
 	str, ok := s.Pop(ctx, "foo").(string)
@@ -66,7 +66,7 @@ func TestPop(t *testing.T) {
 		t.Errorf("got %q: expected %q", str, "bar")
 	}
 
-	_, ok = sd.Values["foo"]
+	_, ok = sd.values["foo"]
 	if ok {
 		t.Errorf("got %v: expected %v", ok, false)
 	}
@@ -79,13 +79,13 @@ func TestPop(t *testing.T) {
 func TestRemove(t *testing.T) {
 	s := NewSession()
 	sd := newSessionData(time.Hour)
-	sd.Values["foo"] = "bar"
+	sd.values["foo"] = "bar"
 	ctx := s.addSessionDataToContext(context.Background(), sd)
 
 	s.Remove(ctx, "foo")
 
-	if sd.Values["foo"] != nil {
-		t.Errorf("got %v: expected %v", sd.Values["foo"], nil)
+	if sd.values["foo"] != nil {
+		t.Errorf("got %v: expected %v", sd.values["foo"], nil)
 	}
 
 	if sd.status != Modified {
@@ -96,18 +96,18 @@ func TestRemove(t *testing.T) {
 func TestClear(t *testing.T) {
 	s := NewSession()
 	sd := newSessionData(time.Hour)
-	sd.Values["foo"] = "bar"
-	sd.Values["baz"] = "boz"
+	sd.values["foo"] = "bar"
+	sd.values["baz"] = "boz"
 	ctx := s.addSessionDataToContext(context.Background(), sd)
 
 	s.Clear(ctx)
 
-	if sd.Values["foo"] != nil {
-		t.Errorf("got %v: expected %v", sd.Values["foo"], nil)
+	if sd.values["foo"] != nil {
+		t.Errorf("got %v: expected %v", sd.values["foo"], nil)
 	}
 
-	if sd.Values["baz"] != nil {
-		t.Errorf("got %v: expected %v", sd.Values["baz"], nil)
+	if sd.values["baz"] != nil {
+		t.Errorf("got %v: expected %v", sd.values["baz"], nil)
 	}
 
 	if sd.status != Modified {
@@ -118,7 +118,7 @@ func TestClear(t *testing.T) {
 func TestExists(t *testing.T) {
 	s := NewSession()
 	sd := newSessionData(time.Hour)
-	sd.Values["foo"] = "bar"
+	sd.values["foo"] = "bar"
 	ctx := s.addSessionDataToContext(context.Background(), sd)
 
 	if !s.Exists(ctx, "foo") {
@@ -133,8 +133,8 @@ func TestExists(t *testing.T) {
 func TestKeys(t *testing.T) {
 	s := NewSession()
 	sd := newSessionData(time.Hour)
-	sd.Values["foo"] = "bar"
-	sd.Values["woo"] = "waa"
+	sd.values["foo"] = "bar"
+	sd.values["woo"] = "waa"
 	ctx := s.addSessionDataToContext(context.Background(), sd)
 
 	keys := s.Keys(ctx)
@@ -146,7 +146,7 @@ func TestKeys(t *testing.T) {
 func TestGetString(t *testing.T) {
 	s := NewSession()
 	sd := newSessionData(time.Hour)
-	sd.Values["foo"] = "bar"
+	sd.values["foo"] = "bar"
 	ctx := s.addSessionDataToContext(context.Background(), sd)
 
 	str := s.GetString(ctx, "foo")
@@ -163,7 +163,7 @@ func TestGetString(t *testing.T) {
 func TestGetBool(t *testing.T) {
 	s := NewSession()
 	sd := newSessionData(time.Hour)
-	sd.Values["foo"] = true
+	sd.values["foo"] = true
 	ctx := s.addSessionDataToContext(context.Background(), sd)
 
 	b := s.GetBool(ctx, "foo")
@@ -180,7 +180,7 @@ func TestGetBool(t *testing.T) {
 func TestGetInt(t *testing.T) {
 	s := NewSession()
 	sd := newSessionData(time.Hour)
-	sd.Values["foo"] = 123
+	sd.values["foo"] = 123
 	ctx := s.addSessionDataToContext(context.Background(), sd)
 
 	i := s.GetInt(ctx, "foo")
@@ -197,7 +197,7 @@ func TestGetInt(t *testing.T) {
 func TestGetFloat(t *testing.T) {
 	s := NewSession()
 	sd := newSessionData(time.Hour)
-	sd.Values["foo"] = 123.456
+	sd.values["foo"] = 123.456
 	ctx := s.addSessionDataToContext(context.Background(), sd)
 
 	f := s.GetFloat(ctx, "foo")
@@ -214,7 +214,7 @@ func TestGetFloat(t *testing.T) {
 func TestGetBytes(t *testing.T) {
 	s := NewSession()
 	sd := newSessionData(time.Hour)
-	sd.Values["foo"] = []byte("bar")
+	sd.values["foo"] = []byte("bar")
 	ctx := s.addSessionDataToContext(context.Background(), sd)
 
 	b := s.GetBytes(ctx, "foo")
@@ -233,7 +233,7 @@ func TestGetTime(t *testing.T) {
 
 	s := NewSession()
 	sd := newSessionData(time.Hour)
-	sd.Values["foo"] = now
+	sd.values["foo"] = now
 	ctx := s.addSessionDataToContext(context.Background(), sd)
 
 	tm := s.GetTime(ctx, "foo")
@@ -250,7 +250,7 @@ func TestGetTime(t *testing.T) {
 func TestPopString(t *testing.T) {
 	s := NewSession()
 	sd := newSessionData(time.Hour)
-	sd.Values["foo"] = "bar"
+	sd.values["foo"] = "bar"
 	ctx := s.addSessionDataToContext(context.Background(), sd)
 
 	str := s.PopString(ctx, "foo")
@@ -258,7 +258,7 @@ func TestPopString(t *testing.T) {
 		t.Errorf("got %q: expected %q", str, "bar")
 	}
 
-	_, ok := sd.Values["foo"]
+	_, ok := sd.values["foo"]
 	if ok {
 		t.Errorf("got %v: expected %v", ok, false)
 	}
@@ -276,7 +276,7 @@ func TestPopString(t *testing.T) {
 func TestPopBool(t *testing.T) {
 	s := NewSession()
 	sd := newSessionData(time.Hour)
-	sd.Values["foo"] = true
+	sd.values["foo"] = true
 	ctx := s.addSessionDataToContext(context.Background(), sd)
 
 	b := s.PopBool(ctx, "foo")
@@ -284,7 +284,7 @@ func TestPopBool(t *testing.T) {
 		t.Errorf("got %v: expected %v", b, true)
 	}
 
-	_, ok := sd.Values["foo"]
+	_, ok := sd.values["foo"]
 	if ok {
 		t.Errorf("got %v: expected %v", ok, false)
 	}
@@ -302,7 +302,7 @@ func TestPopBool(t *testing.T) {
 func TestPopInt(t *testing.T) {
 	s := NewSession()
 	sd := newSessionData(time.Hour)
-	sd.Values["foo"] = 123
+	sd.values["foo"] = 123
 	ctx := s.addSessionDataToContext(context.Background(), sd)
 
 	i := s.PopInt(ctx, "foo")
@@ -310,7 +310,7 @@ func TestPopInt(t *testing.T) {
 		t.Errorf("got %d: expected %d", i, 123)
 	}
 
-	_, ok := sd.Values["foo"]
+	_, ok := sd.values["foo"]
 	if ok {
 		t.Errorf("got %v: expected %v", ok, false)
 	}
@@ -328,7 +328,7 @@ func TestPopInt(t *testing.T) {
 func TestPopFloat(t *testing.T) {
 	s := NewSession()
 	sd := newSessionData(time.Hour)
-	sd.Values["foo"] = 123.456
+	sd.values["foo"] = 123.456
 	ctx := s.addSessionDataToContext(context.Background(), sd)
 
 	f := s.PopFloat(ctx, "foo")
@@ -336,7 +336,7 @@ func TestPopFloat(t *testing.T) {
 		t.Errorf("got %f: expected %f", f, 123.456)
 	}
 
-	_, ok := sd.Values["foo"]
+	_, ok := sd.values["foo"]
 	if ok {
 		t.Errorf("got %v: expected %v", ok, false)
 	}
@@ -354,14 +354,14 @@ func TestPopFloat(t *testing.T) {
 func TestPopBytes(t *testing.T) {
 	s := NewSession()
 	sd := newSessionData(time.Hour)
-	sd.Values["foo"] = []byte("bar")
+	sd.values["foo"] = []byte("bar")
 	ctx := s.addSessionDataToContext(context.Background(), sd)
 
 	b := s.PopBytes(ctx, "foo")
 	if !bytes.Equal(b, []byte("bar")) {
 		t.Errorf("got %v: expected %v", b, []byte("bar"))
 	}
-	_, ok := sd.Values["foo"]
+	_, ok := sd.values["foo"]
 	if ok {
 		t.Errorf("got %v: expected %v", ok, false)
 	}
@@ -380,7 +380,7 @@ func TestPopTime(t *testing.T) {
 	now := time.Now()
 	s := NewSession()
 	sd := newSessionData(time.Hour)
-	sd.Values["foo"] = now
+	sd.values["foo"] = now
 	ctx := s.addSessionDataToContext(context.Background(), sd)
 
 	tm := s.PopTime(ctx, "foo")
@@ -388,7 +388,7 @@ func TestPopTime(t *testing.T) {
 		t.Errorf("got %v: expected %v", tm, now)
 	}
 
-	_, ok := sd.Values["foo"]
+	_, ok := sd.values["foo"]
 	if ok {
 		t.Errorf("got %v: expected %v", ok, false)
 	}

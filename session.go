@@ -143,9 +143,9 @@ func (s *SessionManager) LoadAndSave(next http.Handler) http.Handler {
 				http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
 				return
 			}
-			s.writeSessionCookie(w, token, expiry)
+			s.WriteSessionCookie(w, token, expiry)
 		case Destroyed:
-			s.writeSessionCookie(w, "", time.Time{})
+			s.WriteSessionCookie(w, "", time.Time{})
 		}
 
 		if bw.code != 0 {
@@ -155,7 +155,7 @@ func (s *SessionManager) LoadAndSave(next http.Handler) http.Handler {
 	})
 }
 
-func (s *SessionManager) writeSessionCookie(w http.ResponseWriter, token string, expiry time.Time) {
+func (s *SessionManager) WriteSessionCookie(w http.ResponseWriter, token string, expiry time.Time) {
 	cookie := &http.Cookie{
 		Name:     s.Cookie.Name,
 		Value:    token,

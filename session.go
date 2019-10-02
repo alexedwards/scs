@@ -155,6 +155,11 @@ func (s *SessionManager) LoadAndSave(next http.Handler) http.Handler {
 	})
 }
 
+// WriteSessionCookie writes a cookie with the provided session token and
+// expiry time.
+//
+// Most applications will use the LoadAndSave() middleware and will not need to
+// use this method.
 func (s *SessionManager) WriteSessionCookie(w http.ResponseWriter, token string, expiry time.Time) {
 	cookie := &http.Cookie{
 		Name:     s.Cookie.Name,

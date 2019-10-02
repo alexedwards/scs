@@ -191,8 +191,9 @@ func addHeaderIfMissing(w http.ResponseWriter, key, value string) {
 
 type bufferedResponseWriter struct {
 	http.ResponseWriter
-	buf  bytes.Buffer
-	code int
+	buf         bytes.Buffer
+	code        int
+	wroteHeader bool
 }
 
 func (bw *bufferedResponseWriter) Write(b []byte) (int, error) {
@@ -200,7 +201,10 @@ func (bw *bufferedResponseWriter) Write(b []byte) (int, error) {
 }
 
 func (bw *bufferedResponseWriter) WriteHeader(code int) {
-	bw.code = code
+	if !bw.wroteHeader {
+		bw.code = code
+		bw.wroteHeader = true
+	}
 }
 
 func (bw *bufferedResponseWriter) Hijack() (net.Conn, *bufio.ReadWriter, error) {

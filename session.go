@@ -216,3 +216,10 @@ func (bw *bufferedResponseWriter) Hijack() (net.Conn, *bufio.ReadWriter, error) 
 	hj := bw.ResponseWriter.(http.Hijacker)
 	return hj.Hijack()
 }
+
+func (bw *bufferedResponseWriter) Push(target string, opts *http.PushOptions) error {
+	if pusher, ok := bw.ResponseWriter.(http.Pusher); ok {
+		return pusher.Push(target, opts)
+	}
+	return http.ErrNotSupported
+}

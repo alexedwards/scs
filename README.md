@@ -134,7 +134,7 @@ Behind the scenes SCS uses gob encoding to store session data, so if you want to
 
 Most applications will use the [`LoadAndSave()`](https://godoc.org/github.com/alexedwards/scs#SessionManager.LoadAndSave) middleware. This middleware takes care of loading and committing session data to the session store, and communicating the session token to/from the client in a cookie as necessary.
 
-If you want to communicate the session token to/from the client in a different way (for example in a different HTTP header) you are encouraged to create your own alternative middleware using the code in [`LoadAndSave()`](https://godoc.org/github.com/alexedwards/scs#SessionManager.LoadAndSave) as a template. An example is [given here](https://gist.github.com/alexedwards/cc6190195acfa466bf27f05aa5023f50).
+If you want to customize the behavior (like communicating the session token to/from the client in a HTTP header, or creating a distributed lock on the session token for the duration of the request) you are encouraged to create your own alternative middleware using the code in [`LoadAndSave()`](https://godoc.org/github.com/alexedwards/scs#SessionManager.LoadAndSave) as a template. An example is [given here](https://gist.github.com/alexedwards/cc6190195acfa466bf27f05aa5023f50).
 
 Or for more fine-grained control you can load and save sessions within your individual handlers (or from anywhere in your application). [See here](https://gist.github.com/alexedwards/0570e5a59677e278e13acb8ea53a3b30) for an example.
 

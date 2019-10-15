@@ -39,6 +39,14 @@ type SessionManager struct {
 	// encoded/decoded using encoding/gob.
 	Codec Codec
 
+	// ErrorFunc allows you to control behavior when an error is encountered by
+	// the LoadAndSave middleware. The default behavior is for a HTTP 500
+	// "Internal Server Error" message to be sent to the client and the error
+	// logged using Go's standard logger. If a custom ErrorFunc is set, then
+	// control will be passed to this instead. A typical use would be to provide
+	// a function which logs the error and returns a customized HTML error page.
+	ErrorFunc func(http.ResponseWriter, *http.Request, error)
+
 	// contextKey is the key used to set and retrieve the session data from a
 	// context.Context. It's automatically generated to ensure uniqueness.
 	contextKey contextKey
@@ -93,6 +101,7 @@ func New() *SessionManager {
 		Lifetime:    24 * time.Hour,
 		Store:       memstore.New(),
 		Codec:       gobCodec{},
+		ErrorFunc:   defaultErrorFunc,
 		contextKey:  generateContextKey(),
 		Cookie: SessionCookie{
 			Name:     "session",
@@ -126,8 +135,7 @@ func (s *SessionManager) LoadAndSave(next http.Handler) http.Handler {
 
 		ctx, err := s.Load(r.Context(), token)
 		if err != nil {
-			log.Output(2, err.Error())
-			http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
+			s.ErrorFunc(w, r, err)
 			return
 		}
 
@@ -139,8 +147,7 @@ func (s *SessionManager) LoadAndSave(next http.Handler) http.Handler {
 		case Modified:
 			token, expiry, err := s.Commit(ctx)
 			if err != nil {
-				log.Output(2, err.Error())
-				http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
+				s.ErrorFunc(w, r, err)
 				return
 			}
 			s.WriteSessionCookie(w, token, expiry)
@@ -192,6 +199,11 @@ func addHeaderIfMissing(w http.ResponseWriter, key, value string) {
 		}
 	}
 	w.Header().Add(key, value)
+}
+
+func defaultErrorFunc(w http.ResponseWriter, r *http.Request, err error) {
+	log.Output(2, err.Error())
+	http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
 }
 
 type bufferedResponseWriter struct {

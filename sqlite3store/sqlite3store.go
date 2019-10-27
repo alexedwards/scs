@@ -34,7 +34,7 @@ func NewWithCleanupInterval(db *sql.DB, cleanupInterval time.Duration) *SQLite3S
 // If the session token is not found or is expired, the returned exists flag will
 // be set to false.
 func (p *SQLite3Store) Find(token string) (b []byte, exists bool, err error) {
-	row := p.db.QueryRow("SELECT data FROM sessions WHERE token = $1 AND current_timestamp < expiry", token)
+	row := p.db.QueryRow("SELECT data FROM sessions WHERE token = $1 AND julianday('now') < expiry", token)
 	err = row.Scan(&b)
 	if err == sql.ErrNoRows {
 		return nil, false, nil
@@ -48,7 +48,7 @@ func (p *SQLite3Store) Find(token string) (b []byte, exists bool, err error) {
 // given expiry time. If the session token already exists, then the data and expiry
 // time are updated.
 func (p *SQLite3Store) Commit(token string, b []byte, expiry time.Time) error {
-	_, err := p.db.Exec("REPLACE INTO sessions (token, data, expiry) VALUES ($1, $2 ,$3)", token, b, expiry)
+	_, err := p.db.Exec("REPLACE INTO sessions (token, data, expiry) VALUES ($1, $2, julianday($3))", token, b, expiry)
 	if err != nil {
 		return err
 	}
@@ -96,6 +96,6 @@ func (p *SQLite3Store) StopCleanup() {
 }
 
 func (p *SQLite3Store) deleteExpired() error {
-	_, err := p.db.Exec("DELETE FROM sessions WHERE expiry < CURRENT_TIMESTAMP")
+	_, err := p.db.Exec("DELETE FROM sessions WHERE expiry < julianday('now')")
 	return err
 }

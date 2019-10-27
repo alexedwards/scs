@@ -1,22 +1,20 @@
-# postgresstore
+# sqlite3store
 
-A PostgreSQL-based session store supporting the [pq](https://github.com/lib/pq) driver.
+A SQLite3-based session store supporting the [pq](https://github.com/lib/pq) driver.
 
 ## Setup
 
-You should have a working PostgreSQL database containing a `sessions` table with the definition:
+You should have a working SQLite3 database containing a `sessions` table with the definition:
 
 ```sql
 CREATE TABLE sessions (
 	token TEXT PRIMARY KEY,
 	data BLOB NOT NULL,
-	expiry TEXT NOT NULL
+	expiry REAL NOT NULL
 );
 
 CREATE INDEX sessions_expiry_idx ON sessions(expiry);
 ```
-
-The database user for your application must have `SELECT`, `INSERT`, `UPDATE` and `DELETE` permissions on this table.
 
 ## Example
 
@@ -30,24 +28,24 @@ import (
 	"net/http"
 
 	"github.com/alexedwards/scs/v2"
-	"github.com/alexedwards/scs/postgresstore"
+	"github.com/alexedwards/scs/SQLite3Store"
 
-	_ "github.com/lib/pq"
+	_ "github.com/mattn/go-sqlite3"
 )
 
 var sessionManager *scs.SessionManager
 
 func main() {
-	db, err := sql.Open("postgres", "postgres://user:pass@localhost/db")
+	db, err := sql.Open("sqlite3", "sqlite3_database.db")
 	if err != nil {
 		log.Fatal(err)
 	}
 	defer db.Close()
 
-	// Initialize a new session manager and configure it to use PostgreSQL as
+	// Initialize a new session manager and configure it to use SQLite3 as
 	// the session store.
 	sessionManager = scs.New()
-	sessionManager.Store = postgresstore.New(db)
+	sessionManager.Store = SQLite3Store.New(db)
 
 	mux := http.NewServeMux()
 	mux.HandleFunc("/put", putHandler)
@@ -72,10 +70,10 @@ This package provides a background 'cleanup' goroutine to delete expired session
 
 ```go
 // Run a cleanup every 30 minutes.
-postgresstore.NewWithCleanupInterval(db, 30*time.Minute)
+SQLite3Store.NewWithCleanupInterval(db, 30*time.Minute)
 
 // Disable the cleanup goroutine by setting the cleanup interval to zero.
-postgresstore.NewWithCleanupInterval(db, 0)
+SQLite3Store.NewWithCleanupInterval(db, 0)
 ```
 
 ### Terminating the Cleanup Goroutine
@@ -86,13 +84,13 @@ However, there may be occasions when your use of a session store instance is tra
 
 ```go
 func TestExample(t *testing.T) {
-	db, err := sql.Open("postgres", "postgres://user:pass@localhost/db")
+	db, err := sql.Open("sqlite3", "sqlite3_database.db")
 	if err != nil {
 	    t.Fatal(err)
 	}
 	defer db.Close()
 
-	store := postgresstore.New(db)
+	store := SQLite3Store.New(db)
 	defer store.StopCleanup()
 
 	sessionManager = scs.New()

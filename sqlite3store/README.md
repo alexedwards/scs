@@ -4,7 +4,7 @@ A SQLite3-based session store supporting the [pq](https://github.com/lib/pq) dri
 
 ## Setup
 
-You should have a working SQLite3 database containing a `sessions` table with the definition:
+You should have a working SQLite3 database file a `sessions` table with the definition:
 
 ```sql
 CREATE TABLE sessions (

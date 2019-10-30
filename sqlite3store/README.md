@@ -1,6 +1,6 @@
 # sqlite3store
 
-A SQLite3-based session store supporting the [pq](https://github.com/lib/pq) driver.
+A SQLite3-based session store supporting the [mattn/go-sqlite3](https://github.com/mattn/go-sqlite3) driver.
 
 ## Setup
 

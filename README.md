@@ -152,7 +152,7 @@ The session stores currently included are shown in the table below. Please click
 | [mysqlstore](https://github.com/alexedwards/scs/tree/master/mysqlstore)   			| MySQL based session store                                                        |
 | [postgresstore](https://github.com/alexedwards/scs/tree/master/postgresstore)         | PostgreSQL based session store                                                   |
 | [redisstore](https://github.com/alexedwards/scs/tree/master/redisstore)       		| Redis based session store |
-| [sqllite3store](https://github.com/alexedwards/scs/tree/master/sqllite3store) | SQLite3 based session store |
+| [sqllite3store](https://github.com/alexedwards/scs/tree/master/sqlite3store) | SQLite3 based session store |
 
 Custom session stores are also supported. Please [see here](#using-custom-session-stores) for more information.
 

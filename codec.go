@@ -9,18 +9,20 @@ import (
 // Codec is the interface for encoding/decoding session data to and from a byte
 // slice for use by the session store.
 type Codec interface {
-	Encode(deadline time.Time, values map[string]interface{}) ([]byte, error)
-	Decode([]byte) (deadline time.Time, values map[string]interface{}, err error)
+	Encode(deadline time.Time, persit bool, values map[string]interface{}) ([]byte, error)
+	Decode([]byte) (deadline time.Time, persit bool, values map[string]interface{}, err error)
 }
 
 type gobCodec struct{}
 
-func (gobCodec) Encode(deadline time.Time, values map[string]interface{}) ([]byte, error) {
+func (gobCodec) Encode(deadline time.Time, persit bool, values map[string]interface{}) ([]byte, error) {
 	aux := &struct {
 		Deadline time.Time
+		Persist  bool
 		Values   map[string]interface{}
 	}{
 		Deadline: deadline,
+		Persist:  persit,
 		Values:   values,
 	}
 
@@ -33,17 +35,18 @@ func (gobCodec) Encode(deadline time.Time, values map[string]interface{}) ([]byt
 	return b.Bytes(), nil
 }
 
-func (gobCodec) Decode(b []byte) (time.Time, map[string]interface{}, error) {
+func (gobCodec) Decode(b []byte) (time.Time, bool, map[string]interface{}, error) {
 	aux := &struct {
 		Deadline time.Time
+		Persist  bool
 		Values   map[string]interface{}
 	}{}
 
 	r := bytes.NewReader(b)
 	err := gob.NewDecoder(r).Decode(&aux)
 	if err != nil {
-		return time.Time{}, nil, err
+		return time.Time{}, false, nil, err
 	}
 
-	return aux.Deadline, aux.Values, nil
+	return aux.Deadline, aux.Persist, aux.Values, nil
 }

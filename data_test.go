@@ -21,7 +21,7 @@ func TestSessionDataFromContext(t *testing.T) {
 
 func TestPut(t *testing.T) {
 	s := NewSession()
-	sd := newSessionData(time.Hour)
+	sd := newSessionData(time.Hour, true)
 	ctx := s.addSessionDataToContext(context.Background(), sd)
 
 	s.Put(ctx, "foo", "bar")
@@ -37,7 +37,7 @@ func TestPut(t *testing.T) {
 
 func TestGet(t *testing.T) {
 	s := NewSession()
-	sd := newSessionData(time.Hour)
+	sd := newSessionData(time.Hour, true)
 	sd.values["foo"] = "bar"
 	ctx := s.addSessionDataToContext(context.Background(), sd)
 
@@ -53,7 +53,7 @@ func TestGet(t *testing.T) {
 
 func TestPop(t *testing.T) {
 	s := NewSession()
-	sd := newSessionData(time.Hour)
+	sd := newSessionData(time.Hour, true)
 	sd.values["foo"] = "bar"
 	ctx := s.addSessionDataToContext(context.Background(), sd)
 
@@ -78,7 +78,7 @@ func TestPop(t *testing.T) {
 
 func TestRemove(t *testing.T) {
 	s := NewSession()
-	sd := newSessionData(time.Hour)
+	sd := newSessionData(time.Hour, true)
 	sd.values["foo"] = "bar"
 	ctx := s.addSessionDataToContext(context.Background(), sd)
 
@@ -95,7 +95,7 @@ func TestRemove(t *testing.T) {
 
 func TestClear(t *testing.T) {
 	s := NewSession()
-	sd := newSessionData(time.Hour)
+	sd := newSessionData(time.Hour, true)
 	sd.values["foo"] = "bar"
 	sd.values["baz"] = "boz"
 	ctx := s.addSessionDataToContext(context.Background(), sd)
@@ -117,7 +117,7 @@ func TestClear(t *testing.T) {
 
 func TestExists(t *testing.T) {
 	s := NewSession()
-	sd := newSessionData(time.Hour)
+	sd := newSessionData(time.Hour, true)
 	sd.values["foo"] = "bar"
 	ctx := s.addSessionDataToContext(context.Background(), sd)
 
@@ -132,7 +132,7 @@ func TestExists(t *testing.T) {
 
 func TestKeys(t *testing.T) {
 	s := NewSession()
-	sd := newSessionData(time.Hour)
+	sd := newSessionData(time.Hour, true)
 	sd.values["foo"] = "bar"
 	sd.values["woo"] = "waa"
 	ctx := s.addSessionDataToContext(context.Background(), sd)
@@ -145,7 +145,7 @@ func TestKeys(t *testing.T) {
 
 func TestGetString(t *testing.T) {
 	s := NewSession()
-	sd := newSessionData(time.Hour)
+	sd := newSessionData(time.Hour, true)
 	sd.values["foo"] = "bar"
 	ctx := s.addSessionDataToContext(context.Background(), sd)
 
@@ -162,7 +162,7 @@ func TestGetString(t *testing.T) {
 
 func TestGetBool(t *testing.T) {
 	s := NewSession()
-	sd := newSessionData(time.Hour)
+	sd := newSessionData(time.Hour, true)
 	sd.values["foo"] = true
 	ctx := s.addSessionDataToContext(context.Background(), sd)
 
@@ -179,7 +179,7 @@ func TestGetBool(t *testing.T) {
 
 func TestGetInt(t *testing.T) {
 	s := NewSession()
-	sd := newSessionData(time.Hour)
+	sd := newSessionData(time.Hour, true)
 	sd.values["foo"] = 123
 	ctx := s.addSessionDataToContext(context.Background(), sd)
 
@@ -196,7 +196,7 @@ func TestGetInt(t *testing.T) {
 
 func TestGetFloat(t *testing.T) {
 	s := NewSession()
-	sd := newSessionData(time.Hour)
+	sd := newSessionData(time.Hour, true)
 	sd.values["foo"] = 123.456
 	ctx := s.addSessionDataToContext(context.Background(), sd)
 
@@ -213,7 +213,7 @@ func TestGetFloat(t *testing.T) {
 
 func TestGetBytes(t *testing.T) {
 	s := NewSession()
-	sd := newSessionData(time.Hour)
+	sd := newSessionData(time.Hour, true)
 	sd.values["foo"] = []byte("bar")
 	ctx := s.addSessionDataToContext(context.Background(), sd)
 
@@ -232,7 +232,7 @@ func TestGetTime(t *testing.T) {
 	now := time.Now()
 
 	s := NewSession()
-	sd := newSessionData(time.Hour)
+	sd := newSessionData(time.Hour, true)
 	sd.values["foo"] = now
 	ctx := s.addSessionDataToContext(context.Background(), sd)
 
@@ -249,7 +249,7 @@ func TestGetTime(t *testing.T) {
 
 func TestPopString(t *testing.T) {
 	s := NewSession()
-	sd := newSessionData(time.Hour)
+	sd := newSessionData(time.Hour, true)
 	sd.values["foo"] = "bar"
 	ctx := s.addSessionDataToContext(context.Background(), sd)
 
@@ -275,7 +275,7 @@ func TestPopString(t *testing.T) {
 
 func TestPopBool(t *testing.T) {
 	s := NewSession()
-	sd := newSessionData(time.Hour)
+	sd := newSessionData(time.Hour, true)
 	sd.values["foo"] = true
 	ctx := s.addSessionDataToContext(context.Background(), sd)
 
@@ -301,7 +301,7 @@ func TestPopBool(t *testing.T) {
 
 func TestPopInt(t *testing.T) {
 	s := NewSession()
-	sd := newSessionData(time.Hour)
+	sd := newSessionData(time.Hour, true)
 	sd.values["foo"] = 123
 	ctx := s.addSessionDataToContext(context.Background(), sd)
 
@@ -327,7 +327,7 @@ func TestPopInt(t *testing.T) {
 
 func TestPopFloat(t *testing.T) {
 	s := NewSession()
-	sd := newSessionData(time.Hour)
+	sd := newSessionData(time.Hour, true)
 	sd.values["foo"] = 123.456
 	ctx := s.addSessionDataToContext(context.Background(), sd)
 
@@ -353,7 +353,7 @@ func TestPopFloat(t *testing.T) {
 
 func TestPopBytes(t *testing.T) {
 	s := NewSession()
-	sd := newSessionData(time.Hour)
+	sd := newSessionData(time.Hour, true)
 	sd.values["foo"] = []byte("bar")
 	ctx := s.addSessionDataToContext(context.Background(), sd)
 
@@ -379,7 +379,7 @@ func TestPopBytes(t *testing.T) {
 func TestPopTime(t *testing.T) {
 	now := time.Now()
 	s := NewSession()
-	sd := newSessionData(time.Hour)
+	sd := newSessionData(time.Hour, true)
 	sd.values["foo"] = now
 	ctx := s.addSessionDataToContext(context.Background(), sd)
 
@@ -406,7 +406,7 @@ func TestPopTime(t *testing.T) {
 
 func TestStatus(t *testing.T) {
 	s := NewSession()
-	sd := newSessionData(time.Hour)
+	sd := newSessionData(time.Hour, true)
 	ctx := s.addSessionDataToContext(context.Background(), sd)
 
 	status := s.Status(ctx)

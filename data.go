@@ -29,15 +29,17 @@ const (
 
 type sessionData struct {
 	deadline time.Time
+	persist  bool
 	status   Status
 	token    string
 	values   map[string]interface{}
 	mu       sync.Mutex
 }
 
-func newSessionData(lifetime time.Duration) *sessionData {
+func newSessionData(lifetime time.Duration, persist bool) *sessionData {
 	return &sessionData{
 		deadline: time.Now().Add(lifetime).UTC(),
+		persist:  persist,
 		status:   Unmodified,
 		values:   make(map[string]interface{}),
 	}
@@ -55,28 +57,28 @@ func (s *SessionManager) Load(ctx context.Context, token string) (context.Contex
 	}
 
 	if token == "" {
-		return s.addSessionDataToContext(ctx, newSessionData(s.Lifetime)), nil
+		return s.addSessionDataToContext(ctx, newSessionData(s.Lifetime, s.Cookie.Persist && s.IdleTimeout == 0)), nil
 	}
 
 	b, found, err := s.Store.Find(token)
 	if err != nil {
 		return nil, err
 	} else if !found {
-		return s.addSessionDataToContext(ctx, newSessionData(s.Lifetime)), nil
+		return s.addSessionDataToContext(ctx, newSessionData(s.Lifetime, s.Cookie.Persist && s.IdleTimeout == 0)), nil
 	}
 
 	sd := &sessionData{
 		status: Unmodified,
 		token:  token,
 	}
-	sd.deadline, sd.values, err = s.Codec.Decode(b)
+	sd.deadline, sd.persist, sd.values, err = s.Codec.Decode(b)
 	if err != nil {
 		return nil, err
 	}
 	// Mark the session data as modified if an idle timeout is being used. This
 	// will force the session data to be re-committed to the session store with
 	// a new expiry time.
-	if s.IdleTimeout > 0 {
+	if !sd.persist && s.IdleTimeout > 0 {
 		sd.status = Modified
 	}
 
@@ -89,7 +91,7 @@ func (s *SessionManager) Load(ctx context.Context, token string) (context.Contex
 // Most applications will use the LoadAndSave() middleware and will not need to
 // use this method.
 func (s *SessionManager) LoadNew(ctx context.Context) (context.Context, error) {
-	return s.addSessionDataToContext(ctx, newSessionData(s.Lifetime)), nil
+	return s.addSessionDataToContext(ctx, newSessionData(s.Lifetime, s.Cookie.Persist && s.IdleTimeout == 0)), nil
 }
 
 // Commit saves the session data to the session store and returns the session
@@ -97,7 +99,7 @@ func (s *SessionManager) LoadNew(ctx context.Context) (context.Context, error) {
 //
 // Most applications will use the LoadAndSave() middleware and will not need to
 // use this method.
-func (s *SessionManager) Commit(ctx context.Context) (string, time.Time, error) {
+func (s *SessionManager) Commit(ctx context.Context) (string, time.Time, bool, error) {
 	sd := s.getSessionDataFromContext(ctx)
 
 	sd.mu.Lock()
@@ -107,17 +109,17 @@ func (s *SessionManager) Commit(ctx context.Context) (string, time.Time, error) 
 		var err error
 		sd.token, err = generateToken()
 		if err != nil {
-			return "", time.Time{}, err
+			return "", time.Time{}, false, err
 		}
 	}
 
-	b, err := s.Codec.Encode(sd.deadline, sd.values)
+	b, err := s.Codec.Encode(sd.deadline, sd.persist, sd.values)
 	if err != nil {
-		return "", time.Time{}, err
+		return "", time.Time{}, false, err
 	}
 
 	expiry := sd.deadline
-	if s.IdleTimeout > 0 {
+	if !sd.persist && s.IdleTimeout > 0 {
 		ie := time.Now().Add(s.IdleTimeout)
 		if ie.Before(expiry) {
 			expiry = ie
@@ -126,10 +128,10 @@ func (s *SessionManager) Commit(ctx context.Context) (string, time.Time, error) 
 
 	err = s.Store.Commit(sd.token, b, expiry)
 	if err != nil {
-		return "", time.Time{}, err
+		return "", time.Time{}, false, err
 	}
 
-	return sd.token, expiry, nil
+	return sd.token, expiry, sd.persist, nil
 }
 
 // Destroy deletes the session data from the session store and sets the session
@@ -168,6 +170,18 @@ func (s *SessionManager) Put(ctx context.Context, key string, val interface{}) {
 	sd.values[key] = val
 	sd.status = Modified
 	sd.mu.Unlock()
+}
+
+// Persist sets current session as persistent for specified duration. If
+// IdleTimeout is set it wont be used for this session anymore.
+func (s *SessionManager) Persist(ctx context.Context, duration time.Duration) {
+	sd := s.getSessionDataFromContext(ctx)
+
+	sd.mu.Lock()
+	defer sd.mu.Unlock()
+	sd.persist = true
+	sd.deadline = time.Now().Add(duration)
+	sd.status = Modified
 }
 
 // Get returns the value for a given key from the session data. The return

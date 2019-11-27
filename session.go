@@ -145,14 +145,14 @@ func (s *SessionManager) LoadAndSave(next http.Handler) http.Handler {
 
 		switch s.Status(ctx) {
 		case Modified:
-			token, expiry, err := s.Commit(ctx)
+			token, expiry, persist, err := s.Commit(ctx)
 			if err != nil {
 				s.ErrorFunc(w, r, err)
 				return
 			}
-			s.WriteSessionCookie(w, token, expiry)
+			s.WriteSessionCookieWithPersistance(w, token, expiry, persist || s.Cookie.Persist)
 		case Destroyed:
-			s.WriteSessionCookie(w, "", time.Time{})
+			s.WriteSessionCookieWithPersistance(w, "", time.Time{}, false)
 		}
 
 		if bw.code != 0 {
@@ -162,12 +162,21 @@ func (s *SessionManager) LoadAndSave(next http.Handler) http.Handler {
 	})
 }
 
-// WriteSessionCookie writes a cookie with the provided session token and
-// expiry time.
+// WriteSessionCookie writes a cookie with the provided session
+// token, expiry time and default persistance.
 //
 // Most applications will use the LoadAndSave() middleware and will not need to
 // use this method.
 func (s *SessionManager) WriteSessionCookie(w http.ResponseWriter, token string, expiry time.Time) {
+	s.WriteSessionCookieWithPersistance(w, token, expiry, s.Cookie.Persist)
+}
+
+// WriteSessionCookieWithPersistance writes a cookie with the provided session
+// token, expiry time and specified persistance.
+//
+// Most applications will use the LoadAndSave() middleware and will not need to
+// use this method.
+func (s *SessionManager) WriteSessionCookieWithPersistance(w http.ResponseWriter, token string, expiry time.Time, persist bool) {
 	cookie := &http.Cookie{
 		Name:     s.Cookie.Name,
 		Value:    token,
@@ -181,7 +190,7 @@ func (s *SessionManager) WriteSessionCookie(w http.ResponseWriter, token string,
 	if expiry.IsZero() {
 		cookie.Expires = time.Unix(1, 0)
 		cookie.MaxAge = -1
-	} else if s.Cookie.Persist {
+	} else if persist {
 		cookie.Expires = time.Unix(expiry.Unix()+1, 0)        // Round up to the nearest second.
 		cookie.MaxAge = int(time.Until(expiry).Seconds() + 1) // Round up to the nearest second.
 	}

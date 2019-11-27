@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"sort"
 	"sync"
+	"sync/atomic"
 	"time"
 )
 
@@ -495,9 +496,9 @@ func generateToken() (string, error) {
 
 type contextKey string
 
-var contextKeyID int
+var contextKeyID uint64
 
 func generateContextKey() contextKey {
-	contextKeyID = contextKeyID + 1
+	atomic.AddUint64(&contextKeyID, 1)
 	return contextKey(fmt.Sprintf("session.%d", contextKeyID))
 }

@@ -118,7 +118,7 @@ func (s *SessionManager) Commit(ctx context.Context) (string, time.Time, error) 
 
 	expiry := sd.deadline
 	if s.IdleTimeout > 0 {
-		ie := time.Now().Add(s.IdleTimeout)
+		ie := time.Now().Add(s.IdleTimeout).UTC()
 		if ie.Before(expiry) {
 			expiry = ie
 		}

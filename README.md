@@ -29,7 +29,7 @@
 
 ### Installation
 
-This package requires Go 1.11 or newer.
+This package requires Go 1.12 or newer.
 
 ```
 $ go get github.com/alexedwards/scs/v2@latest
@@ -207,6 +207,6 @@ It is possible for an application to support multiple sessions per request, with
 
 ### Compatibility
 
-This package requires Go 1.11 or newer.
+This package requires Go 1.12 or newer.
 
 It is not compatible with the [Echo](https://echo.labstack.com/) framework. Please consider using the [Echo session manager](https://echo.labstack.com/middleware/session) instead.

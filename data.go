@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"sort"
 	"sync"
+	"sync/atomic"
 	"time"
 )
 
@@ -120,7 +121,7 @@ func (s *SessionManager) Commit(ctx context.Context) (string, time.Time, bool, e
 
 	expiry := sd.deadline
 	if !sd.persist && s.IdleTimeout > 0 {
-		ie := time.Now().Add(s.IdleTimeout)
+		ie := time.Now().Add(s.IdleTimeout).UTC()
 		if ie.Before(expiry) {
 			expiry = ie
 		}
@@ -509,9 +510,9 @@ func generateToken() (string, error) {
 
 type contextKey string
 
-var contextKeyID int
+var contextKeyID uint64
 
 func generateContextKey() contextKey {
-	contextKeyID = contextKeyID + 1
+	atomic.AddUint64(&contextKeyID, 1)
 	return contextKey(fmt.Sprintf("session.%d", contextKeyID))
 }

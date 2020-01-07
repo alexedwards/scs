@@ -9,7 +9,7 @@ import (
 	"net/http"
 	"time"
 
-	"github.com/alexedwards/scs/v2/memstore"
+	"github.com/alexedwards/scs/v3/memstore"
 )
 
 // Deprecated: Session is a backwards-compatible alias for SessionManager.
@@ -29,8 +29,8 @@ type SessionManager struct {
 	// hours.
 	Lifetime time.Duration
 
-	// Store controls the session store where the session data is persisted.
-	Store Store
+	// ContextStore controls the session store where the session data is persisted.
+	ContextStore ContextStore
 
 	// Cookie contains the configuration settings for session cookies.
 	Cookie SessionCookie
@@ -101,12 +101,12 @@ type SessionCookie struct {
 // concurrent use.
 func New() *SessionManager {
 	s := &SessionManager{
-		IdleTimeout: 0,
-		Lifetime:    24 * time.Hour,
-		Store:       memstore.New(),
-		Codec:       GobCodec{},
-		ErrorFunc:   defaultErrorFunc,
-		contextKey:  generateContextKey(),
+		IdleTimeout:  0,
+		Lifetime:     24 * time.Hour,
+		ContextStore: &StoreAdapter{Store: memstore.New()},
+		Codec:        gobCodec{},
+		ErrorFunc:    defaultErrorFunc,
+		contextKey:   generateContextKey(),
 		Cookie: SessionCookie{
 			Name:     "session",
 			Domain:   "",

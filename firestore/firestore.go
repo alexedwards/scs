@@ -136,5 +136,6 @@ func (m *FireStore) deleteExpired() error {
 			log.Fatalf("Failed to delete: %v", err)
 		}
 	}
+	iter.Stop()
 	return nil
 }

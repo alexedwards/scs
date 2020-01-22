@@ -68,7 +68,7 @@ func (m *FireStore) Find(ctx context.Context, token string) ([]byte, bool, error
 	return sd.Data, true, nil
 }
 
-// Commit adds a session token and data to the MySQLStore instance with the given
+// Commit adds a session token and data to the FireStore instance with the given
 // expiry time. If the session token already exists, then the data and expiry
 // time are updated.
 func (m *FireStore) Commit(ctx context.Context, token string, b []byte, expiry time.Time) error {
@@ -80,7 +80,7 @@ func (m *FireStore) Commit(ctx context.Context, token string, b []byte, expiry t
 	return nil
 }
 
-// Delete removes a session token and corresponding data from the MySQLStore
+// Delete removes a session token and corresponding data from the FireStore
 // instance.
 func (m *FireStore) Delete(ctx context.Context, token string) error {
 	_, err := m.Sessions.Doc(token).Delete(ctx)
@@ -104,13 +104,13 @@ func (m *FireStore) startCleanup(interval time.Duration) {
 	}
 }
 
-// StopCleanup terminates the background cleanup goroutine for the MySQLStore
-// instance. It's rare to terminate this; generally MySQLStore instances and
+// StopCleanup terminates the background cleanup goroutine for the FireStore
+// instance. It's rare to terminate this; generally FireStore instances and
 // their cleanup goroutines are intended to be long-lived and run for the lifetime
 // of your application.
 //
-// There may be occasions though when your use of the MySQLStore is transient.
-// An example is creating a new MySQLStore instance in a test function. In this
+// There may be occasions though when your use of the FireStore is transient.
+// An example is creating a new FireStore instance in a test function. In this
 // scenario, the cleanup goroutine (which will run forever) will prevent the
 // MySQLStore object from being garbage collected even after the test function
 // has finished. You can prevent this by manually calling StopCleanup.

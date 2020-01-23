@@ -129,11 +129,13 @@ func (m *FireStore) deleteExpired() error {
 			break
 		}
 		if err != nil {
-			log.Fatalf("Failed to iterate: %v", err)
+			log.Printf("Failed to iterate: %v", err)
+			break
 		}
 		_, err = snap.Ref.Delete(ctx, firestore.LastUpdateTime(snap.UpdateTime))
 		if err != nil {
-			log.Fatalf("Failed to delete: %v", err)
+			log.Printf("Failed to delete: %v", err)
+			continue
 		}
 	}
 	iter.Stop()

@@ -1,4 +1,4 @@
-module github.com/jum/scs/v3/firestore
+module github.com/jum/scs/firestore
 
 go 1.12
 

@@ -143,6 +143,10 @@ func (s *SessionManager) LoadAndSave(next http.Handler) http.Handler {
 		bw := &bufferedResponseWriter{ResponseWriter: w}
 		next.ServeHTTP(bw, sr)
 
+		if sr.MultipartForm != nil {
+			sr.MultipartForm.RemoveAll()
+		}
+
 		switch s.Status(ctx) {
 		case Modified:
 			token, expiry, err := s.Commit(ctx)

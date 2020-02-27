@@ -284,9 +284,12 @@ func (s *SessionManager) RenewToken(ctx context.Context) error {
 	sd.mu.Lock()
 	defer sd.mu.Unlock()
 
-	err := s.ContextStore.Delete(ctx, sd.token)
-	if err != nil {
-		return err
+	// if we already have committed a session, delete the old session.
+	if sd.token != "" {
+		err := s.ContextStore.Delete(ctx, sd.token)
+		if err != nil {
+			return err
+		}
 	}
 
 	newToken, err := generateToken()

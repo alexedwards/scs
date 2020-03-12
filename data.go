@@ -304,6 +304,44 @@ func (s *SessionManager) RenewToken(ctx context.Context) error {
 	return nil
 }
 
+// MergeSession is used to merge in data from a different session in case strict
+// session tokens are lost across an oauth or similar redirect flows. Use Clear()
+// if no values of the new session are to be used.
+func (s *SessionManager) MergeSession(ctx context.Context, token string) error {
+	sd := s.getSessionDataFromContext(ctx)
+
+	b, found, err := s.ContextStore.Find(ctx, token)
+	if err != nil {
+		return err
+	} else if !found {
+		return nil
+	}
+
+	deadline, values, err := s.Codec.Decode(b)
+	if err != nil {
+		return err
+	}
+
+	sd.mu.Lock()
+	defer sd.mu.Unlock()
+
+	// If it is the same session, nothing needs to be done.
+	if sd.token == token {
+		return nil
+	}
+
+	if deadline.After(sd.deadline) {
+		sd.deadline = deadline
+	}
+
+	for k, v := range values {
+		sd.values[k] = v
+	}
+
+	sd.status = Modified
+	return s.ContextStore.Delete(ctx, token)
+}
+
 // Status returns the current status of the session data.
 func (s *SessionManager) Status(ctx context.Context) Status {
 	sd := s.getSessionDataFromContext(ctx)

@@ -13,9 +13,9 @@ type Codec interface {
 	Decode([]byte) (deadline time.Time, values map[string]interface{}, err error)
 }
 
-type gobCodec struct{}
+type GobCodec struct{}
 
-func (gobCodec) Encode(deadline time.Time, values map[string]interface{}) ([]byte, error) {
+func (GobCodec) Encode(deadline time.Time, values map[string]interface{}) ([]byte, error) {
 	aux := &struct {
 		Deadline time.Time
 		Values   map[string]interface{}
@@ -33,7 +33,7 @@ func (gobCodec) Encode(deadline time.Time, values map[string]interface{}) ([]byt
 	return b.Bytes(), nil
 }
 
-func (gobCodec) Decode(b []byte) (time.Time, map[string]interface{}, error) {
+func (GobCodec) Decode(b []byte) (time.Time, map[string]interface{}, error) {
 	aux := &struct {
 		Deadline time.Time
 		Values   map[string]interface{}

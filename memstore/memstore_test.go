@@ -35,16 +35,6 @@ func TestFindMissing(t *testing.T) {
 	}
 }
 
-func TestFindBadData(t *testing.T) {
-	m := NewWithCleanupInterval(0)
-	m.items["session_token"] = item{object: "not_a_byte_slice", expiration: time.Now().Add(time.Second).UnixNano()}
-
-	_, _, err := m.Find("session_token")
-	if err != errTypeAssertionFailed {
-		t.Fatalf("got %v: expected %v", err, errTypeAssertionFailed)
-	}
-}
-
 func TestCommitNew(t *testing.T) {
 	m := NewWithCleanupInterval(0)
 
@@ -57,12 +47,9 @@ func TestCommitNew(t *testing.T) {
 	if found != true {
 		t.Fatalf("got %v: expected %v", found, true)
 	}
-	b, ok := v.object.([]byte)
-	if ok == false {
-		t.Fatal("could not convert to []byte")
-	}
-	if reflect.DeepEqual(b, []byte("encoded_data")) == false {
-		t.Fatalf("got %v: expected %v", b, []byte("encoded_data"))
+
+	if reflect.DeepEqual(v.object, []byte("encoded_data")) == false {
+		t.Fatalf("got %v: expected %v", v.object, []byte("encoded_data"))
 	}
 }
 
@@ -80,12 +67,9 @@ func TestCommitUpdated(t *testing.T) {
 	}
 
 	v := m.items["session_token"].object
-	b, ok := v.([]byte)
-	if ok == false {
-		t.Fatal("could not convert to []byte")
-	}
-	if reflect.DeepEqual(b, []byte("new_encoded_data")) == false {
-		t.Fatalf("got %v: expected %v", b, []byte("new_encoded_data"))
+
+	if reflect.DeepEqual(v, []byte("new_encoded_data")) == false {
+		t.Fatalf("got %v: expected %v", v, []byte("new_encoded_data"))
 	}
 }
 

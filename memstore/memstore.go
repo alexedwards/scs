@@ -1,15 +1,12 @@
 package memstore
 
 import (
-	"errors"
 	"sync"
 	"time"
 )
 
-var errTypeAssertionFailed = errors.New("type assertion failed: could not convert interface{} to []byte")
-
 type item struct {
-	object     interface{}
+	object     []byte
 	expiration int64
 }
 
@@ -53,16 +50,12 @@ func (m *MemStore) Find(token string) ([]byte, bool, error) {
 	if !found {
 		return nil, false, nil
 	}
+
 	if time.Now().UnixNano() > item.expiration {
 		return nil, false, nil
 	}
 
-	b, ok := item.object.([]byte)
-	if !ok {
-		return nil, true, errTypeAssertionFailed
-	}
-
-	return b, true, nil
+	return item.object, true, nil
 }
 
 // Commit adds a session token and data to the MemStore instance with the given

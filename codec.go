@@ -13,8 +13,11 @@ type Codec interface {
 	Decode([]byte) (deadline time.Time, values map[string]interface{}, err error)
 }
 
+// GobCodec is used for encoding/decoding session data to and from a byte
+// slice using the encoding/gob package.
 type GobCodec struct{}
 
+// Encode converts a session dealine and values into a byte slice.
 func (GobCodec) Encode(deadline time.Time, values map[string]interface{}) ([]byte, error) {
 	aux := &struct {
 		Deadline time.Time
@@ -33,6 +36,7 @@ func (GobCodec) Encode(deadline time.Time, values map[string]interface{}) ([]byt
 	return b.Bytes(), nil
 }
 
+// Decode converts a byte slice into a session deadline and values.
 func (GobCodec) Decode(b []byte) (time.Time, map[string]interface{}, error) {
 	aux := &struct {
 		Deadline time.Time

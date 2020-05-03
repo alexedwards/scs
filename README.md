@@ -32,11 +32,12 @@
 This package requires Go 1.12 or newer.
 
 ```
-$ go get github.com/alexedwards/scs/v2@latest
+$ go get github.com/alexedwards/scs/v2
 ```
 
 Note: If you're using the traditional `GOPATH` mechanism to manage dependencies, instead of modules, you'll need to `go get` and `import` `github.com/alexedwards/scs` without the `v2` suffix.
 
+Please use [versioned releases](https://github.com/alexedwards/scs/releases). Code in tip may contain experimental features which are subject to change.
 
 ### Basic Use
 

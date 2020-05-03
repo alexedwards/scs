@@ -1,5 +1,5 @@
 module github.com/alexedwards/scs/redisstore
 
-go 1.12
+go 1.14
 
-require github.com/gomodule/redigo v2.0.0+incompatible
+require github.com/gomodule/redigo v1.8.0

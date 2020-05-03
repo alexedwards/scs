@@ -154,9 +154,9 @@ func (s *SessionManager) LoadAndSave(next http.Handler) http.Handler {
 				s.ErrorFunc(w, r, err)
 				return
 			}
-			s.WriteSessionCookie(w, token, expiry)
+			s.writeSessionCookie(w, token, expiry)
 		case Destroyed:
-			s.WriteSessionCookie(w, "", time.Time{})
+			s.writeSessionCookie(w, "", time.Time{})
 		}
 
 		if bw.code != 0 {
@@ -166,12 +166,7 @@ func (s *SessionManager) LoadAndSave(next http.Handler) http.Handler {
 	})
 }
 
-// WriteSessionCookie writes a cookie with the provided session token and
-// expiry time.
-//
-// Most applications will use the LoadAndSave() middleware and will not need to
-// use this method.
-func (s *SessionManager) WriteSessionCookie(w http.ResponseWriter, token string, expiry time.Time) {
+func (s *SessionManager) writeSessionCookie(w http.ResponseWriter, token string, expiry time.Time) {
 	cookie := &http.Cookie{
 		Name:     s.Cookie.Name,
 		Value:    token,

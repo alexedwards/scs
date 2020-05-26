@@ -113,7 +113,7 @@ func TestClear(t *testing.T) {
 	ctx := s.addSessionDataToContext(context.Background(), sd)
 
 	if err := s.Clear(ctx); err != nil {
-		t.Errorf("unexpected error encountered clearing session: %w", err)
+		t.Errorf("unexpected error encountered clearing session: %v", err)
 	}
 
 	if sd.values["foo"] != nil {
@@ -465,7 +465,7 @@ func TestStatus(t *testing.T) {
 	}
 
 	if err := s.Destroy(ctx); err != nil {
-		t.Errorf("unexpected error destroying session data: %w", err)
+		t.Errorf("unexpected error destroying session data: %vgi", err)
 	}
 
 	status = s.Status(ctx)

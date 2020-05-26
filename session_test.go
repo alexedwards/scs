@@ -52,6 +52,8 @@ func extractTokenFromCookie(c string) string {
 }
 
 func TestEnable(t *testing.T) {
+	t.Parallel()
+
 	sessionManager := New()
 
 	mux := http.NewServeMux()
@@ -85,6 +87,8 @@ func TestEnable(t *testing.T) {
 }
 
 func TestLifetime(t *testing.T) {
+	t.Parallel()
+
 	sessionManager := New()
 	sessionManager.Lifetime = 500 * time.Millisecond
 
@@ -119,6 +123,8 @@ func TestLifetime(t *testing.T) {
 }
 
 func TestIdleTimeout(t *testing.T) {
+	t.Parallel()
+
 	sessionManager := New()
 	sessionManager.IdleTimeout = 200 * time.Millisecond
 	sessionManager.Lifetime = time.Second
@@ -158,6 +164,8 @@ func TestIdleTimeout(t *testing.T) {
 }
 
 func TestDestroy(t *testing.T) {
+	t.Parallel()
+
 	sessionManager := New()
 
 	mux := http.NewServeMux()
@@ -204,6 +212,8 @@ func TestDestroy(t *testing.T) {
 }
 
 func TestRenewToken(t *testing.T) {
+	t.Parallel()
+
 	sessionManager := New()
 
 	mux := http.NewServeMux()

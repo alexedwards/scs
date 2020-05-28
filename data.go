@@ -487,9 +487,14 @@ func generateToken() (string, error) {
 
 type contextKey string
 
-var contextKeyID uint64
+var (
+	contextKeyID      uint64
+	contextKeyIDMutex = &sync.Mutex{}
+)
 
 func generateContextKey() contextKey {
+	contextKeyIDMutex.Lock()
+	defer contextKeyIDMutex.Unlock()
 	atomic.AddUint64(&contextKeyID, 1)
 	return contextKey(fmt.Sprintf("session.%d", contextKeyID))
 }

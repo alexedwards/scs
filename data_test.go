@@ -9,6 +9,8 @@ import (
 )
 
 func TestSessionDataFromContext(t *testing.T) {
+	t.Parallel()
+
 	defer func() {
 		if r := recover(); r == nil {
 			t.Errorf("the code did not panic")
@@ -20,6 +22,8 @@ func TestSessionDataFromContext(t *testing.T) {
 }
 
 func TestPut(t *testing.T) {
+	t.Parallel()
+
 	s := NewSession()
 	sd := newSessionData(time.Hour)
 	ctx := s.addSessionDataToContext(context.Background(), sd)
@@ -36,6 +40,8 @@ func TestPut(t *testing.T) {
 }
 
 func TestGet(t *testing.T) {
+	t.Parallel()
+
 	s := NewSession()
 	sd := newSessionData(time.Hour)
 	sd.values["foo"] = "bar"
@@ -52,6 +58,8 @@ func TestGet(t *testing.T) {
 }
 
 func TestPop(t *testing.T) {
+	t.Parallel()
+
 	s := NewSession()
 	sd := newSessionData(time.Hour)
 	sd.values["foo"] = "bar"
@@ -77,6 +85,8 @@ func TestPop(t *testing.T) {
 }
 
 func TestRemove(t *testing.T) {
+	t.Parallel()
+
 	s := NewSession()
 	sd := newSessionData(time.Hour)
 	sd.values["foo"] = "bar"
@@ -94,13 +104,17 @@ func TestRemove(t *testing.T) {
 }
 
 func TestClear(t *testing.T) {
+	t.Parallel()
+
 	s := NewSession()
 	sd := newSessionData(time.Hour)
 	sd.values["foo"] = "bar"
 	sd.values["baz"] = "boz"
 	ctx := s.addSessionDataToContext(context.Background(), sd)
 
-	s.Clear(ctx)
+	if err := s.Clear(ctx); err != nil {
+		t.Errorf("unexpected error encountered clearing session: %v", err)
+	}
 
 	if sd.values["foo"] != nil {
 		t.Errorf("got %v: expected %v", sd.values["foo"], nil)
@@ -116,6 +130,8 @@ func TestClear(t *testing.T) {
 }
 
 func TestExists(t *testing.T) {
+	t.Parallel()
+
 	s := NewSession()
 	sd := newSessionData(time.Hour)
 	sd.values["foo"] = "bar"
@@ -131,6 +147,8 @@ func TestExists(t *testing.T) {
 }
 
 func TestKeys(t *testing.T) {
+	t.Parallel()
+
 	s := NewSession()
 	sd := newSessionData(time.Hour)
 	sd.values["foo"] = "bar"
@@ -144,6 +162,8 @@ func TestKeys(t *testing.T) {
 }
 
 func TestGetString(t *testing.T) {
+	t.Parallel()
+
 	s := NewSession()
 	sd := newSessionData(time.Hour)
 	sd.values["foo"] = "bar"
@@ -161,6 +181,8 @@ func TestGetString(t *testing.T) {
 }
 
 func TestGetBool(t *testing.T) {
+	t.Parallel()
+
 	s := NewSession()
 	sd := newSessionData(time.Hour)
 	sd.values["foo"] = true
@@ -178,6 +200,8 @@ func TestGetBool(t *testing.T) {
 }
 
 func TestGetInt(t *testing.T) {
+	t.Parallel()
+
 	s := NewSession()
 	sd := newSessionData(time.Hour)
 	sd.values["foo"] = 123
@@ -195,6 +219,8 @@ func TestGetInt(t *testing.T) {
 }
 
 func TestGetFloat(t *testing.T) {
+	t.Parallel()
+
 	s := NewSession()
 	sd := newSessionData(time.Hour)
 	sd.values["foo"] = 123.456
@@ -212,6 +238,8 @@ func TestGetFloat(t *testing.T) {
 }
 
 func TestGetBytes(t *testing.T) {
+	t.Parallel()
+
 	s := NewSession()
 	sd := newSessionData(time.Hour)
 	sd.values["foo"] = []byte("bar")
@@ -229,6 +257,8 @@ func TestGetBytes(t *testing.T) {
 }
 
 func TestGetTime(t *testing.T) {
+	t.Parallel()
+
 	now := time.Now()
 
 	s := NewSession()
@@ -248,6 +278,8 @@ func TestGetTime(t *testing.T) {
 }
 
 func TestPopString(t *testing.T) {
+	t.Parallel()
+
 	s := NewSession()
 	sd := newSessionData(time.Hour)
 	sd.values["foo"] = "bar"
@@ -274,6 +306,8 @@ func TestPopString(t *testing.T) {
 }
 
 func TestPopBool(t *testing.T) {
+	t.Parallel()
+
 	s := NewSession()
 	sd := newSessionData(time.Hour)
 	sd.values["foo"] = true
@@ -300,6 +334,8 @@ func TestPopBool(t *testing.T) {
 }
 
 func TestPopInt(t *testing.T) {
+	t.Parallel()
+
 	s := NewSession()
 	sd := newSessionData(time.Hour)
 	sd.values["foo"] = 123
@@ -326,6 +362,8 @@ func TestPopInt(t *testing.T) {
 }
 
 func TestPopFloat(t *testing.T) {
+	t.Parallel()
+
 	s := NewSession()
 	sd := newSessionData(time.Hour)
 	sd.values["foo"] = 123.456
@@ -352,6 +390,8 @@ func TestPopFloat(t *testing.T) {
 }
 
 func TestPopBytes(t *testing.T) {
+	t.Parallel()
+
 	s := NewSession()
 	sd := newSessionData(time.Hour)
 	sd.values["foo"] = []byte("bar")
@@ -377,6 +417,8 @@ func TestPopBytes(t *testing.T) {
 }
 
 func TestPopTime(t *testing.T) {
+	t.Parallel()
+
 	now := time.Now()
 	s := NewSession()
 	sd := newSessionData(time.Hour)
@@ -405,6 +447,8 @@ func TestPopTime(t *testing.T) {
 }
 
 func TestStatus(t *testing.T) {
+	t.Parallel()
+
 	s := NewSession()
 	sd := newSessionData(time.Hour)
 	ctx := s.addSessionDataToContext(context.Background(), sd)
@@ -420,7 +464,10 @@ func TestStatus(t *testing.T) {
 		t.Errorf("got %d: expected %d", status, Modified)
 	}
 
-	s.Destroy(ctx)
+	if err := s.Destroy(ctx); err != nil {
+		t.Errorf("unexpected error destroying session data: %vgi", err)
+	}
+
 	status = s.Status(ctx)
 	if status != Destroyed {
 		t.Errorf("got %d: expected %d", status, Destroyed)

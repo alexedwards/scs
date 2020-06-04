@@ -96,7 +96,7 @@ type SessionCookie struct {
 // New returns a new session manager with the default options. It is safe for
 // concurrent use.
 func New() *SessionManager {
-	s := &SessionManager{
+	return &SessionManager{
 		IdleTimeout: 0,
 		Lifetime:    24 * time.Hour,
 		Store:       memstore.New(),
@@ -113,7 +113,6 @@ func New() *SessionManager {
 			SameSite: http.SameSiteLaxMode,
 		},
 	}
-	return s
 }
 
 // Deprecated: NewSession is a backwards-compatible alias for New. Use the New

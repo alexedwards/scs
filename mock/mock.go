@@ -1,4 +1,4 @@
-package scs
+package mock
 
 import (
 	"context"
@@ -6,14 +6,14 @@ import (
 	"time"
 
 	"github.com/stretchr/testify/mock"
+
+	"github.com/alexedwards/scs/v2"
 )
+
+var _ scs.MockableSession = &Mock{}
 
 type Mock struct {
 	mock.Mock
-}
-
-func NewMock() ISession {
-	return &Mock{}
 }
 
 func (m *Mock) Load(ctx context.Context, token string) (context.Context, error) {
@@ -62,8 +62,8 @@ func (m *Mock) RenewToken(ctx context.Context) error {
 	return m.Called(ctx).Error(0)
 }
 
-func (m *Mock) Status(ctx context.Context) Status {
-	return m.Called(ctx).Get(0).(Status)
+func (m *Mock) Status(ctx context.Context) scs.Status {
+	return m.Called(ctx).Get(0).(scs.Status)
 }
 
 func (m *Mock) GetString(ctx context.Context, key string) string {

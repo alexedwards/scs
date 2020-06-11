@@ -1,4 +1,4 @@
-package scs_test
+package mock_test
 
 import (
 	"context"
@@ -8,9 +8,10 @@ import (
 	"testing"
 	"time"
 
-	"github.com/stretchr/testify/mock"
+	testifyMock "github.com/stretchr/testify/mock"
 
 	"github.com/alexedwards/scs/v2"
+	"github.com/alexedwards/scs/v2/mock"
 )
 
 var (
@@ -28,7 +29,7 @@ var (
 )
 
 func TestMock_Load(t *testing.T) {
-	m := scs.NewMock().(*scs.Mock)
+	m := &mock.Mock{}
 	m.On("Load", expectedCtx, expectedString).Return(expectedCtx, expectedErr)
 	ctx, err := m.Load(expectedCtx, expectedString)
 	assertValue(t, expectedErr, err)
@@ -38,7 +39,7 @@ func TestMock_Load(t *testing.T) {
 }
 
 func TestMock_Commit(t *testing.T) {
-	m := scs.NewMock().(*scs.Mock)
+	m := &mock.Mock{}
 	m.On("Commit", expectedCtx).Return(expectedString, expectedTime, expectedErr)
 	s, ti, err := m.Commit(expectedCtx)
 	assertValue(t, expectedErr, err)
@@ -48,7 +49,7 @@ func TestMock_Commit(t *testing.T) {
 }
 
 func TestMock_Destroy(t *testing.T) {
-	m := scs.NewMock().(*scs.Mock)
+	m := &mock.Mock{}
 	m.On("Destroy", expectedCtx).Return(expectedErr)
 	err := m.Destroy(expectedCtx)
 	assertValue(t, expectedErr, err)
@@ -56,14 +57,14 @@ func TestMock_Destroy(t *testing.T) {
 }
 
 func TestMock_Put(t *testing.T) {
-	m := scs.NewMock().(*scs.Mock)
+	m := &mock.Mock{}
 	m.On("Put", expectedCtx, expectedString, "random")
 	m.Put(expectedCtx, expectedString, "random")
 	assertMock(t, &m.Mock)
 }
 
 func TestMock_Get(t *testing.T) {
-	m := scs.NewMock().(*scs.Mock)
+	m := &mock.Mock{}
 	m.On("Get", expectedCtx, expectedString).Return(expectedString)
 	result := m.Get(expectedCtx, expectedString)
 	assertValue(t, expectedString, result)
@@ -71,7 +72,7 @@ func TestMock_Get(t *testing.T) {
 }
 
 func TestMock_Pop(t *testing.T) {
-	m := scs.NewMock().(*scs.Mock)
+	m := &mock.Mock{}
 	m.On("Pop", expectedCtx, expectedString).Return(expectedString)
 	result := m.Pop(expectedCtx, expectedString)
 	assertValue(t, expectedString, result)
@@ -79,14 +80,14 @@ func TestMock_Pop(t *testing.T) {
 }
 
 func TestMock_Remove(t *testing.T) {
-	m := scs.NewMock().(*scs.Mock)
+	m := &mock.Mock{}
 	m.On("Remove", expectedCtx, expectedString)
 	m.Remove(expectedCtx, expectedString)
 	assertMock(t, &m.Mock)
 }
 
 func TestMock_Clear(t *testing.T) {
-	m := scs.NewMock().(*scs.Mock)
+	m := &mock.Mock{}
 	m.On("Clear", expectedCtx).Return(expectedErr)
 	err := m.Clear(expectedCtx)
 	assertValue(t, expectedErr, err)
@@ -94,7 +95,7 @@ func TestMock_Clear(t *testing.T) {
 }
 
 func TestMock_Exists(t *testing.T) {
-	m := scs.NewMock().(*scs.Mock)
+	m := &mock.Mock{}
 	m.On("Exists", expectedCtx, expectedString).Return(expectedBool)
 	result := m.Exists(expectedCtx, expectedString)
 	assertValue(t, expectedBool, result)
@@ -102,7 +103,7 @@ func TestMock_Exists(t *testing.T) {
 }
 
 func TestMock_Keys(t *testing.T) {
-	m := scs.NewMock().(*scs.Mock)
+	m := &mock.Mock{}
 	m.On("Keys", expectedCtx).Return(expectedSliceString)
 	result := m.Keys(expectedCtx)
 	assertValue(t, expectedSliceString, result)
@@ -110,7 +111,7 @@ func TestMock_Keys(t *testing.T) {
 }
 
 func TestMock_RenewToken(t *testing.T) {
-	m := scs.NewMock().(*scs.Mock)
+	m := &mock.Mock{}
 	m.On("RenewToken", expectedCtx).Return(expectedErr)
 	result := m.RenewToken(expectedCtx)
 	assertValue(t, expectedErr, result)
@@ -118,7 +119,7 @@ func TestMock_RenewToken(t *testing.T) {
 }
 
 func TestMock_Status(t *testing.T) {
-	m := scs.NewMock().(*scs.Mock)
+	m := &mock.Mock{}
 	m.On("Status", expectedCtx).Return(expectedStatus)
 	result := m.Status(expectedCtx)
 	assertValue(t, expectedStatus, result)
@@ -126,7 +127,7 @@ func TestMock_Status(t *testing.T) {
 }
 
 func TestMock_GetString(t *testing.T) {
-	m := scs.NewMock().(*scs.Mock)
+	m := &mock.Mock{}
 	m.On("GetString", expectedCtx, expectedString).Return(expectedString)
 	result := m.GetString(expectedCtx, expectedString)
 	assertValue(t, expectedString, result)
@@ -134,7 +135,7 @@ func TestMock_GetString(t *testing.T) {
 }
 
 func TestMock_GetBool(t *testing.T) {
-	m := scs.NewMock().(*scs.Mock)
+	m := &mock.Mock{}
 	m.On("GetBool", expectedCtx, expectedString).Return(expectedBool)
 	result := m.GetBool(expectedCtx, expectedString)
 	assertValue(t, expectedBool, result)
@@ -142,7 +143,7 @@ func TestMock_GetBool(t *testing.T) {
 }
 
 func TestMock_GetInt(t *testing.T) {
-	m := scs.NewMock().(*scs.Mock)
+	m := &mock.Mock{}
 	m.On("GetInt", expectedCtx, expectedString).Return(expectedInt)
 	result := m.GetInt(expectedCtx, expectedString)
 	assertValue(t, expectedInt, result)
@@ -150,7 +151,7 @@ func TestMock_GetInt(t *testing.T) {
 }
 
 func TestMock_GetFloat(t *testing.T) {
-	m := scs.NewMock().(*scs.Mock)
+	m := &mock.Mock{}
 	m.On("GetFloat", expectedCtx, expectedString).Return(expectedFloat)
 	result := m.GetFloat(expectedCtx, expectedString)
 	assertValue(t, expectedFloat, result)
@@ -158,7 +159,7 @@ func TestMock_GetFloat(t *testing.T) {
 }
 
 func TestMock_GetBytes(t *testing.T) {
-	m := scs.NewMock().(*scs.Mock)
+	m := &mock.Mock{}
 	m.On("GetBytes", expectedCtx, expectedString).Return(expectedBytes)
 	result := m.GetBytes(expectedCtx, expectedString)
 	assertValue(t, expectedBytes, result)
@@ -166,7 +167,7 @@ func TestMock_GetBytes(t *testing.T) {
 }
 
 func TestMock_GetTime(t *testing.T) {
-	m := scs.NewMock().(*scs.Mock)
+	m := &mock.Mock{}
 	m.On("GetTime", expectedCtx, expectedString).Return(expectedTime)
 	result := m.GetTime(expectedCtx, expectedString)
 	assertValue(t, expectedTime, result)
@@ -174,7 +175,7 @@ func TestMock_GetTime(t *testing.T) {
 }
 
 func TestMock_PopString(t *testing.T) {
-	m := scs.NewMock().(*scs.Mock)
+	m := &mock.Mock{}
 	m.On("PopString", expectedCtx, expectedString).Return(expectedString)
 	result := m.PopString(expectedCtx, expectedString)
 	assertValue(t, expectedString, result)
@@ -182,7 +183,7 @@ func TestMock_PopString(t *testing.T) {
 }
 
 func TestMock_PopBool(t *testing.T) {
-	m := scs.NewMock().(*scs.Mock)
+	m := &mock.Mock{}
 	m.On("PopBool", expectedCtx, expectedString).Return(expectedBool)
 	result := m.PopBool(expectedCtx, expectedString)
 	assertValue(t, expectedBool, result)
@@ -190,7 +191,7 @@ func TestMock_PopBool(t *testing.T) {
 }
 
 func TestMock_PopInt(t *testing.T) {
-	m := scs.NewMock().(*scs.Mock)
+	m := &mock.Mock{}
 	m.On("PopInt", expectedCtx, expectedString).Return(expectedInt)
 	result := m.PopInt(expectedCtx, expectedString)
 	assertValue(t, expectedInt, result)
@@ -198,7 +199,7 @@ func TestMock_PopInt(t *testing.T) {
 }
 
 func TestMock_PopFloat(t *testing.T) {
-	m := scs.NewMock().(*scs.Mock)
+	m := &mock.Mock{}
 	m.On("PopFloat", expectedCtx, expectedString).Return(expectedFloat)
 	result := m.PopFloat(expectedCtx, expectedString)
 	assertValue(t, expectedFloat, result)
@@ -206,7 +207,7 @@ func TestMock_PopFloat(t *testing.T) {
 }
 
 func TestMock_PopBytes(t *testing.T) {
-	m := scs.NewMock().(*scs.Mock)
+	m := &mock.Mock{}
 	m.On("PopBytes", expectedCtx, expectedString).Return(expectedBytes)
 	result := m.PopBytes(expectedCtx, expectedString)
 	assertValue(t, expectedBytes, result)
@@ -214,7 +215,7 @@ func TestMock_PopBytes(t *testing.T) {
 }
 
 func TestMock_PopTime(t *testing.T) {
-	m := scs.NewMock().(*scs.Mock)
+	m := &mock.Mock{}
 	m.On("PopTime", expectedCtx, expectedString).Return(expectedTime)
 	result := m.PopTime(expectedCtx, expectedString)
 	assertValue(t, expectedTime, result)
@@ -222,8 +223,8 @@ func TestMock_PopTime(t *testing.T) {
 }
 
 func TestMock_LoadAndSave(t *testing.T) {
-	m := scs.NewMock().(*scs.Mock)
-	m.On("LoadAndSave", mock.AnythingOfType("HandlerFunc")).Return(expectedHTTPHandler)
+	m := &mock.Mock{}
+	m.On("LoadAndSave", testifyMock.AnythingOfType("HandlerFunc")).Return(expectedHTTPHandler)
 	result := m.LoadAndSave(expectedHTTPHandler)
 	f1 := reflect.ValueOf(expectedHTTPHandler)
 	f2 := reflect.ValueOf(result)
@@ -239,7 +240,7 @@ func assertValue(t *testing.T, expected, current interface{}) {
 	}
 }
 
-func assertMock(t *testing.T, m *mock.Mock) {
+func assertMock(t *testing.T, m *testifyMock.Mock) {
 	if !m.AssertExpectations(t) {
 		t.Error("AssertMockFullFilled failed")
 	}

@@ -6,7 +6,7 @@ import (
 	"time"
 )
 
-type ISession interface {
+type MockableSession interface {
 	LoadAndSave(next http.Handler) http.Handler
 	Load(ctx context.Context, token string) (context.Context, error)
 	Commit(ctx context.Context) (string, time.Time, error)
@@ -34,7 +34,7 @@ type ISession interface {
 	PopTime(ctx context.Context, key string) time.Time
 }
 
-// Allows to cast SessionManager to ISession interface
-func (s *SessionManager) AsInterface() ISession {
+// Allows to cast SessionManager to MockableSession interface
+func (s *SessionManager) AsInterface() MockableSession {
 	return s
 }

@@ -28,8 +28,7 @@ func (GobCodec) Encode(deadline time.Time, values map[string]interface{}) ([]byt
 	}
 
 	var b bytes.Buffer
-	err := gob.NewEncoder(&b).Encode(&aux)
-	if err != nil {
+	if err := gob.NewEncoder(&b).Encode(&aux); err != nil {
 		return nil, err
 	}
 
@@ -44,8 +43,7 @@ func (GobCodec) Decode(b []byte) (time.Time, map[string]interface{}, error) {
 	}{}
 
 	r := bytes.NewReader(b)
-	err := gob.NewDecoder(r).Decode(&aux)
-	if err != nil {
+	if err := gob.NewDecoder(r).Decode(&aux); err != nil {
 		return time.Time{}, nil, err
 	}
 

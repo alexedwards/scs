@@ -70,10 +70,10 @@ func (s *SessionManager) Load(ctx context.Context, token string) (context.Contex
 		status: Unmodified,
 		token:  token,
 	}
-	sd.deadline, sd.values, err = s.Codec.Decode(b)
-	if err != nil {
+	if sd.deadline, sd.values, err = s.Codec.Decode(b); err != nil {
 		return nil, err
 	}
+
 	// Mark the session data as modified if an idle timeout is being used. This
 	// will force the session data to be re-committed to the session store with
 	// a new expiry time.
@@ -97,8 +97,7 @@ func (s *SessionManager) Commit(ctx context.Context) (string, time.Time, error) 
 
 	if sd.token == "" {
 		var err error
-		sd.token, err = generateToken()
-		if err != nil {
+		if sd.token, err = generateToken(); err != nil {
 			return "", time.Time{}, err
 		}
 	}
@@ -116,8 +115,7 @@ func (s *SessionManager) Commit(ctx context.Context) (string, time.Time, error) 
 		}
 	}
 
-	err = s.Store.Commit(sd.token, b, expiry)
-	if err != nil {
+	if err := s.Store.Commit(sd.token, b, expiry); err != nil {
 		return "", time.Time{}, err
 	}
 

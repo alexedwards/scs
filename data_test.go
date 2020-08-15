@@ -9,7 +9,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/alexedwards/scs/v2/mockstore"
+	"github.com/alexedwards/scs/v3/mockstore"
 )
 
 func TestSessionDataFromContext(t *testing.T) {
@@ -43,7 +43,7 @@ func TestSessionManager_Load(T *testing.T) {
 			t.Errorf("unexpected error encoding value: %v", err)
 		}
 
-		if err := s.Store.Commit(expected, encodedValue, exampleDeadline); err != nil {
+		if err := s.ContextStore.Commit(ctx, expected, encodedValue, exampleDeadline); err != nil {
 			t.Errorf("error committing to session store: %v", err)
 		}
 
@@ -101,7 +101,7 @@ func TestSessionManager_Load(T *testing.T) {
 			t.Errorf("unexpected error encoding value: %v", err)
 		}
 
-		if err := s.Store.Commit(expected, encodedValue, exampleDeadline); err != nil {
+		if err := s.ContextStore.Commit(ctx, expected, encodedValue, exampleDeadline); err != nil {
 			t.Errorf("error committing to session store: %v", err)
 		}
 
@@ -137,7 +137,7 @@ func TestSessionManager_Load(T *testing.T) {
 		expected := "example"
 
 		store.ExpectFind(expected, []byte{}, true, errors.New("arbitrary"))
-		s.Store = store
+		s.ContextStore = &StoreAdapter{Store: store}
 
 		newCtx, err := s.Load(ctx, expected)
 		if err == nil {
@@ -186,7 +186,7 @@ func TestSessionManager_Load(T *testing.T) {
 		expected := "example"
 		exampleDeadline := time.Now().Add(time.Hour)
 
-		if err := s.Store.Commit(expected, []byte(""), exampleDeadline); err != nil {
+		if err := s.ContextStore.Commit(ctx, expected, []byte(""), exampleDeadline); err != nil {
 			t.Errorf("error committing to session store: %v", err)
 		}
 
@@ -310,7 +310,7 @@ func TestSessionManager_Commit(T *testing.T) {
 		ctx := context.WithValue(context.Background(), s.contextKey, sd)
 
 		store.ExpectCommit(sd.token, expectedBytes, sd.deadline, expectedErr)
-		s.Store = store
+		s.ContextStore = &StoreAdapter{Store: store}
 
 		actualToken, _, err := s.Commit(ctx)
 		if actualToken != "" {

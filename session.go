@@ -147,16 +147,35 @@ func (s *SessionManager) LoadAndSave(next http.Handler) http.Handler {
 			sr.MultipartForm.RemoveAll()
 		}
 
-		switch s.Status(ctx) {
-		case Modified:
-			token, expiry, err := s.Commit(ctx)
-			if err != nil {
-				s.ErrorFunc(w, r, err)
-				return
+		if s.Status(ctx) != Unmodified {
+			responseCookie := &http.Cookie{
+				Name:     s.Cookie.Name,
+				Path:     s.Cookie.Path,
+				Domain:   s.Cookie.Domain,
+				Secure:   s.Cookie.Secure,
+				HttpOnly: s.Cookie.HttpOnly,
+				SameSite: s.Cookie.SameSite,
 			}
-			s.writeSessionCookie(w, token, expiry)
-		case Destroyed:
-			s.writeSessionCookie(w, "", time.Time{})
+
+			switch s.Status(ctx) {
+			case Modified:
+				token, expiry, err := s.Commit(ctx)
+				if err != nil {
+					s.ErrorFunc(w, r, err)
+					return
+				}
+
+				responseCookie.Value = token
+				responseCookie.Expires = time.Unix(expiry.Unix()+1, 0)        // Round up to the nearest second.
+				responseCookie.MaxAge = int(time.Until(expiry).Seconds() + 1) // Round up to the nearest second.
+			case Destroyed:
+				responseCookie.Expires = time.Unix(1, 0)
+				responseCookie.MaxAge = -1
+			}
+
+			w.Header().Add("Set-Cookie", responseCookie.String())
+			addHeaderIfMissing(w, "Cache-Control", `no-cache="Set-Cookie"`)
+			addHeaderIfMissing(w, "Vary", "Cookie")
 		}
 
 		if bw.code != 0 {
@@ -164,31 +183,6 @@ func (s *SessionManager) LoadAndSave(next http.Handler) http.Handler {
 		}
 		w.Write(bw.buf.Bytes())
 	})
-}
-
-func (s *SessionManager) writeSessionCookie(w http.ResponseWriter, token string, expiry time.Time) {
-	cookie := &http.Cookie{
-		Name:     s.Cookie.Name,
-		Value:    token,
-		Path:     s.Cookie.Path,
-		Domain:   s.Cookie.Domain,
-		Secure:   s.Cookie.Secure,
-		HttpOnly: s.Cookie.HttpOnly,
-		SameSite: s.Cookie.SameSite,
-	}
-
-	if expiry.IsZero() {
-		cookie.Expires = time.Unix(1, 0)
-		cookie.MaxAge = -1
-	} else if s.Cookie.Persist {
-		cookie.Expires = time.Unix(expiry.Unix()+1, 0)        // Round up to the nearest second.
-		cookie.MaxAge = int(time.Until(expiry).Seconds() + 1) // Round up to the nearest second.
-	}
-
-	w.Header().Add("Set-Cookie", cookie.String())
-	addHeaderIfMissing(w, "Cache-Control", `no-cache="Set-Cookie"`)
-	addHeaderIfMissing(w, "Vary", "Cookie")
-
 }
 
 func addHeaderIfMissing(w http.ResponseWriter, key, value string) {

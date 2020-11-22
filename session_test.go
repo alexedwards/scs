@@ -256,3 +256,47 @@ func TestRenewToken(t *testing.T) {
 		t.Errorf("want %q; got %q", "bar", body)
 	}
 }
+
+func TestRememberMe(t *testing.T) {
+	t.Parallel()
+
+	sessionManager := New()
+	sessionManager.Cookie.Persist = false
+
+	mux := http.NewServeMux()
+	mux.HandleFunc("/put-normal", http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		sessionManager.Put(r.Context(), "foo", "bar")
+	}))
+	mux.HandleFunc("/put-rememberMe-true", http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		sessionManager.RememberMe(r.Context(), true)
+		sessionManager.Put(r.Context(), "foo", "bar")
+	}))
+	mux.HandleFunc("/put-rememberMe-false", http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		sessionManager.RememberMe(r.Context(), false)
+		sessionManager.Put(r.Context(), "foo", "bar")
+	}))
+
+	ts := newTestServer(t, sessionManager.LoadAndSave(mux))
+	defer ts.Close()
+
+	header, _ := ts.execute(t, "/put-normal")
+	header.Get("Set-Cookie")
+
+	if strings.Contains(header.Get("Set-Cookie"), "Max-Age=") || strings.Contains(header.Get("Set-Cookie"), "Expires=") {
+		t.Errorf("want no Max-Age or Expires attributes; got %q", header.Get("Set-Cookie"))
+	}
+
+	header, _ = ts.execute(t, "/put-rememberMe-true")
+	header.Get("Set-Cookie")
+
+	if !strings.Contains(header.Get("Set-Cookie"), "Max-Age=") || !strings.Contains(header.Get("Set-Cookie"), "Expires=") {
+		t.Errorf("want Max-Age and Expires attributes; got %q", header.Get("Set-Cookie"))
+	}
+
+	header, _ = ts.execute(t, "/put-rememberMe-false")
+	header.Get("Set-Cookie")
+
+	if strings.Contains(header.Get("Set-Cookie"), "Max-Age=") || strings.Contains(header.Get("Set-Cookie"), "Expires=") {
+		t.Errorf("want no Max-Age or Expires attributes; got %q", header.Get("Set-Cookie"))
+	}
+}

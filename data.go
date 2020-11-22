@@ -462,6 +462,14 @@ func (s *SessionManager) PopTime(ctx context.Context, key string) time.Time {
 	return t
 }
 
+// RememberMe controls whether the session cookie is persistent (i.e  whether it
+// is retained after a user closes their browser). RememberMe only has an effect
+// if you have set SessionManager.Cookie.Persist = false (the default is true) and
+// you are using the standard LoadAndSave() middleware.
+func (s *SessionManager) RememberMe(ctx context.Context, val bool) {
+	s.Put(ctx, "__rememberMe", val)
+}
+
 func (s *SessionManager) addSessionDataToContext(ctx context.Context, sd *sessionData) context.Context {
 	return context.WithValue(ctx, s.contextKey, sd)
 }

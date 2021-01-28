@@ -210,4 +210,4 @@ It is possible for an application to support multiple sessions per request, with
 
 This package requires Go 1.12 or newer.
 
-It is not compatible with the [Echo](https://echo.labstack.com/) framework. Please consider using the [Echo session manager](https://echo.labstack.com/middleware/session) instead.
+You may have [some problems](https://github.com/alexedwards/scs/issues/57) using this package with the [Echo](https://echo.labstack.com/) framework. If you do, then please consider using the [Echo session manager](https://echo.labstack.com/middleware/session) instead.

@@ -24,29 +24,29 @@ The database user for your application must have `SELECT`, `INSERT`, `UPDATE` an
 package main
 
 import (
-    "context"
-	"database/sql"
+	"context"
 	"io"
 	"log"
 	"net/http"
 
-	"github.com/alexedwards/scs/v2"
 	"github.com/alexedwards/scs/pgxstore"
+	"github.com/alexedwards/scs/v2"
+	"github.com/jackc/pgx/v4/pgxpool"
 )
 
 var sessionManager *scs.SessionManager
 
 func main() {
-	conn, err := pgx.Connect(context.Background(), "postgres://user:pass@localhost/db")
+	pool, err := pgxpool.Connect(context.Background(), "postgres://user:pass@localhost/db")
 	if err != nil {
 		log.Fatal(err)
 	}
-	defer conn.Close()
+	defer pool.Close()
 
-	// Initialize a new session manager and configure it to use PostgreSQL as
-	// the session store.
+	// Initialize a new session manager and configure it to use PostgreSQL with the pgx
+	// driver as the session store.
 	sessionManager = scs.New()
-	sessionManager.Store = pgxstore.New(conn)
+	sessionManager.Store = pgxstore.New(pool)
 
 	mux := http.NewServeMux()
 	mux.HandleFunc("/put", putHandler)
@@ -71,10 +71,10 @@ This package provides a background 'cleanup' goroutine to delete expired session
 
 ```go
 // Run a cleanup every 30 minutes.
-postgresstore.NewWithCleanupInterval(conn, 30*time.Minute)
+pgxstore.NewWithCleanupInterval(conn, 30*time.Minute)
 
 // Disable the cleanup goroutine by setting the cleanup interval to zero.
-postgresstore.NewWithCleanupInterval(conn, 0)
+pgxstore.NewWithCleanupInterval(conn, 0)
 ```
 
 ### Terminating the Cleanup Goroutine
@@ -85,13 +85,13 @@ However, there may be occasions when your use of a session store instance is tra
 
 ```go
 func TestExample(t *testing.T) {
-	conn, err := pgx.Connect(context.Background(), "postgres://user:pass@localhost/db")
+	pool, err := pgxpool.Connect(context.Background(), "postgres://user:pass@localhost/db")
 	if err != nil {
-	    t.Fatal(err)
+		 t.Fatal(err)
 	}
-	defer conn.Close()
+	defer pool.Close()
 
-	store := postgresstore.New(conn)
+	store := pgxstore.New(pool)
 	defer store.StopCleanup()
 
 	sessionManager = scs.New()

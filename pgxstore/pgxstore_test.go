@@ -1,35 +1,34 @@
-package postgresstore
+package pgxstore
 
 import (
 	"bytes"
 	"context"
-	"github.com/jackc/pgx/v4"
 	"os"
 	"reflect"
 	"testing"
 	"time"
+
+	"github.com/jackc/pgx/v4/pgxpool"
 )
 
 func TestFind(t *testing.T) {
 	dsn := os.Getenv("SCS_POSTGRES_TEST_DSN")
-	conn, err := pgx.Connect(context.Background(), dsn)
+	pool, err := pgxpool.Connect(context.Background(), dsn)
 	if err != nil {
 		t.Fatal(err)
 	}
-	defer conn.Close(context.Background())
-	if err = conn.Ping(context.Background()); err != nil {
-		t.Fatal(err)
-	}
-	_, err = conn.Exec(context.Background(), "TRUNCATE TABLE sessions")
+	defer pool.Close()
+
+	_, err = pool.Exec(context.Background(), "TRUNCATE TABLE sessions")
 	if err != nil {
 		t.Fatal(err)
 	}
-	_, err = conn.Exec(context.Background(), "INSERT INTO sessions VALUES('session_token', 'encoded_data', current_timestamp + interval '1 minute')")
+	_, err = pool.Exec(context.Background(), "INSERT INTO sessions VALUES('session_token', 'encoded_data', current_timestamp + interval '1 minute')")
 	if err != nil {
 		t.Fatal(err)
 	}
 
-	p := NewWithCleanupInterval(conn, 0)
+	p := NewWithCleanupInterval(pool, 0)
 
 	b, found, err := p.Find("session_token")
 	if err != nil {
@@ -45,20 +44,18 @@ func TestFind(t *testing.T) {
 
 func TestFindMissing(t *testing.T) {
 	dsn := os.Getenv("SCS_POSTGRES_TEST_DSN")
-	conn, err := pgx.Connect(context.Background(), dsn)
+	pool, err := pgxpool.Connect(context.Background(), dsn)
 	if err != nil {
 		t.Fatal(err)
 	}
-	defer conn.Close(context.Background())
-	if err = conn.Ping(context.Background()); err != nil {
-		t.Fatal(err)
-	}
-	_, err = conn.Exec(context.Background(), "TRUNCATE TABLE sessions")
+	defer pool.Close()
+
+	_, err = pool.Exec(context.Background(), "TRUNCATE TABLE sessions")
 	if err != nil {
 		t.Fatal(err)
 	}
 
-	p := NewWithCleanupInterval(conn, 0)
+	p := NewWithCleanupInterval(pool, 0)
 
 	_, found, err := p.Find("missing_session_token")
 	if err != nil {
@@ -71,27 +68,25 @@ func TestFindMissing(t *testing.T) {
 
 func TestSaveNew(t *testing.T) {
 	dsn := os.Getenv("SCS_POSTGRES_TEST_DSN")
-	conn, err := pgx.Connect(context.Background(), dsn)
+	pool, err := pgxpool.Connect(context.Background(), dsn)
 	if err != nil {
 		t.Fatal(err)
 	}
-	defer conn.Close(context.Background())
-	if err = conn.Ping(context.Background()); err != nil {
-		t.Fatal(err)
-	}
-	_, err = conn.Exec(context.Background(), "TRUNCATE TABLE sessions")
+	defer pool.Close()
+
+	_, err = pool.Exec(context.Background(), "TRUNCATE TABLE sessions")
 	if err != nil {
 		t.Fatal(err)
 	}
 
-	p := NewWithCleanupInterval(conn, 0)
+	p := NewWithCleanupInterval(pool, 0)
 
 	err = p.Commit("session_token", []byte("encoded_data"), time.Now().Add(time.Minute))
 	if err != nil {
 		t.Fatal(err)
 	}
 
-	row := conn.QueryRow(context.Background(), "SELECT data FROM sessions WHERE token = 'session_token'")
+	row := pool.QueryRow(context.Background(), "SELECT data FROM sessions WHERE token = 'session_token'")
 	var data []byte
 	err = row.Scan(&data)
 	if err != nil {
@@ -104,31 +99,29 @@ func TestSaveNew(t *testing.T) {
 
 func TestSaveUpdated(t *testing.T) {
 	dsn := os.Getenv("SCS_POSTGRES_TEST_DSN")
-	conn, err := pgx.Connect(context.Background(), dsn)
+	pool, err := pgxpool.Connect(context.Background(), dsn)
 	if err != nil {
 		t.Fatal(err)
 	}
-	defer conn.Close(context.Background())
-	if err = conn.Ping(context.Background()); err != nil {
-		t.Fatal(err)
-	}
-	_, err = conn.Exec(context.Background(), "TRUNCATE TABLE sessions")
+	defer pool.Close()
+
+	_, err = pool.Exec(context.Background(), "TRUNCATE TABLE sessions")
 	if err != nil {
 		t.Fatal(err)
 	}
-	_, err = conn.Exec(context.Background(), "INSERT INTO sessions VALUES('session_token', 'encoded_data', current_timestamp + interval '1 minute')")
+	_, err = pool.Exec(context.Background(), "INSERT INTO sessions VALUES('session_token', 'encoded_data', current_timestamp + interval '1 minute')")
 	if err != nil {
 		t.Fatal(err)
 	}
 
-	p := NewWithCleanupInterval(conn, 0)
+	p := NewWithCleanupInterval(pool, 0)
 
 	err = p.Commit("session_token", []byte("new_encoded_data"), time.Now().Add(time.Minute))
 	if err != nil {
 		t.Fatal(err)
 	}
 
-	row := conn.QueryRow(context.Background(), "SELECT data FROM sessions WHERE token = 'session_token'")
+	row := pool.QueryRow(context.Background(), "SELECT data FROM sessions WHERE token = 'session_token'")
 	var data []byte
 	err = row.Scan(&data)
 	if err != nil {
@@ -141,20 +134,18 @@ func TestSaveUpdated(t *testing.T) {
 
 func TestExpiry(t *testing.T) {
 	dsn := os.Getenv("SCS_POSTGRES_TEST_DSN")
-	conn, err := pgx.Connect(context.Background(), dsn)
+	pool, err := pgxpool.Connect(context.Background(), dsn)
 	if err != nil {
 		t.Fatal(err)
 	}
-	defer conn.Close(context.Background())
-	if err = conn.Ping(context.Background()); err != nil {
-		t.Fatal(err)
-	}
-	_, err = conn.Exec(context.Background(), "TRUNCATE TABLE sessions")
+	defer pool.Close()
+
+	_, err = pool.Exec(context.Background(), "TRUNCATE TABLE sessions")
 	if err != nil {
 		t.Fatal(err)
 	}
 
-	p := NewWithCleanupInterval(conn, 0)
+	p := NewWithCleanupInterval(pool, 0)
 
 	err = p.Commit("session_token", []byte("encoded_data"), time.Now().Add(100*time.Millisecond))
 	if err != nil {
@@ -175,31 +166,29 @@ func TestExpiry(t *testing.T) {
 
 func TestDelete(t *testing.T) {
 	dsn := os.Getenv("SCS_POSTGRES_TEST_DSN")
-	conn, err := pgx.Connect(context.Background(), dsn)
+	pool, err := pgxpool.Connect(context.Background(), dsn)
 	if err != nil {
 		t.Fatal(err)
 	}
-	defer conn.Close(context.Background())
-	if err = conn.Ping(context.Background()); err != nil {
-		t.Fatal(err)
-	}
-	_, err = conn.Exec(context.Background(), "TRUNCATE TABLE sessions")
+	defer pool.Close()
+
+	_, err = pool.Exec(context.Background(), "TRUNCATE TABLE sessions")
 	if err != nil {
 		t.Fatal(err)
 	}
-	_, err = conn.Exec(context.Background(), "INSERT INTO sessions VALUES('session_token', 'encoded_data', current_timestamp + interval '1 minute')")
+	_, err = pool.Exec(context.Background(), "INSERT INTO sessions VALUES('session_token', 'encoded_data', current_timestamp + interval '1 minute')")
 	if err != nil {
 		t.Fatal(err)
 	}
 
-	p := NewWithCleanupInterval(conn, 0)
+	p := NewWithCleanupInterval(pool, 0)
 
 	err = p.Delete("session_token")
 	if err != nil {
 		t.Fatal(err)
 	}
 
-	row := conn.QueryRow(context.Background(), "SELECT COUNT(*) FROM sessions WHERE token = 'session_token'")
+	row := pool.QueryRow(context.Background(), "SELECT COUNT(*) FROM sessions WHERE token = 'session_token'")
 	var count int
 	err = row.Scan(&count)
 	if err != nil {
@@ -212,20 +201,18 @@ func TestDelete(t *testing.T) {
 
 func TestCleanup(t *testing.T) {
 	dsn := os.Getenv("SCS_POSTGRES_TEST_DSN")
-	conn, err := pgx.Connect(context.Background(), dsn)
+	pool, err := pgxpool.Connect(context.Background(), dsn)
 	if err != nil {
 		t.Fatal(err)
 	}
-	defer conn.Close(context.Background())
-	if err = conn.Ping(context.Background()); err != nil {
-		t.Fatal(err)
-	}
-	_, err = conn.Exec(context.Background(), "TRUNCATE TABLE sessions")
+	defer pool.Close()
+
+	_, err = pool.Exec(context.Background(), "TRUNCATE TABLE sessions")
 	if err != nil {
 		t.Fatal(err)
 	}
 
-	p := NewWithCleanupInterval(conn, 200*time.Millisecond)
+	p := NewWithCleanupInterval(pool, 200*time.Millisecond)
 	defer p.StopCleanup()
 
 	err = p.Commit("session_token", []byte("encoded_data"), time.Now().Add(100*time.Millisecond))
@@ -233,7 +220,7 @@ func TestCleanup(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	row := conn.QueryRow(context.Background(), "SELECT COUNT(*) FROM sessions WHERE token = 'session_token'")
+	row := pool.QueryRow(context.Background(), "SELECT COUNT(*) FROM sessions WHERE token = 'session_token'")
 	var count int
 	err = row.Scan(&count)
 	if err != nil {
@@ -244,7 +231,7 @@ func TestCleanup(t *testing.T) {
 	}
 
 	time.Sleep(300 * time.Millisecond)
-	row = conn.QueryRow(context.Background(), "SELECT COUNT(*) FROM sessions WHERE token = 'session_token'")
+	row = pool.QueryRow(context.Background(), "SELECT COUNT(*) FROM sessions WHERE token = 'session_token'")
 	err = row.Scan(&count)
 	if err != nil {
 		t.Fatal(err)
@@ -256,16 +243,13 @@ func TestCleanup(t *testing.T) {
 
 func TestStopNilCleanup(t *testing.T) {
 	dsn := os.Getenv("SCS_POSTGRES_TEST_DSN")
-	conn, err := pgx.Connect(context.Background(), dsn)
+	pool, err := pgxpool.Connect(context.Background(), dsn)
 	if err != nil {
 		t.Fatal(err)
 	}
-	defer conn.Close(context.Background())
-	if err = conn.Ping(context.Background()); err != nil {
-		t.Fatal(err)
-	}
+	defer pool.Close()
 
-	p := NewWithCleanupInterval(conn, 0)
+	p := NewWithCleanupInterval(pool, 0)
 	time.Sleep(100 * time.Millisecond)
 	// A send to a nil channel will block forever
 	p.StopCleanup()

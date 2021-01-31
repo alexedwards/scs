@@ -151,7 +151,8 @@ The session stores currently included are shown in the table below. Please click
 | [boltstore](https://github.com/alexedwards/scs/tree/master/boltstore)       			| BoltDB based session store  		                                               |
 | [memstore](https://github.com/alexedwards/scs/tree/master/memstore)       			| In-memory session store (default)                                                |
 | [mysqlstore](https://github.com/alexedwards/scs/tree/master/mysqlstore)   			| MySQL based session store                                                        |
-| [postgresstore](https://github.com/alexedwards/scs/tree/master/postgresstore)         | PostgreSQL based session store                                                   |
+| [postgresstore](https://github.com/alexedwards/scs/tree/master/postgresstore)         | PostgreSQL based session store (using the [pq](https://github.com/lib/pq) driver)                                                 |
+| [pgxstore](https://github.com/alexedwards/scs/tree/master/pgxstore)         | PostgreSQL based session store (using the [pgx](https://github.com/jackc/pgx) driver)                                                 |
 | [redisstore](https://github.com/alexedwards/scs/tree/master/redisstore)       		| Redis based session store |
 | [sqlite3store](https://github.com/alexedwards/scs/tree/master/sqlite3store) | SQLite3 based session store |
 

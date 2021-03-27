@@ -140,7 +140,6 @@ func (m *MongoDBStore) deleteExpired() error {
 	filter := bson.M{"expiration": bson.M{"$lt": now}}
 	_, err := m.collection.DeleteMany(context.Background(), filter, nil)
 	if err != nil {
-		log.Print(err)
 		return err
 	}
 

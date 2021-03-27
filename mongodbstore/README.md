@@ -14,7 +14,7 @@ import (
 	"net/http"
 
 	"github.com/alexedwards/scs/v2"
-	"github.com/alexedwards/scs/v2/mongodbstore"
+	"github.com/alexedwards/scs/mongodbstore"
 )
 
 var sessionManager *scs.SessionManager

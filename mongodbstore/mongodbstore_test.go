@@ -15,8 +15,12 @@ import (
 func TestFind(t *testing.T) {
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 	defer cancel()
-	client, err := mongo.Connect(ctx, options.Client().ApplyURI("mongodb://localhost:27017"))
+	clientOptions := options.Client().ApplyURI("mongodb://localhost:27017")
+	client, err := mongo.Connect(ctx, clientOptions)
+	if err != nil {
+		t.Fatalf("got %v: expected %v", err, nil)
 
+	}
 	defer func() {
 		if err = client.Disconnect(ctx); err != nil {
 			panic(err)
@@ -45,8 +49,12 @@ func TestFind(t *testing.T) {
 func TestFindMissing(t *testing.T) {
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 	defer cancel()
-	client, err := mongo.Connect(ctx, options.Client().ApplyURI("mongodb://localhost:27017"))
+	clientOptions := options.Client().ApplyURI("mongodb://localhost:27017")
+	client, err := mongo.Connect(ctx, clientOptions)
+	if err != nil {
+		t.Fatalf("got %v: expected %v", err, nil)
 
+	}
 	defer func() {
 		if err = client.Disconnect(ctx); err != nil {
 			panic(err)
@@ -67,8 +75,12 @@ func TestFindMissing(t *testing.T) {
 func TestCommitNew(t *testing.T) {
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 	defer cancel()
-	client, err := mongo.Connect(ctx, options.Client().ApplyURI("mongodb://localhost:27017"))
+	clientOptions := options.Client().ApplyURI("mongodb://localhost:27017")
+	client, err := mongo.Connect(ctx, clientOptions)
+	if err != nil {
+		t.Fatalf("got %v: expected %v", err, nil)
 
+	}
 	defer func() {
 		if err = client.Disconnect(ctx); err != nil {
 			panic(err)
@@ -104,8 +116,12 @@ func TestCommitNew(t *testing.T) {
 func TestCommitUpdated(t *testing.T) {
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 	defer cancel()
-	client, err := mongo.Connect(ctx, options.Client().ApplyURI("mongodb://localhost:27017"))
+	clientOptions := options.Client().ApplyURI("mongodb://localhost:27017")
+	client, err := mongo.Connect(ctx, clientOptions)
+	if err != nil {
+		t.Fatalf("got %v: expected %v", err, nil)
 
+	}
 	defer func() {
 		if err = client.Disconnect(ctx); err != nil {
 			panic(err)
@@ -146,8 +162,12 @@ func TestCommitUpdated(t *testing.T) {
 func TestExpiry(t *testing.T) {
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 	defer cancel()
-	client, err := mongo.Connect(ctx, options.Client().ApplyURI("mongodb://localhost:27017"))
+	clientOptions := options.Client().ApplyURI("mongodb://localhost:27017")
+	client, err := mongo.Connect(ctx, clientOptions)
+	if err != nil {
+		t.Fatalf("got %v: expected %v", err, nil)
 
+	}
 	defer func() {
 		if err = client.Disconnect(ctx); err != nil {
 			panic(err)
@@ -176,8 +196,12 @@ func TestExpiry(t *testing.T) {
 func TestDelete(t *testing.T) {
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 	defer cancel()
-	client, err := mongo.Connect(ctx, options.Client().ApplyURI("mongodb://localhost:27017"))
+	clientOptions := options.Client().ApplyURI("mongodb://localhost:27017")
+	client, err := mongo.Connect(ctx, clientOptions)
+	if err != nil {
+		t.Fatalf("got %v: expected %v", err, nil)
 
+	}
 	defer func() {
 		if err = client.Disconnect(ctx); err != nil {
 			panic(err)
@@ -207,8 +231,12 @@ func TestDelete(t *testing.T) {
 func TestCleanupInterval(t *testing.T) {
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 	defer cancel()
-	client, err := mongo.Connect(ctx, options.Client().ApplyURI("mongodb://localhost:27017"))
+	clientOptions := options.Client().ApplyURI("mongodb://localhost:27017")
+	client, err := mongo.Connect(ctx, clientOptions)
+	if err != nil {
+		t.Fatalf("got %v: expected %v", err, nil)
 
+	}
 	defer func() {
 		if err = client.Disconnect(ctx); err != nil {
 			panic(err)

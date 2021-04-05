@@ -17,7 +17,7 @@ type Codec interface {
 // slice using the encoding/gob package.
 type GobCodec struct{}
 
-// Encode converts a session dealine and values into a byte slice.
+// Encode converts a session deadline and values into a byte slice.
 func (GobCodec) Encode(deadline time.Time, values map[string]interface{}) ([]byte, error) {
 	aux := &struct {
 		Deadline time.Time

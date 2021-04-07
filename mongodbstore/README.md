@@ -10,11 +10,15 @@ You should follow the [usage instructions](https://github.com/mongodb/mongo-go-d
 package main
 
 import (
+	"context"
 	"io"
 	"net/http"
+	"time"
 
-	"github.com/alexedwards/scs/v2"
 	"github.com/alexedwards/scs/mongodbstore"
+	"github.com/alexedwards/scs/v2"
+	"go.mongodb.org/mongo-driver/mongo"
+	"go.mongodb.org/mongo-driver/mongo/options"
 )
 
 var sessionManager *scs.SessionManager
@@ -23,6 +27,7 @@ func main() {
 	// Establish connection to MongoDB.
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 	defer cancel()
+
 	client, err := mongo.Connect(ctx, options.Client().ApplyURI("mongodb://localhost:27017"))
 
 	defer func() {

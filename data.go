@@ -347,6 +347,30 @@ func (s *SessionManager) GetInt(ctx context.Context, key string) int {
 	return i
 }
 
+// GetInt64 returns the int64 value for a given key from the session data. The
+// zero value for an int64 (0) is returned if the key does not exist or the
+// value could not be type asserted to an int64.
+func (s *SessionManager) GetInt64(ctx context.Context, key string) int64 {
+	val := s.Get(ctx, key)
+	i, ok := val.(int64)
+	if !ok {
+		return 0
+	}
+	return i
+}
+
+// GetInt32 returns the int value for a given key from the session data. The
+// zero value for an int32 (0) is returned if the key does not exist or the
+// value could not be type asserted to an int32.
+func (s *SessionManager) GetInt32(ctx context.Context, key string) int32 {
+	val := s.Get(ctx, key)
+	i, ok := val.(int32)
+	if !ok {
+		return 0
+	}
+	return i
+}
+
 // GetFloat returns the float64 value for a given key from the session data. The
 // zero value for an float64 (0) is returned if the key does not exist or the
 // value could not be type asserted to a float64.

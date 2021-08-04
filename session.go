@@ -180,24 +180,16 @@ func (s *SessionManager) LoadAndSave(next http.Handler) http.Handler {
 			}
 
 			w.Header().Add("Set-Cookie", responseCookie.String())
-			addHeaderIfMissing(w, "Cache-Control", `no-cache="Set-Cookie"`)
-			addHeaderIfMissing(w, "Vary", "Cookie")
+			w.Header().Add("Cache-Control", `no-cache="Set-Cookie"`)
 		}
+
+		w.Header().Add("Vary", "Cookie")
 
 		if bw.code != 0 {
 			w.WriteHeader(bw.code)
 		}
 		w.Write(bw.buf.Bytes())
 	})
-}
-
-func addHeaderIfMissing(w http.ResponseWriter, key, value string) {
-	for _, h := range w.Header()[key] {
-		if h == value {
-			return
-		}
-	}
-	w.Header().Add(key, value)
 }
 
 func defaultErrorFunc(w http.ResponseWriter, r *http.Request, err error) {

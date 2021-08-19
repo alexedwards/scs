@@ -212,4 +212,4 @@ It is possible for an application to support multiple sessions per request, with
 
 This package requires Go 1.12 or newer.
 
-You may have [some problems](https://github.com/alexedwards/scs/issues/57) using this package with the [Echo](https://echo.labstack.com/) framework. If you do, then please consider using the [Echo session manager](https://echo.labstack.com/middleware/session) or [echo-scs-session](https://github.com/spazzymoto/echo-scs-session) fork instead.
+You may have some problems using this package with Go frameworks that do not propagate the request context from standard-library compatible middleware, like [Echo](https://github.com/alexedwards/scs/issues/57) and [Fiber](https://github.com/alexedwards/scs/issues/106). If you are using Echo, please use the [echo-scs-session](https://github.com/spazzymoto/echo-scs-session) fork of this package instead.

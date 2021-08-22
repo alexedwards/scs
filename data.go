@@ -532,6 +532,18 @@ func (s *SessionManager) Iterate(fn func(context.Context) error) error {
 	return nil
 }
 
+// Deadline returns the 'absolute' expiry time for the session. Please note
+// that if you are using an idle timeout, it is possible that a session will
+// expire due to non-use before the returned deadline.
+func (s *SessionManager) Deadline(ctx context.Context) time.Time {
+	sd := s.getSessionDataFromContext(ctx)
+
+	sd.mu.Lock()
+	defer sd.mu.Unlock()
+
+	return sd.deadline
+}
+
 func (s *SessionManager) addSessionDataToContext(ctx context.Context, sd *sessionData) context.Context {
 	return context.WithValue(ctx, s.contextKey, sd)
 }

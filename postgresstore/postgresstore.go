@@ -62,6 +62,39 @@ func (p *PostgresStore) Delete(token string) error {
 	return err
 }
 
+// All returns a map containing the token and data for all active (i.e.
+// not expired) sessions in the PostgresStore instance.
+func (p *PostgresStore) All() (map[string][]byte, error) {
+	rows, err := p.db.Query("SELECT token, data FROM sessions WHERE current_timestamp < expiry")
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	sessions := make(map[string][]byte)
+
+	for rows.Next() {
+		var (
+			token string
+			data  []byte
+		)
+
+		err = rows.Scan(&token, &data)
+		if err != nil {
+			return nil, err
+		}
+
+		sessions[token] = data
+	}
+
+	err = rows.Err()
+	if err != nil {
+		return nil, err
+	}
+
+	return sessions, nil
+}
+
 func (p *PostgresStore) startCleanup(interval time.Duration) {
 	p.stopCleanup = make(chan bool)
 	ticker := time.NewTicker(interval)

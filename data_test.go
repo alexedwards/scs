@@ -61,7 +61,9 @@ func TestSessionManager_Load(T *testing.T) {
 		}
 		if sd == nil {
 			t.Error("sessionData present in returned context unexpectedly nil")
+			return
 		}
+
 		actual := sd.token
 
 		if expected != actual {
@@ -117,7 +119,9 @@ func TestSessionManager_Load(T *testing.T) {
 		}
 		if sd == nil {
 			t.Error("sessionData present in returned context unexpectedly nil")
+			return
 		}
+
 		actual := sd.token
 
 		if expected != actual {
@@ -165,7 +169,9 @@ func TestSessionManager_Load(T *testing.T) {
 		}
 		if sd == nil {
 			t.Error("sessionData present in returned context unexpectedly nil")
+			return
 		}
+
 		actual := sd.token
 
 		if expected != actual {

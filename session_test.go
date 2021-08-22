@@ -1,11 +1,16 @@
 package scs
 
 import (
+	"context"
+	"errors"
 	"fmt"
 	"io/ioutil"
 	"net/http"
 	"net/http/cookiejar"
 	"net/http/httptest"
+	"reflect"
+	"sort"
+	"strconv"
 	"strings"
 	"testing"
 	"time"
@@ -251,7 +256,7 @@ func TestRenewToken(t *testing.T) {
 		t.Fatal("token has not changed")
 	}
 
-	header, body := ts.execute(t, "/get")
+	_, body := ts.execute(t, "/get")
 	if body != "bar" {
 		t.Errorf("want %q; got %q", "bar", body)
 	}
@@ -298,5 +303,48 @@ func TestRememberMe(t *testing.T) {
 
 	if strings.Contains(header.Get("Set-Cookie"), "Max-Age=") || strings.Contains(header.Get("Set-Cookie"), "Expires=") {
 		t.Errorf("want no Max-Age or Expires attributes; got %q", header.Get("Set-Cookie"))
+	}
+}
+
+func TestIterate(t *testing.T) {
+	t.Parallel()
+
+	sessionManager := New()
+
+	mux := http.NewServeMux()
+	mux.HandleFunc("/put", http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		sessionManager.Put(r.Context(), "foo", r.URL.Query().Get("foo"))
+	}))
+
+	for i := 0; i < 3; i++ {
+		ts := newTestServer(t, sessionManager.LoadAndSave(mux))
+		defer ts.Close()
+
+		ts.execute(t, "/put?foo="+strconv.Itoa(i))
+	}
+
+	results := []string{}
+
+	err := sessionManager.Iterate(func(ctx context.Context) error {
+		i := sessionManager.GetString(ctx, "foo")
+		results = append(results, i)
+		return nil
+	})
+
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	sort.Strings(results)
+
+	if !reflect.DeepEqual(results, []string{"0", "1", "2"}) {
+		t.Fatalf("unexpected value: got %v", results)
+	}
+
+	err = sessionManager.Iterate(func(ctx context.Context) error {
+		return errors.New("expected error")
+	})
+	if err.Error() != "expected error" {
+		t.Fatal("didn't get expected error")
 	}
 }

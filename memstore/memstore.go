@@ -82,6 +82,23 @@ func (m *MemStore) Delete(token string) error {
 	return nil
 }
 
+// All returns a map containing the token and data for all active (i.e.
+// not expired) sessions.
+func (m *MemStore) All() (map[string][]byte, error) {
+	m.mu.RLock()
+	defer m.mu.RUnlock()
+
+	var mm = make(map[string][]byte)
+
+	for token, item := range m.items {
+		if item.expiration > time.Now().UnixNano() {
+			mm[token] = item.object
+		}
+	}
+
+	return mm, nil
+}
+
 func (m *MemStore) startCleanup(interval time.Duration) {
 	m.stopCleanup = make(chan bool)
 	ticker := time.NewTicker(interval)

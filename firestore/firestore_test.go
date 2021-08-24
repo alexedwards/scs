@@ -3,6 +3,7 @@ package firestore
 import (
 	"bytes"
 	"context"
+	"fmt"
 	"os"
 	"reflect"
 	"testing"
@@ -174,6 +175,36 @@ func TestDelete(t *testing.T) {
 	}
 }
 
+func TestAll(t *testing.T) {
+	ctx := context.Background()
+	client, err := firestore.NewClient(ctx, os.Getenv("GOOGLE_CLOUD_PROJECT"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer client.Close()
+
+	m := NewWithCleanupInterval(client, 0)
+	ref := client.Collection("Sessions")
+	sessions := make(map[string][]byte)
+	for i := 0; i < 4; i++ {
+		key := fmt.Sprintf("token_%v", i)
+		val := []byte(key)
+		_, err = ref.Doc(key).Set(ctx, map[string]interface{}{"Data": val, "Expiry": time.Now().Add(time.Minute)})
+		if err != nil {
+			t.Fatal(err)
+		}
+		sessions[key] = val
+	}
+
+	gotSessions, err := m.All(ctx)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	if reflect.DeepEqual(sessions, gotSessions) == false {
+		t.Fatalf("got %v: expected %v", sessions, gotSessions)
+	}
+}
 func TestCleanup(t *testing.T) {
 	ctx := context.Background()
 	client, err := firestore.NewClient(ctx, os.Getenv("GOOGLE_CLOUD_PROJECT"))

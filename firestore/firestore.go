@@ -87,6 +87,30 @@ func (m *FireStore) Delete(ctx context.Context, token string) error {
 	return err
 }
 
+// All returns a map containing the token and data for all active (i.e.
+// not expired) sessions in the firestore instance.
+func (m *FireStore) All(ctx context.Context) (map[string][]byte, error) {
+	iter := m.Sessions.Where("Expiry", ">=", time.Now()).Documents(ctx)
+	defer iter.Stop()
+	sessions := make(map[string][]byte)
+	for {
+		snap, err := iter.Next()
+		if err == iterator.Done {
+			break
+		}
+		if err != nil {
+			return nil, err
+		}
+		var sd sessionDoc
+		err = snap.DataTo(&sd)
+		if err != nil {
+			return nil, err
+		}
+		sessions[snap.Ref.ID] = sd.Data
+	}
+	return sessions, nil
+}
+
 func (m *FireStore) startCleanup(interval time.Duration) {
 	m.stopCleanup = make(chan bool)
 	ticker := time.NewTicker(interval)

@@ -201,10 +201,17 @@ func TestAll(t *testing.T) {
 		t.Fatal(err)
 	}
 
+	for k := range sessions {
+		err = m.Delete(ctx, k)
+		if err != nil {
+			t.Fatal(err)
+		}
+	}
 	if reflect.DeepEqual(sessions, gotSessions) == false {
-		t.Fatalf("got %v: expected %v", sessions, gotSessions)
+		t.Fatalf("got %v: expected %v", gotSessions, sessions)
 	}
 }
+
 func TestCleanup(t *testing.T) {
 	ctx := context.Background()
 	client, err := firestore.NewClient(ctx, os.Getenv("GOOGLE_CLOUD_PROJECT"))

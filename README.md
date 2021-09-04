@@ -1,7 +1,7 @@
 # SCS: HTTP Session Management for Go
 
-[![GoDoc](https://pkg.go.dev/github.com/alexedwards/scs/v2?status.png)](https://pkg.go.dev/github.com/alexedwards/scs/v2?tab=doc)
-[![Build status](https://travis-ci.org/alexedwards/stack.svg?branch=master)](https://travis-ci.org/alexedwards/scs)
+[![GoDoc](https://godoc.org/github.com/alexedwards/scs?status.png)](https://pkg.go.dev/github.com/alexedwards/scs/v2?tab=doc)
+[![Build status](https://travis-ci.com/alexedwards/stack.svg?branch=master)](https://travis-ci.com/alexedwards/scs)
 [![Go report card](https://goreportcard.com/badge/github.com/alexedwards/scs)](https://goreportcard.com/report/github.com/alexedwards/scs)
 [![Test coverage](http://gocover.io/_badge/github.com/alexedwards/scs)](https://gocover.io/github.com/alexedwards/scs)
 

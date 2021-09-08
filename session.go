@@ -104,7 +104,7 @@ func New() *SessionManager {
 		IdleTimeout:  0,
 		Lifetime:     24 * time.Hour,
 		ContextStore: &StoreAdapter{Store: memstore.New()},
-		Codec:        gobCodec{},
+		Codec:        GobCodec{},
 		ErrorFunc:    defaultErrorFunc,
 		contextKey:   generateContextKey(),
 		Cookie: SessionCookie{

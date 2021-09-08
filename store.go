@@ -34,6 +34,7 @@ type IterableStore interface {
 	All() (map[string][]byte, error)
 }
 
+//
 // ContextStore is the interface for session stores that need a request
 // context, e.g. Google Cloud Platform Firestore.
 type ContextStore interface {
@@ -55,6 +56,15 @@ type ContextStore interface {
 	Commit(ctx context.Context, token string, b []byte, expiry time.Time) (err error)
 }
 
+// IterableContextStore is the interface for session stores which support iteration.
+type IterableContextStore interface {
+	// All should return a map containing data for all active sessions (i.e.
+	// sessions which have not expired). The map key should be the session
+	// token and the map value should be the session data. If no active
+	// sessions exist this should return an empty (not nil) map.
+	All(ctx context.Context) (map[string][]byte, error)
+}
+
 // StoreAdapter is used to for the scs version 2 store with a ContextStore,
 // dropping the unused context argument.
 type StoreAdapter struct {
@@ -71,4 +81,14 @@ func (sa *StoreAdapter) Find(ctx context.Context, token string) (b []byte, found
 
 func (sa *StoreAdapter) Commit(ctx context.Context, token string, b []byte, expiry time.Time) (err error) {
 	return sa.Store.Commit(token, b, expiry)
+}
+
+// IterableStoreAdapter is used to for the scs version 2 store with a ContextStore,
+// dropping the unused context argument.
+type IterableStoreAdapter struct {
+	Store IterableStore
+}
+
+func (sa *IterableStoreAdapter) All(ctx context.Context) (map[string][]byte, error) {
+	return sa.Store.All()
 }

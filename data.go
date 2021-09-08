@@ -538,13 +538,24 @@ func (s *SessionManager) RememberMe(ctx context.Context, val bool) {
 // Iterate retrieves all active (i.e. not expired) sessions from the store and
 // executes the provided function fn for each session. If the session store
 // being used does not support iteration then Iterate will panic.
-func (s *SessionManager) Iterate(fn func(context.Context) error) error {
-	iterableStore, ok := s.Store.(IterableStore)
+func (s *SessionManager) Iterate(ctx context.Context, fn func(context.Context) error) error {
+	iterableStore, ok := s.ContextStore.(IterableContextStore)
 	if !ok {
-		panic(fmt.Sprintf("type %T does not implement IterableStore interface", s.Store))
+		iterableStore = nil
+		// For compatibility, also wrap the IterableStore interface.
+		sa, ok := s.ContextStore.(*StoreAdapter)
+		if ok {
+			is, ok := sa.Store.(IterableStore)
+			if ok {
+				iterableStore = &IterableStoreAdapter{Store: is}
+			}
+		}
+		if iterableStore == nil {
+			panic(fmt.Sprintf("type %T does not implement IterableContextStore/IterableStore interface", s.ContextStore))
+		}
 	}
 
-	allSessions, err := iterableStore.All()
+	allSessions, err := iterableStore.All(ctx)
 	if err != nil {
 		return err
 	}

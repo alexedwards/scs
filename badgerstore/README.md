@@ -1,4 +1,4 @@
-# badger
+# badgerstore
 
 A [Badger](https://github.com/dgraph-io/badger)-based session store for [SCS](https://github.com/alexedwards/scs).
 

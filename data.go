@@ -544,6 +544,18 @@ func (s *SessionManager) Deadline(ctx context.Context) time.Time {
 	return sd.deadline
 }
 
+// Token returns the session token. Please note that this will return the
+// empty string "" if it is called before the session has been committed to
+// the store.
+func (s *SessionManager) Token(ctx context.Context) string {
+	sd := s.getSessionDataFromContext(ctx)
+
+	sd.mu.Lock()
+	defer sd.mu.Unlock()
+
+	return sd.token
+}
+
 func (s *SessionManager) addSessionDataToContext(ctx context.Context, sd *sessionData) context.Context {
 	return context.WithValue(ctx, s.contextKey, sd)
 }

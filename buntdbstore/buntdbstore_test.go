@@ -13,14 +13,19 @@ import (
 
 // remove old test DB if it exists and create a new one
 func getTestDatabase() *buntdb.DB {
-	err := os.Remove("/tmp/testing.db")
-	if err != nil {
-		panic(err)
+	fileinfo, _ := os.Stat("/tmp/testing.db")
+	if fileinfo != nil {
+		err := os.Remove("/tmp/testing.db")
+		if err != nil {
+			panic(err)
+		}
 	}
+
 	db, err := buntdb.Open("/tmp/testing.db")
 	if err != nil {
 		panic(err)
 	}
+
 	return db
 }
 

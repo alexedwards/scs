@@ -55,3 +55,25 @@ func (bs *BuntDBStore) Delete(token string) error {
 		return err
 	})
 }
+
+// All returns a map containing the token and data for all active (i.e.
+// not expired) sessions in the BuntDBStore instance.
+func (bs *BuntDBStore) All() (map[string][]byte, error) {
+	sessions := make(map[string][]byte)
+
+	err := bs.db.View(func(tx *buntdb.Tx) error {
+		err := tx.Ascend("", func(key, value string) bool {
+			sessions[key] = []byte(value)
+			return true
+		})
+		return err
+	})
+	if err != nil {
+		if err == buntdb.ErrNotFound {
+			return nil, nil
+		}
+		return nil, err
+	}
+
+	return sessions, nil
+}

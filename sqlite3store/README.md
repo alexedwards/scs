@@ -28,7 +28,7 @@ import (
 	"net/http"
 
 	"github.com/alexedwards/scs/v2"
-	"github.com/alexedwards/scs/SQLite3Store"
+	"github.com/alexedwards/scs/sqlite3store"
 
 	_ "github.com/mattn/go-sqlite3"
 )
@@ -45,7 +45,7 @@ func main() {
 	// Initialize a new session manager and configure it to use SQLite3 as
 	// the session store.
 	sessionManager = scs.New()
-	sessionManager.Store = SQLite3Store.New(db)
+	sessionManager.Store = sqlite3store.New(db)
 
 	mux := http.NewServeMux()
 	mux.HandleFunc("/put", putHandler)

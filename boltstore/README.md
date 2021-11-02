@@ -1,6 +1,6 @@
 # boltstore
 
-A BoltDB-based session store for [SCS](https://github.com/alexedwards/scs) using the [go.etcd.io/bbolt](https://github.com/etcd-io/bbolt) package.
+A Bolt-based session store for [SCS](https://github.com/alexedwards/scs) using the [go.etcd.io/bbolt](https://github.com/etcd-io/bbolt) package.
 
 ## Example
 

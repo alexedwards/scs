@@ -77,6 +77,39 @@ func (r *RedisStore) Delete(token string) error {
 	return err
 }
 
+// All returns a map containing the token and data for all active (i.e.
+// not expired) sessions in the RedisStore instance.
+func (r *RedisStore) All() (map[string][]byte, error) {
+	conn := r.pool.Get()
+	defer conn.Close()
+
+	keys, err := redis.Strings(conn.Do("KEYS", r.prefix+"*"))
+	if err == redis.ErrNil {
+		return nil, nil
+	} else if err != nil {
+		return nil, err
+	}
+
+	sessions := make(map[string][]byte)
+
+	for _, key := range keys {
+		token := key[len(r.prefix):]
+
+		data, exists, err := r.Find(token)
+		if err == redis.ErrNil {
+			return nil, nil
+		} else if err != nil {
+			return nil, err
+		}
+
+		if exists {
+			sessions[token] = data
+		}
+	}
+
+	return sessions, nil
+}
+
 func makeMillisecondTimestamp(t time.Time) int64 {
 	return t.UnixNano() / (int64(time.Millisecond) / int64(time.Nanosecond))
 }

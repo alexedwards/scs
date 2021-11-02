@@ -8,7 +8,7 @@
 ## Features
 
 * Automatic loading and saving of session data via middleware.
-* Choice of server-side session stores including PostgreSQL, MySQL, Redis, BadgerDB and BoltDB. Custom session stores are also supported.
+* Choice of server-side session stores including PostgreSQL, MySQL, Redis, Badger, Bolt and BuntDB. Custom session stores are also supported.
 * Supports multiple sessions per request, 'flash' messages, session token regeneration, idle and absolute session timeouts, and 'remember me' functionality.
 * Easy to extend and customize. Communicate session tokens to/from clients in HTTP headers or request/response bodies.
 * Efficient design. Smaller, faster and uses less memory than [gorilla/sessions](https://github.com/gorilla/sessions).
@@ -146,10 +146,11 @@ The session stores currently included are shown in the table below. Please click
 
 | Package                                                                               |                                                                                  |
 |:------------------------------------------------------------------------------------- |----------------------------------------------------------------------------------|
-| [badgerstore](https://github.com/alexedwards/scs/tree/master/badgerstore)       		| BadgerDB based session store  		                                               |
-| [boltstore](https://github.com/alexedwards/scs/tree/master/boltstore)       			| BoltDB based session store  		                                               |
+| [badgerstore](https://github.com/alexedwards/scs/tree/master/badgerstore)       		| Badger based session store  		                                           |
+| [boltstore](https://github.com/alexedwards/scs/tree/master/boltstore)       			| Bolt based session store  		                                               |
+| [buntdbstore](https://github.com/alexedwards/scs/tree/master/buntdbstore)  			| BuntDB based session store  		                                               |
 | [memstore](https://github.com/alexedwards/scs/tree/master/memstore)       			| In-memory session store (default)                                                |
-| [mongodbstore](https://github.com/alexedwards/scs/tree/master/mongodbstore)       	| MongoDB based session store                                               |
+| [mongodbstore](https://github.com/alexedwards/scs/tree/master/mongodbstore)       	| MongoDB based session store                                               	   |
 | [mysqlstore](https://github.com/alexedwards/scs/tree/master/mysqlstore)   			| MySQL based session store                                                        |
 | [postgresstore](https://github.com/alexedwards/scs/tree/master/postgresstore)         | PostgreSQL based session store (using the [pq](https://github.com/lib/pq) driver)                                                 |
 | [pgxstore](https://github.com/alexedwards/scs/tree/master/pgxstore)         | PostgreSQL based session store (using the [pgx](https://github.com/jackc/pgx) driver)                                                 |

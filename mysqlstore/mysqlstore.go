@@ -79,6 +79,47 @@ func (m *MySQLStore) Delete(token string) error {
 	return err
 }
 
+// All returns a map containing the token and data for all active (i.e.
+// not expired) sessions in the MySQLStore instance.
+func (m *MySQLStore) All() (map[string][]byte, error) {
+	var stmt string
+
+	if compareVersion("5.6.4", m.version) >= 0 {
+		stmt = "SELECT token, data FROM sessions WHERE UTC_TIMESTAMP(6) < expiry"
+	} else {
+		stmt = "SELECT token, data FROM sessions WHERE UTC_TIMESTAMP < expiry"
+	}
+
+	rows, err := m.DB.Query(stmt)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	sessions := make(map[string][]byte)
+
+	for rows.Next() {
+		var (
+			token string
+			data  []byte
+		)
+
+		err = rows.Scan(&token, &data)
+		if err != nil {
+			return nil, err
+		}
+
+		sessions[token] = data
+	}
+
+	err = rows.Err()
+	if err != nil {
+		return nil, err
+	}
+
+	return sessions, nil
+}
+
 func (m *MySQLStore) startCleanup(interval time.Duration) {
 	m.stopCleanup = make(chan bool)
 	ticker := time.NewTicker(interval)

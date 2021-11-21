@@ -91,6 +91,30 @@ func (bs *BoltStore) Delete(token string) error {
 	})
 }
 
+// All returns a map containing the token and data for all active (i.e.
+// not expired) sessions in the BoltStore instance.
+func (bs *BoltStore) All() (map[string][]byte, error) {
+	sessions := make(map[string][]byte)
+
+	err := bs.db.View(func(tx *bbolt.Tx) error {
+		bucket := tx.Bucket(bucketName)
+		cursor := bucket.Cursor()
+
+		for key, val := cursor.First(); key != nil; key, val = cursor.Next() {
+			if binary.BigEndian.Uint64(val[:8]) > uint64(time.Now().UnixNano()) {
+				sessions[string(key)] = val[8:]
+			}
+		}
+
+		return nil
+	})
+	if err != nil {
+		return nil, err
+	}
+
+	return sessions, nil
+}
+
 func (bs *BoltStore) startCleanup(cleanupInterval time.Duration) {
 	bs.stopCleanup = make(chan bool)
 	ticker := time.NewTicker(cleanupInterval)

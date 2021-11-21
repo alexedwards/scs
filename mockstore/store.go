@@ -24,17 +24,22 @@ type expectedCommit struct {
 	returnErr   error
 }
 
+type expectedAll struct {
+	returnMB  map[string][]byte
+	returnErr error
+}
+
 type MockStore struct {
 	deleteExpectations []expectedDelete
 	findExpectations   []expectedFind
 	commitExpectations []expectedCommit
+	allExpectations    []expectedAll
 }
 
-// Delete implements the Store interface
-func (m *MockStore) ExpectDelete(token string, returnErr error) {
+func (m *MockStore) ExpectDelete(token string, err error) {
 	m.deleteExpectations = append(m.deleteExpectations, expectedDelete{
 		inputToken: token,
-		returnErr:  returnErr,
+		returnErr:  err,
 	})
 }
 
@@ -109,7 +114,7 @@ func (m *MockStore) Commit(token string, b []byte, expiry time.Time) (err error)
 		expectationFound bool
 	)
 	for i, expectation := range m.commitExpectations {
-		if expectation.inputToken == token && bytes.Compare(expectation.inputB, b) == 0 && expectation.inputExpiry == expiry {
+		if expectation.inputToken == token && bytes.Equal(expectation.inputB, b) && expectation.inputExpiry == expiry {
 			indexToRemove = i
 			expectationFound = true
 			break
@@ -123,4 +128,34 @@ func (m *MockStore) Commit(token string, b []byte, expiry time.Time) (err error)
 	m.commitExpectations = m.commitExpectations[:indexToRemove+copy(m.commitExpectations[indexToRemove:], m.commitExpectations[indexToRemove+1:])]
 
 	return errToReturn
+}
+
+func (m *MockStore) ExpectAll(mb map[string][]byte, err error) {
+	m.allExpectations = append(m.allExpectations, expectedAll{
+		returnMB:  mb,
+		returnErr: err,
+	})
+}
+
+// All implements the IterableStore interface
+func (m *MockStore) All() (map[string][]byte, error) {
+	var (
+		indexToRemove    int
+		expectationFound bool
+	)
+	for i, expectation := range m.allExpectations {
+		if len(expectation.returnMB) == 3 {
+			indexToRemove = i
+			expectationFound = true
+			break
+		}
+	}
+	if !expectationFound {
+		panic("store.All called unexpectedly")
+	}
+
+	valueToReturn := m.allExpectations[indexToRemove]
+	m.allExpectations = m.allExpectations[:indexToRemove+copy(m.allExpectations[indexToRemove:], m.allExpectations[indexToRemove+1:])]
+
+	return valueToReturn.returnMB, valueToReturn.returnErr
 }

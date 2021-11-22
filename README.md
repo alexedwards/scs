@@ -24,6 +24,7 @@
 * [Using Custom Session Stores](#using-custom-session-stores)
 * [Preventing Session Fixation](#preventing-session-fixation)
 * [Multiple Sessions per Request](#multiple-sessions-per-request)
+* [Enumerate All Sessions](#enumerate-all-sessions)
 * [Compatibility](#compatibility)
 
 ### Installation

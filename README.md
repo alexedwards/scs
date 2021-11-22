@@ -183,6 +183,14 @@ type Store interface {
 	// expiry time should be overwritten.
 	Commit(token string, b []byte, expiry time.Time) (err error)
 }
+
+type IterableStore interface {
+	// All should return a map containing data for all active sessions (i.e.
+	// sessions which have not expired). The map key should be the session
+	// token and the map value should be the session data. If no active
+	// sessions exist this should return an empty (not nil) map.
+	All() (map[string][]byte, error)
+}
 ```
 
 ### Preventing Session Fixation

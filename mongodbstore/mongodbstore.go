@@ -102,6 +102,43 @@ func (m *MongoDBStore) Delete(token string) error {
 	return err
 }
 
+// All returns a map containing the token and data for all active (i.e.
+// not expired) sessions in the MongoDBStore instance.
+func (m *MongoDBStore) All() (map[string][]byte, error) {
+	filter := bson.D{}
+	cursor, err := m.collection.Find(context.Background(), filter)
+	if err != nil {
+		if err == mongo.ErrNoDocuments {
+			return nil, nil
+		}
+
+		return nil, err
+	}
+
+	sessions := make(map[string][]byte)
+
+	for cursor.Next(context.Background()) {
+		var i item
+
+		err := cursor.Decode(&i)
+		if err != nil {
+			return nil, err
+		}
+
+		if i.Expiration > time.Now().UnixNano() {
+			sessions[i.Token] = i.Object
+		}
+	}
+
+	if err := cursor.Err(); err != nil {
+		return nil, err
+	}
+
+	cursor.Close(context.Background())
+
+	return sessions, nil
+}
+
 func (m *MongoDBStore) startCleanup(cleanupInterval time.Duration) {
 	m.stopCleanup = make(chan bool)
 	ticker := time.NewTicker(cleanupInterval)

@@ -3,6 +3,7 @@ package mockstore
 import (
 	"bytes"
 	"errors"
+	"reflect"
 	"testing"
 	"time"
 )
@@ -56,10 +57,10 @@ func TestMockStore_Find(T *testing.T) {
 		s.ExpectFind(exampleToken, expectedBytes, expectedFound, nil)
 
 		actualBytes, actualFound, actualErr := s.Find(exampleToken)
-		if !bytes.Equal(expectedBytes, actualBytes) {
+		if !bytes.Equal(actualBytes, expectedBytes) {
 			t.Error("returned bytes do not match expectation")
 		}
-		if expectedFound != actualFound {
+		if actualFound != expectedFound {
 			t.Error("returned found does not match expectation")
 		}
 		if actualErr != nil {
@@ -123,6 +124,44 @@ func TestMockStore_Commit(T *testing.T) {
 		}()
 
 		if err := s.Commit(exampleToken, exampleBytes, exampleExpiry); err != nil {
+			t.Error("unexpected error returned")
+		}
+	})
+}
+
+func TestMockStore_All(T *testing.T) {
+	T.Parallel()
+
+	T.Run("obligatory", func(t *testing.T) {
+		s := &MockStore{}
+
+		expectedMapBytes := map[string][]byte{"token1": []byte("hello, world 1!"), "token2": []byte("hello, world 2!"), "token3": []byte("hello, world 3!")}
+
+		s.ExpectAll(expectedMapBytes, nil)
+
+		actualMapBytes, actualErr := s.All()
+		if !reflect.DeepEqual(actualMapBytes, expectedMapBytes) {
+			t.Error("returned map bytes do not match expectation")
+		}
+		if actualErr != nil {
+			t.Error("unexpected error returned")
+		}
+		if len(s.allExpectations) != 0 {
+			t.Error("expectations left over after exhausting calls")
+		}
+	})
+
+	T.Run("panics with unfound expectation", func(t *testing.T) {
+		s := &MockStore{}
+
+		defer func() {
+			if r := recover(); r == nil {
+				t.Error("expected panic to occur")
+			}
+		}()
+
+		_, actualErr := s.All()
+		if actualErr != nil {
 			t.Error("unexpected error returned")
 		}
 	})

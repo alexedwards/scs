@@ -208,6 +208,26 @@ func loginHandler(w http.ResponseWriter, r *http.Request) {
 
 It is possible for an application to support multiple sessions per request, with different lifetime lengths and even different stores. Please [see here for an example](https://gist.github.com/alexedwards/22535f758356bfaf96038fffad154824).
 
+### Enumerate All Sessions
+
+To iterate throught all sessions, SCS offers to all data stores an `All()` function where they can return their own sessions. 
+Essentially, in your code, you pass the `Iterate()` method a closure with the signature `func(ctx context.Context) error` which contains the logic that you want to execute against each session. For example, if you want to revoke all sessions with contain a `userID` value equal to `4` you can do the following:
+
+```go
+err := sessionManager.Iterate(func(ctx context.Context) error {
+	userID := sessionManager.GetInt(ctx, "userID")
+
+	if userID == 4 {
+		return sessionManager.Destroy(ctx)
+	}
+
+	return nil
+})
+if err != nil {
+	log.Fatal(err)
+}
+```
+
 ### Compatibility
 
 This package requires Go 1.12 or newer.

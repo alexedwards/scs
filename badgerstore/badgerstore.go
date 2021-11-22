@@ -86,3 +86,35 @@ func (bs *BadgerStore) Delete(token string) error {
 
 	return nil
 }
+
+// All returns a map containing the token and data for all active (i.e.
+// not expired) sessions in the BadgerStore instance.
+func (bs *BadgerStore) All() (map[string][]byte, error) {
+	sessions := make(map[string][]byte)
+
+	err := bs.db.View(func(txn *badger.Txn) error {
+		iterator := txn.NewIterator(badger.DefaultIteratorOptions)
+		defer iterator.Close()
+
+		prefix := []byte(bs.prefix)
+		for iterator.Seek(prefix); iterator.ValidForPrefix(prefix); iterator.Next() {
+			item := iterator.Item()
+			key := item.Key()
+			err := item.Value(func(val []byte) error {
+				token := string(key)[len(prefix):]
+				sessions[token] = val
+				return nil
+			})
+			if err != nil {
+				return err
+			}
+		}
+
+		return nil
+	})
+	if err != nil {
+		return nil, err
+	}
+
+	return sessions, nil
+}

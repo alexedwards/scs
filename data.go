@@ -59,7 +59,7 @@ func (s *SessionManager) Load(ctx context.Context, token string) (context.Contex
 		return s.addSessionDataToContext(ctx, newSessionData(s.Lifetime)), nil
 	}
 
-	b, found, err := s.Store.Find(token)
+	b, found, err := s.doStoreFind(ctx, token)
 	if err != nil {
 		return nil, err
 	} else if !found {
@@ -115,7 +115,7 @@ func (s *SessionManager) Commit(ctx context.Context) (string, time.Time, error) 
 		}
 	}
 
-	if err := s.Store.Commit(sd.token, b, expiry); err != nil {
+	if err := s.doStoreCommit(ctx, sd.token, b, expiry); err != nil {
 		return "", time.Time{}, err
 	}
 
@@ -131,7 +131,7 @@ func (s *SessionManager) Destroy(ctx context.Context) error {
 	sd.mu.Lock()
 	defer sd.mu.Unlock()
 
-	err := s.Store.Delete(sd.token)
+	err := s.doStoreDelete(ctx, sd.token)
 	if err != nil {
 		return err
 	}
@@ -284,7 +284,7 @@ func (s *SessionManager) RenewToken(ctx context.Context) error {
 	sd.mu.Lock()
 	defer sd.mu.Unlock()
 
-	err := s.Store.Delete(sd.token)
+	err := s.doStoreDelete(ctx, sd.token)
 	if err != nil {
 		return err
 	}
@@ -589,4 +589,34 @@ func generateContextKey() contextKey {
 	defer contextKeyIDMutex.Unlock()
 	atomic.AddUint64(&contextKeyID, 1)
 	return contextKey(fmt.Sprintf("session.%d", contextKeyID))
+}
+
+func (s *SessionManager) doStoreDelete(ctx context.Context, token string) (err error) {
+	c, ok := s.Store.(interface {
+		DeleteCtx(context.Context, string) error
+	})
+	if ok {
+		return c.DeleteCtx(ctx, token)
+	}
+	return s.Store.Delete(token)
+}
+
+func (s *SessionManager) doStoreFind(ctx context.Context, token string) (b []byte, found bool, err error) {
+	c, ok := s.Store.(interface {
+		FindCtx(context.Context, string) ([]byte, bool, error)
+	})
+	if ok {
+		return c.FindCtx(ctx, token)
+	}
+	return s.Store.Find(token)
+}
+
+func (s *SessionManager) doStoreCommit(ctx context.Context, token string, b []byte, expiry time.Time) (err error) {
+	c, ok := s.Store.(interface {
+		CommitCtx(context.Context, string, []byte, time.Time) error
+	})
+	if ok {
+		return c.CommitCtx(ctx, token, b, expiry)
+	}
+	return s.Store.Commit(token, b, expiry)
 }

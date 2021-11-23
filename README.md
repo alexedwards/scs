@@ -24,6 +24,7 @@
 * [Using Custom Session Stores](#using-custom-session-stores)
 * [Preventing Session Fixation](#preventing-session-fixation)
 * [Multiple Sessions per Request](#multiple-sessions-per-request)
+* [Enumerate All Sessions](#enumerate-all-sessions)
 * [Compatibility](#compatibility)
 
 ### Installation
@@ -181,6 +182,14 @@ type Store interface {
 	// expiry time. If the session token already exists, then the data and
 	// expiry time should be overwritten.
 	Commit(token string, b []byte, expiry time.Time) (err error)
+}
+
+type IterableStore interface {
+	// All should return a map containing data for all active sessions (i.e.
+	// sessions which have not expired). The map key should be the session
+	// token and the map value should be the session data. If no active
+	// sessions exist this should return an empty (not nil) map.
+	All() (map[string][]byte, error)
 }
 ```
 

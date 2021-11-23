@@ -1,6 +1,7 @@
 package scs
 
 import (
+	"context"
 	"time"
 )
 
@@ -31,4 +32,18 @@ type IterableStore interface {
 	// token and the map value should be the session data. If no active
 	// sessions exist this should return an empty (not nil) map.
 	All() (map[string][]byte, error)
+}
+
+// CtxStore is an interface which all methods take context.Context parameter
+type CtxStore interface {
+	Store
+
+	// DeleteCtx same as Store.Delete, excepts takes context.Context
+	DeleteCtx(ctx context.Context, token string) (err error)
+
+	// FindCtx same as Store.Find, excepts takes context.Context
+	FindCtx(ctx context.Context, token string) (b []byte, found bool, err error)
+
+	// CommitCtx same as Store.Commit, excepts takes context.Context
+	CommitCtx(ctx context.Context, token string, b []byte, expiry time.Time) (err error)
 }

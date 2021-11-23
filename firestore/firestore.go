@@ -165,3 +165,17 @@ func (m *FireStore) deleteExpired() error {
 	iter.Stop()
 	return nil
 }
+
+// We have to add the plain Store methods here to be recognized a Store
+// by the go compiler. Not using a seperate type makes any errors caught
+// only at runtime instead of compile time. Oh well.
+
+func (m *FireStore) Find(token string) ([]byte, bool, error) {
+	panic("missing context arg")
+}
+func (m *FireStore) Commit(token string, b []byte, expiry time.Time) error {
+	panic("missing context arg")
+}
+func (m *FireStore) Delete(token string) error {
+	panic("missing context arg")
+}

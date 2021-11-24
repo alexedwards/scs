@@ -307,7 +307,7 @@ func (s *SessionManager) RenewToken(ctx context.Context) error {
 func (s *SessionManager) MergeSession(ctx context.Context, token string) error {
 	sd := s.getSessionDataFromContext(ctx)
 
-	b, found, err := s.ContextStore.Find(ctx, token)
+	b, found, err := s.doStoreFind(ctx, token)
 	if err != nil {
 		return err
 	} else if !found {
@@ -336,7 +336,7 @@ func (s *SessionManager) MergeSession(ctx context.Context, token string) error {
 	}
 
 	sd.status = Modified
-	return s.ContextStore.Delete(ctx, token)
+	return s.doStoreDelete(ctx, token)
 }
 
 // Status returns the current status of the session data.

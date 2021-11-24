@@ -34,7 +34,8 @@ type IterableStore interface {
 	All() (map[string][]byte, error)
 }
 
-// CtxStore is an interface which all methods take context.Context parameter
+// CtxStore is an interface for session stores which take a context.Context
+// parameter.
 type CtxStore interface {
 	Store
 

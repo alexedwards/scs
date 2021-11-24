@@ -193,6 +193,26 @@ type IterableStore interface {
 }
 ```
 
+#### Using Custom Session Stores (with context.Context)
+
+[`scs.CtxStore`](https://pkg.go.dev/github.com/alexedwards/scs/v2#CtxStore) defines the interface for custom session stores (with methods take context.Context parameter).
+
+```go
+// CtxStore is an interface which all methods take context.Context parameter
+type CtxStore interface {
+	Store 
+	
+    // DeleteCtx same as Store.Delete, excepts takes context.Context
+    DeleteCtx(ctx context.Context, token string) (err error)
+    
+    // FindCtx same as Store.Find, excepts takes context.Context
+    FindCtx(ctx context.Context, token string) (b []byte, found bool, err error)
+    
+    // CommitCtx same as Store.Commit, excepts takes context.Context
+    CommitCtx(ctx context.Context, token string, b []byte, expiry time.Time) (err error)
+}
+````
+
 ### Preventing Session Fixation
 
 To help prevent session fixation attacks you should [renew the session token after any privilege level change](https://github.com/OWASP/CheatSheetSeries/blob/master/cheatsheets/Session_Management_Cheat_Sheet.md#renew-the-session-id-after-any-privilege-level-change). Commonly, this means that the session token must to be changed when a user logs in or out of your application. You can do this using the [`RenewToken()`](https://pkg.go.dev/github.com/alexedwards/scs/v2#SessionManager.RenewToken) method like so:

@@ -1,10 +1,12 @@
 # badgerstore
 
-A [Badger](https://github.com/dgraph-io/badger)-based session store for [SCS](https://github.com/alexedwards/scs).
+A [Badger](https://github.com/dgraph-io/badger) based session store for [SCS](https://github.com/alexedwards/scs).
 
-## Example
+## Setup
 
 You should follow the instructions to [install and open a database](https://github.com/dgraph-io/badger#installing), and pass the database to `badgerstore.New()` to establish the session store.
+
+## Example
 
 ```go
 package main
@@ -21,15 +23,14 @@ import (
 var sessionManager *scs.SessionManager
 
 func main() {
-	// Create a Badger database.
+	// Open a Badger database.
 	db, err := badger.Open(badger.DefaultOptions("tmp/badger"))
 	if err != nil {
 		log.Fatal(err)
 	}
 	defer db.Close()
 
-	// Initialize a new session manager and configure it to use badgerstore as
-	// the session store.
+	// Initialize a new session manager and configure it to use badgerstore as the session store.
 	sessionManager = scs.New()
 	sessionManager.Store = badgerstore.New(db)
 

@@ -1,6 +1,6 @@
 # mysqlstore
 
-A MySQL-based session store supporting the [go-sql-driver/mysql](https://github.com/go-sql-driver/mysql) driver.
+A [MySQL](https://github.com/go-sql-driver/mysql) based session store for [SCS](https://github.com/alexedwards/scs).
 
 ## Setup
 
@@ -38,14 +38,14 @@ import (
 var sessionManager *scs.SessionManager
 
 func main() {
+	// Establish connection to MySQL.
 	db, err := sql.Open("mysql", "user:pass@/db?parseTime=true")
 	if err != nil {
 		log.Fatal(err)
 	}
 	defer db.Close()
 
-	// Initialize a new session manager and configure it to use MySQL as
-	// the session store.
+	// Initialize a new session manager and configure it to use mysqlstore as the session store.
 	sessionManager = scs.New()
 	sessionManager.Store = mysqlstore.New(db)
 

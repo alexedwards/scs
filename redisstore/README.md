@@ -1,10 +1,12 @@
 # redisstore
 
-A Redis-based session store for [SCS](https://github.com/alexedwards/scs) using the popular [redigo](https://github.com/gomodule/redigo) driver.
+A [Redis](https://github.com/gomodule/redigo) based session store for [SCS](https://github.com/alexedwards/scs).
 
-## Example
+## Setup
 
 You should follow the instructions to [setup a connection pool](https://godoc.org/github.com/gomodule/redigo/redis#Pool), and pass the pool to `redisstore.New()` to establish the session store.
+
+## Example
 
 ```go
 package main
@@ -21,16 +23,15 @@ import (
 var sessionManager *scs.SessionManager
 
 func main() {
-	// Establish a redigo connection pool.
+	// Establish connection pool to Redis.
 	pool := &redis.Pool{
 		MaxIdle: 10,
 		Dial: func() (redis.Conn, error) {
 			return redis.Dial("tcp", "localhost:6379")
 		},
 	}
-
-	// Initialize a new session manager and configure it to use redisstore as
-	// the session store.
+	
+	// Initialize a new session manager and configure it to use redisstore as the session store.
 	sessionManager = scs.New()
 	sessionManager.Store = redisstore.New(pool)
 

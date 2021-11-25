@@ -1,10 +1,10 @@
 # gormstore
 
-A GORM based session store using [GORM](https://gorm.io/).
+A [GORM](https://github.com/go-gorm/gorm) based session store for [SCS](https://github.com/alexedwards/scs).
 
 ## Setup
 
-You should have a working database containing a `sessions` table with the definition:
+You should have a working database containing a `sessions` table with the definition (for PostgreSQL):
 
 ```sql
 CREATE TABLE sessions (
@@ -15,10 +15,11 @@ CREATE TABLE sessions (
 
 CREATE INDEX sessions_expiry_idx ON sessions (expiry);
 ```
+For other stores you can find the setup here: [MSSQL](https://github.com/alexedwards/scs/tree/master/mssqlstore), [MySQL](https://github.com/alexedwards/scs/tree/master/mysqlstore), [SQLite3](https://github.com/alexedwards/scs/tree/master/sqlite3store).
 
-If no table is pressent new table will be automatically created.
+If no table is present, a new one will be automatically created.
 
-The database user for your application must have `CREATE TABLE`, `SELECT`, `INSERT`, `UPDATE` and `DELETE` permissions.
+The database user for your application must have `CREATE TABLE`, `SELECT`, `INSERT`, `UPDATE` and `DELETE` permissions on this table.
 
 ## Example
 
@@ -32,8 +33,8 @@ import (
 	"net/http"
 
 	"github.com/alexedwards/scs/v2"
-    "github.com/alexedwards/scs/gormstore"
-    "github.com/jinzhu/gorm"
+	"github.com/alexedwards/scs/gormstore"
+	"github.com/jinzhu/gorm"
 
 	_ "github.com/jinzhu/gorm/dialects/postgres"
 )
@@ -41,14 +42,14 @@ import (
 var sessionManager *scs.SessionManager
 
 func main() {
+	// Establish connection to your store (PostgreSQL here).
     db, err := gorm.Open("postgres", "postgres://user:pass@localhost/db")
 	if err != nil {
 		log.Fatal(err)
 	}
 	defer db.Close()
 
-	// Initialize a new session manager and configure it to use GORM as
-	// the session store.
+	// Initialize a new session manager and configure it to use gormstore as the session store.
 	sessionManager = scs.New()
 	if sessionManager.Store, err = gormstore.New(db); err != nil {
         log.Fatal(err)

@@ -1,6 +1,6 @@
 # memstore
 
-An in-memory session store for [SCS](https://github.com/alexedwards/scs).
+An in-memory session store, this is the default store for [SCS](https://github.com/alexedwards/scs) if none of the others stores are used.
 
 
 Because memstore uses in-memory storage only, all session data will be lost when your application is stopped or restarted. Therefore it should only be used in applications where data loss is an acceptable trade off for fast performance, or for prototyping and testing purposes.
@@ -21,8 +21,7 @@ import (
 var sessionManager *scs.SessionManager
 
 func main() {
-	// Initialize a new session manager and configure it to use memstore as
-	// the session store.
+	// Initialize a new session manager and configure it to use memstore as the session store.
 	sessionManager = scs.New()
 	sessionManager.Store = memstore.New()
 

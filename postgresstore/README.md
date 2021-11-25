@@ -1,6 +1,6 @@
 # postgresstore
 
-A PostgreSQL-based session store supporting the [pq](https://github.com/lib/pq) driver.
+A PostgreSQL based session store for [SCS](https://github.com/alexedwards/scs) using the [pq](https://github.com/lib/pq) driver.
 
 ## Setup
 
@@ -38,14 +38,14 @@ import (
 var sessionManager *scs.SessionManager
 
 func main() {
+	// Establish connection to PostgreSQL.
 	db, err := sql.Open("postgres", "postgres://user:pass@localhost/db")
 	if err != nil {
 		log.Fatal(err)
 	}
 	defer db.Close()
 
-	// Initialize a new session manager and configure it to use PostgreSQL as
-	// the session store.
+	// Initialize a new session manager and configure it to use postgresstore as the session store.
 	sessionManager = scs.New()
 	sessionManager.Store = postgresstore.New(db)
 

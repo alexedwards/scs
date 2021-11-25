@@ -1,6 +1,6 @@
 # mssqlstore
 
-A MSSQL-based session store supporting the [denisenkom/go-mssqldb](https://github.com/denisenkom/go-mssqldb) driver.
+A [MSSQL](https://github.com/denisenkom/go-mssqldb) based session store for [SCS](https://github.com/alexedwards/scs).
 
 ## Setup
 
@@ -38,14 +38,14 @@ import (
 var sessionManager *scs.SessionManager
 
 func main() {
+	// Establish connection to MSSQL.
 	db, err := sql.Open("sqlserver", "sqlserver://username:password@host?database=dbname")
 	if err != nil {
 		log.Fatal(err)
 	}
 	defer db.Close()
 
-	// Initialize a new session manager and configure it to use MSSQL as
-	// the session store.
+	// Initialize a new session manager and configure it to use mssqlstore as the session store.
 	sessionManager = scs.New()
 	sessionManager.Store = mssqlstore.New(db)
 

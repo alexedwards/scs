@@ -1,6 +1,6 @@
 # pgxstore
 
-A PostgreSQL-based session store supporting the [pgx](https://github.com/jackc/pgx) driver.
+A PostgreSQL based session store for [SCS](https://github.com/alexedwards/scs) using the [pgx](https://github.com/jackc/pgx) driver.
 
 ## Setup
 
@@ -37,14 +37,14 @@ import (
 var sessionManager *scs.SessionManager
 
 func main() {
+	// Establish connection pool to PostgreSQL.
 	pool, err := pgxpool.Connect(context.Background(), "postgres://user:pass@localhost/db")
 	if err != nil {
 		log.Fatal(err)
 	}
 	defer pool.Close()
 
-	// Initialize a new session manager and configure it to use PostgreSQL with the pgx
-	// driver as the session store.
+	// Initialize a new session manager and configure it to use pgxstore as the session store.
 	sessionManager = scs.New()
 	sessionManager.Store = pgxstore.New(pool)
 

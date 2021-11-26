@@ -1,10 +1,10 @@
 # sqlite3store
 
-A SQLite3-based session store supporting the [mattn/go-sqlite3](https://github.com/mattn/go-sqlite3) driver.
+A [SQLite3](https://github.com/mattn/go-sqlite3) based session store for [SCS](https://github.com/alexedwards/scs).
 
 ## Setup
 
-You should have a working SQLite3 database file a `sessions` table with the definition:
+You should have a working SQLite3 database file containing a `sessions` table with the definition:
 
 ```sql
 CREATE TABLE sessions (
@@ -36,14 +36,14 @@ import (
 var sessionManager *scs.SessionManager
 
 func main() {
+	// Open a SQLite3 database.
 	db, err := sql.Open("sqlite3", "sqlite3_database.db")
 	if err != nil {
 		log.Fatal(err)
 	}
 	defer db.Close()
 
-	// Initialize a new session manager and configure it to use SQLite3 as
-	// the session store.
+	// Initialize a new session manager and configure it to use sqlite3store as the session store.
 	sessionManager = scs.New()
 	sessionManager.Store = sqlite3store.New(db)
 

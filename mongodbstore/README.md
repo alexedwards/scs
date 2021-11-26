@@ -1,10 +1,12 @@
 # mongodbstore
 
-A MongoDB based session store for [SCS](https://github.com/alexedwards/scs) using the official [MongoDB Go Driver](https://github.com/mongodb/mongo-go-driver).
+A [MongoDB](https://github.com/mongodb/mongo-go-driver) based session store for [SCS](https://github.com/alexedwards/scs).
+
+## Setup
+
+You should follow the [usage instructions](https://github.com/mongodb/mongo-go-driver#usage), and pass the database to `mongodbstore.New()` to establish the session store.
 
 ## Example
-
-You should follow the [usage instructions](https://github.com/mongodb/mongo-go-driver#usage), and pass the database reference to `mongodbstore.New()`  to establish the session store.
 
 ```go
 package main
@@ -36,8 +38,7 @@ func main() {
 		}
 	}()
 
-	// Initialize a new session manager and configure it to use mongodbstore as
-	// the session store.
+	// Initialize a new session manager and configure it to use mongodbstore as the session store.
 	sessionManager = scs.New()
 	sessionManager.Store = mongodbstore.New(client.Database("database"))
 

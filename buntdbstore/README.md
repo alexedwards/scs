@@ -1,10 +1,12 @@
 # buntdbstore
 
-A [BuntDB](https://github.com/tidwall/buntdb)-based session store for [SCS](https://github.com/alexedwards/scs).
+A [BuntDB](https://github.com/tidwall/buntdb) based session store for [SCS](https://github.com/alexedwards/scs).
 
-## Example
+## Setup
 
 You should follow the instructions to [install and open a database](https://github.com/tidwall/buntdb#installing), and pass the database to `buntdbstore.New()` to establish the session store.
+
+## Example
 
 ```go
 package main
@@ -21,15 +23,14 @@ import (
 var sessionManager *scs.SessionManager
 
 func main() {
-	// Create a BuntDB database.
+	// Open a BuntDB database.
 	db, err := buntdb.Open("tmp/buntdb.db")
 	if err != nil {
 		log.Fatal(err)
 	}
 	defer db.Close()
-
-	// Initialize a new session manager and configure it to use buntdbstore as
-	// the session store.
+	
+	// Initialize a new session manager and configure it to use buntdbstore as the session store.
 	sessionManager = scs.New()
 	sessionManager.Store = buntdbstore.New(db)
 

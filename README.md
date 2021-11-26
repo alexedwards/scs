@@ -8,7 +8,7 @@
 ## Features
 
 * Automatic loading and saving of session data via middleware.
-* Choice of server-side session stores including PostgreSQL, MySQL, MSSQL, SQLite, Redis, MongoDB, Badger, Bolt and BuntDB. Custom session stores are also supported.
+* Choice of server-side session stores including PostgreSQL, MySQL, MSSQL, SQLite, Redis and many others. Custom session stores are also supported.
 * Supports multiple sessions per request, 'flash' messages, session token regeneration, idle and absolute session timeouts, and 'remember me' functionality.
 * Easy to extend and customize. Communicate session tokens to/from clients in HTTP headers or request/response bodies.
 * Efficient design. Smaller, faster and uses less memory than [gorilla/sessions](https://github.com/gorilla/sessions).
@@ -150,6 +150,8 @@ The session stores currently included are shown in the table below. Please click
 | [badgerstore](https://github.com/alexedwards/scs/tree/master/badgerstore)       		| Badger based session store  		                                           	   		|
 | [boltstore](https://github.com/alexedwards/scs/tree/master/boltstore)       			| Bolt based session store  		                                               		|
 | [buntdbstore](https://github.com/alexedwards/scs/tree/master/buntdbstore)  			| BuntDB based session store  		                                               		|
+| [firestore](https://github.com/alexedwards/scs/tree/master/firestore)       			| Google Cloud Firestore based session store                                       		|
+| [gormstore](https://github.com/alexedwards/scs/tree/master/gormstore)       			| GORM based session store        					                               		|
 | [memstore](https://github.com/alexedwards/scs/tree/master/memstore)       			| In-memory session store (default)                                                		|
 | [mongodbstore](https://github.com/alexedwards/scs/tree/master/mongodbstore)       	| MongoDB based session store                                               	   		|
 | [mssqlstore](https://github.com/alexedwards/scs/tree/master/mssqlstore)       		| MSSQL based session store     	                                          	   		|
@@ -259,7 +261,5 @@ if err != nil {
 ```
 
 ### Compatibility
-
-This package requires Go 1.12 or newer.
 
 You may have some problems using this package with Go frameworks that do not propagate the request context from standard-library compatible middleware, like [Echo](https://github.com/alexedwards/scs/issues/57) and [Fiber](https://github.com/alexedwards/scs/issues/106). If you are using Echo, please use the [echo-scs-session](https://github.com/spazzymoto/echo-scs-session) fork of this package instead.

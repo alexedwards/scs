@@ -1,10 +1,12 @@
 # boltstore
 
-A Bolt-based session store for [SCS](https://github.com/alexedwards/scs) using the [go.etcd.io/bbolt](https://github.com/etcd-io/bbolt) package.
+A [Bolt](https://github.com/etcd-io/bbolt) based session store for [SCS](https://github.com/alexedwards/scs).
 
-## Example
+## Setup
 
 You should follow the instructions to [open a Bolt database](https://github.com/etcd-io/bbolt#opening-a-database), and pass the database to `boltstore.New()` to establish the session store.
+
+## Example
 
 ```go
 package main
@@ -23,15 +25,14 @@ import (
 var sessionManager *scs.SessionManager
 
 func main() {
-    // Establish a Bolt database.
+    // Open a Bolt database.
 	db, err := bbolt.Open("/tmp/bolt.db", 0600, nil)
 	if err != nil {
 		log.Fatal(err)
 	}
 	defer db.Close()
 
-	// Initialize a new session manager and configure it to use boltstore as
-	// the session store.
+	// Initialize a new session manager and configure it to use boltstore as the session store.
 	sessionManager = scs.New()
 	sessionManager.Store = boltstore.NewWithCleanupInterval(db, 20*time.Second)
 	sessionManager.Lifetime = time.Minute

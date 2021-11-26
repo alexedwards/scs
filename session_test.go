@@ -325,7 +325,7 @@ func TestIterate(t *testing.T) {
 
 	results := []string{}
 
-	err := sessionManager.Iterate(func(ctx context.Context) error {
+	err := sessionManager.Iterate(context.Background(), func(ctx context.Context) error {
 		i := sessionManager.GetString(ctx, "foo")
 		results = append(results, i)
 		return nil
@@ -341,7 +341,7 @@ func TestIterate(t *testing.T) {
 		t.Fatalf("unexpected value: got %v", results)
 	}
 
-	err = sessionManager.Iterate(func(ctx context.Context) error {
+	err = sessionManager.Iterate(context.Background(), func(ctx context.Context) error {
 		return errors.New("expected error")
 	})
 	if err.Error() != "expected error" {

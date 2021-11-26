@@ -39,12 +39,15 @@ type IterableStore interface {
 type CtxStore interface {
 	Store
 
-	// DeleteCtx same as Store.Delete, excepts takes context.Context
+	// DeleteCtx same as Store.Delete, except it takes a context.Context.
 	DeleteCtx(ctx context.Context, token string) (err error)
 
-	// FindCtx same as Store.Find, excepts takes context.Context
+	// FindCtx same as Store.Find, except it takes a context.Context.
 	FindCtx(ctx context.Context, token string) (b []byte, found bool, err error)
 
-	// CommitCtx same as Store.Commit, excepts takes context.Context
+	// CommitCtx same as Store.Commit, except it takes a context.Context.
 	CommitCtx(ctx context.Context, token string, b []byte, expiry time.Time) (err error)
+
+	// AllCtx same as IterableStore.All, expect it takes a context.Context.
+	AllCtx(ctx context.Context) (map[string][]byte, error)
 }

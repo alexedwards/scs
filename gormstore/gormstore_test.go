@@ -7,59 +7,82 @@ import (
 	"testing"
 	"time"
 
-	"github.com/jinzhu/gorm"
-
-	_ "github.com/jinzhu/gorm/dialects/mysql"
-	_ "github.com/jinzhu/gorm/dialects/postgres"
-	_ "github.com/jinzhu/gorm/dialects/sqlite"
+	"gorm.io/driver/mysql"
+	"gorm.io/driver/postgres"
+	"gorm.io/driver/sqlite"
+	"gorm.io/driver/sqlserver"
+	"gorm.io/gorm"
 )
 
 func initWithCleanupInterval(t *testing.T, cleanupInterval time.Duration) (*GORMStore, *gorm.DB) {
+	var db *gorm.DB
+	var err error
+
 	dialect := os.Getenv("SCS_GORM_TEST_DIALECT")
-	var dsn string
 	switch dialect {
-	case "postgres":
-		dsn = os.Getenv("SCS_POSTGRES_TEST_DSN")
-	case "mysql":
-		dsn = os.Getenv("SCS_MYSQL_TEST_DSN")
 	default:
 		dialect = "sqlite3"
 		fallthrough
+	case "postgres":
+		dsn := os.Getenv("SCS_POSTGRES_TEST_DSN")
+		db, err = gorm.Open(postgres.Open(dsn), &gorm.Config{})
+	case "mssql":
+		dsn := os.Getenv("SCS_MSSQL_TEST_DSN")
+		db, err = gorm.Open(sqlserver.Open(dsn), &gorm.Config{})
+	case "mysql":
+		dsn := os.Getenv("SCS_MYSQL_TEST_DSN")
+		db, err = gorm.Open(mysql.Open(dsn), &gorm.Config{})
 	case "sqlite3":
-		dsn = os.Getenv("./testSQL3lite.db")
+		dsn := os.Getenv("./testSQL3lite.db")
+		db, err = gorm.Open(sqlite.Open(dsn), &gorm.Config{})
 	}
-
-	db, err := gorm.Open(dialect, dsn)
 	if err != nil {
 		t.Fatal(err)
 	}
-	if err = db.DB().Ping(); err != nil {
-		db.Close()
-		t.Fatal(err)
-	}
-	if _, err := db.DB().Exec("DROP TABLE IF EXISTS sessions"); err != nil {
-		t.Fatal(err)
-	}
 
-	p, err := NewWithCleanupInterval(db, cleanupInterval)
+	sqlDB, err := db.DB()
 	if err != nil {
-		db.Close()
+		sqlDB.Close()
+		t.Fatal(err)
+	}
+	if sqlDB.Ping(); err != nil {
+		sqlDB.Close()
 		t.Fatal(err)
 	}
 
-	return p, db
+	if dialect == "mssql" {
+		if err := db.Exec("IF OBJECT_ID('sessions', 'U') IS NOT NULL DROP TABLE sessions").Error; err != nil {
+			t.Fatal(err)
+		}
+	} else {
+		if err := db.Exec("DROP TABLE IF EXISTS sessions").Error; err != nil {
+			t.Fatal(err)
+		}
+	}
+
+	g, err := NewWithCleanupInterval(db, cleanupInterval)
+	if err != nil {
+		sqlDB.Close()
+		t.Fatal(err)
+	}
+
+	return g, db
 }
 
 func TestFind(t *testing.T) {
-	p, db := initWithCleanupInterval(t, 0)
-	defer db.Close()
+	g, db := initWithCleanupInterval(t, 0)
+	sqlDB, err := db.DB()
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer sqlDB.Close()
 
-	sess := db.Create(&session{Token: "session_token", Data: []byte("encoded_data"), Expiry: time.Now().Add(1 * time.Minute)})
-	if errs := sess.GetErrors(); len(errs) != 0 {
-		t.Fatal(errs[0])
+	row := db.Create(&session{Token: "session_token", Data: []byte("encoded_data"), Expiry: time.Now().Add(1 * time.Minute)})
+	if row.Error != nil {
+		t.Fatal(err)
 	}
 
-	b, found, err := p.Find("session_token")
+	b, found, err := g.Find("session_token")
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -72,10 +95,14 @@ func TestFind(t *testing.T) {
 }
 
 func TestFindMissing(t *testing.T) {
-	p, db := initWithCleanupInterval(t, 0)
-	defer db.Close()
+	g, db := initWithCleanupInterval(t, 0)
+	sqlDB, err := db.DB()
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer sqlDB.Close()
 
-	_, found, err := p.Find("missing_session_token")
+	_, found, err := g.Find("missing_session_token")
 	if err != nil {
 		t.Fatalf("got %v: expected %v", err, nil)
 	}
@@ -85,15 +112,19 @@ func TestFindMissing(t *testing.T) {
 }
 
 func TestSaveNew(t *testing.T) {
-	p, db := initWithCleanupInterval(t, 0)
-	defer db.Close()
+	g, db := initWithCleanupInterval(t, 0)
+	sqlDB, err := db.DB()
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer sqlDB.Close()
 
-	err := p.Commit("session_token", []byte("encoded_data"), time.Now().Add(time.Minute))
+	err = g.Commit("session_token", []byte("encoded_data"), time.Now().Add(time.Minute))
 	if err != nil {
 		t.Fatal(err)
 	}
 
-	row := db.DB().QueryRow("SELECT data FROM sessions WHERE token = 'session_token'")
+	row := sqlDB.QueryRow("SELECT data FROM sessions WHERE token = 'session_token'")
 	var data []byte
 	err = row.Scan(&data)
 	if err != nil {
@@ -105,22 +136,26 @@ func TestSaveNew(t *testing.T) {
 }
 
 func TestSaveUpdated(t *testing.T) {
-	p, db := initWithCleanupInterval(t, 0)
-	defer db.Close()
+	g, db := initWithCleanupInterval(t, 0)
+	sqlDB, err := db.DB()
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer sqlDB.Close()
 
-	sess := db.Create(&session{Token: "session_token", Data: []byte("encoded_data"), Expiry: time.Now().Add(1 * time.Minute)})
-	if errs := sess.GetErrors(); len(errs) != 0 {
-		t.Fatal(errs[0])
+	row1 := db.Create(&session{Token: "session_token", Data: []byte("encoded_data"), Expiry: time.Now().Add(1 * time.Minute)})
+	if row1.Error != nil {
+		t.Fatal(row1.Error)
 	}
 
-	err := p.Commit("session_token", []byte("new_encoded_data"), time.Now().Add(time.Minute))
+	err = g.Commit("session_token", []byte("new_encoded_data"), time.Now().Add(time.Minute))
 	if err != nil {
 		t.Fatal(err)
 	}
 
-	row := db.DB().QueryRow("SELECT data FROM sessions WHERE token = 'session_token'")
+	row2 := sqlDB.QueryRow("SELECT data FROM sessions WHERE token = 'session_token'")
 	var data []byte
-	err = row.Scan(&data)
+	err = row2.Scan(&data)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -130,41 +165,49 @@ func TestSaveUpdated(t *testing.T) {
 }
 
 func TestExpiry(t *testing.T) {
-	p, db := initWithCleanupInterval(t, 0)
-	defer db.Close()
+	g, db := initWithCleanupInterval(t, 0)
+	sqlDB, err := db.DB()
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer sqlDB.Close()
 
-	err := p.Commit("session_token", []byte("encoded_data"), time.Now().Add(100*time.Millisecond))
+	err = g.Commit("session_token", []byte("encoded_data"), time.Now().Add(1*time.Second))
 	if err != nil {
 		t.Fatal(err)
 	}
 
-	_, found, _ := p.Find("session_token")
+	_, found, _ := g.Find("session_token")
 	if found != true {
 		t.Fatalf("got %v: expected %v", found, true)
 	}
 
-	time.Sleep(100 * time.Millisecond)
-	_, found, _ = p.Find("session_token")
+	time.Sleep(2 * time.Second)
+	_, found, _ = g.Find("session_token")
 	if found != false {
 		t.Fatalf("got %v: expected %v", found, false)
 	}
 }
 
 func TestDelete(t *testing.T) {
-	p, db := initWithCleanupInterval(t, 0)
-	defer db.Close()
+	g, db := initWithCleanupInterval(t, 0)
+	sqlDB, err := db.DB()
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer sqlDB.Close()
 
-	err := p.Commit("session_token", []byte("encoded_data"), time.Now().Add(1*time.Minute))
+	err = g.Commit("session_token", []byte("encoded_data"), time.Now().Add(1*time.Minute))
 	if err != nil {
 		t.Fatal(err)
 	}
 
-	err = p.Delete("session_token")
+	err = g.Delete("session_token")
 	if err != nil {
 		t.Fatal(err)
 	}
 
-	row := db.DB().QueryRow("SELECT COUNT(*) FROM sessions WHERE token = 'session_token'")
+	row := sqlDB.QueryRow("SELECT COUNT(*) FROM sessions WHERE token = 'session_token'")
 	var count int
 	err = row.Scan(&count)
 	if err != nil {
@@ -176,16 +219,20 @@ func TestDelete(t *testing.T) {
 }
 
 func TestCleanup(t *testing.T) {
-	p, db := initWithCleanupInterval(t, 200*time.Millisecond)
-	defer p.StopCleanup()
-	defer db.Close()
+	g, db := initWithCleanupInterval(t, 2*time.Second)
+	defer g.StopCleanup()
+	sqlDB, err := db.DB()
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer sqlDB.Close()
 
-	err := p.Commit("session_token", []byte("encoded_data"), time.Now().Add(100*time.Millisecond))
+	err = g.Commit("session_token", []byte("encoded_data"), time.Now().Add(1*time.Second))
 	if err != nil {
 		t.Fatal(err)
 	}
 
-	row := db.DB().QueryRow("SELECT COUNT(*) FROM sessions WHERE token = 'session_token'")
+	row := sqlDB.QueryRow("SELECT COUNT(*) FROM sessions WHERE token = 'session_token'")
 	var count int
 	err = row.Scan(&count)
 	if err != nil {
@@ -195,8 +242,8 @@ func TestCleanup(t *testing.T) {
 		t.Fatalf("got %d: expected %d", count, 1)
 	}
 
-	time.Sleep(300 * time.Millisecond)
-	row = db.DB().QueryRow("SELECT COUNT(*) FROM sessions WHERE token = 'session_token'")
+	time.Sleep(3 * time.Second)
+	row = sqlDB.QueryRow("SELECT COUNT(*) FROM sessions WHERE token = 'session_token'")
 	err = row.Scan(&count)
 	if err != nil {
 		t.Fatal(err)
@@ -207,10 +254,14 @@ func TestCleanup(t *testing.T) {
 }
 
 func TestStopNilCleanup(t *testing.T) {
-	p, db := initWithCleanupInterval(t, 0)
-	defer db.Close()
+	g, db := initWithCleanupInterval(t, 0)
+	sqlDB, err := db.DB()
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer sqlDB.Close()
 
 	time.Sleep(100 * time.Millisecond)
 	// A send to a nil channel will block forever
-	p.StopCleanup()
+	g.StopCleanup()
 }

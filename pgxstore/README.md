@@ -38,7 +38,7 @@ var sessionManager *scs.SessionManager
 
 func main() {
 	// Establish connection pool to PostgreSQL.
-	pool, err := pgxpool.Connect(context.Background(), "postgres://user:pass@localhost/db")
+	pool, err := pgxpool.Connect(context.Background(), "postgres://username:password@host/dbname")
 	if err != nil {
 		log.Fatal(err)
 	}

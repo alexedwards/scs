@@ -32,18 +32,20 @@ import (
 	"log"
 	"net/http"
 
-	"github.com/alexedwards/scs/v2"
 	"github.com/alexedwards/scs/gormstore"
-	"github.com/jinzhu/gorm"
-
-	_ "github.com/jinzhu/gorm/dialects/postgres"
+	"github.com/alexedwards/scs/v2"
+	"gorm.io/driver/postgres"
+	"gorm.io/gorm"
 )
 
 var sessionManager *scs.SessionManager
 
 func main() {
-	// Establish connection to your store (PostgreSQL here).
-    db, err := gorm.Open("postgres", "postgres://user:pass@localhost/db")
+	// Establish connection to your store.
+    db, err := gorm.Open(postgres.Open("postgres://username:password@host/dbname", &gorm.Config{})) // PostgreSQL
+    //db, err := gorm.Open(sqlserver.Open("sqlserver://username:password@host?database=dbname", &gorm.Config{})) // MSSQL
+    //db, err := gorm.Open(mysql.Open(username:password@tcp(host)/dbname?parseTime=true", &gorm.Config{})) // MySQL
+	//db, err := gorm.Open(sqlite.Open("sqlite3_database.db"), &gorm.Config{})) // SQLite3
 	if err != nil {
 		log.Fatal(err)
 	}

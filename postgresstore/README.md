@@ -39,7 +39,7 @@ var sessionManager *scs.SessionManager
 
 func main() {
 	// Establish connection to PostgreSQL.
-	db, err := sql.Open("postgres", "postgres://user:pass@localhost/db")
+	db, err := sql.Open("postgres", "postgres://username:password@host/dbname")
 	if err != nil {
 		log.Fatal(err)
 	}

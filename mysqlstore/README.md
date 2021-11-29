@@ -39,7 +39,7 @@ var sessionManager *scs.SessionManager
 
 func main() {
 	// Establish connection to MySQL.
-	db, err := sql.Open("mysql", "user:pass@/db?parseTime=true")
+	db, err := sql.Open("mysql", "username:password@tcp(host)/dbname?parseTime=true")
 	if err != nil {
 		log.Fatal(err)
 	}

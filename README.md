@@ -201,18 +201,23 @@ type IterableStore interface {
 [`scs.CtxStore`](https://pkg.go.dev/github.com/alexedwards/scs/v2#CtxStore) defines the interface for custom session stores (with methods take context.Context parameter).
 
 ```go
-// CtxStore is an interface which all methods take context.Context parameter
 type CtxStore interface {
-	Store 
-	
-    // DeleteCtx same as Store.Delete, excepts takes context.Context
-    DeleteCtx(ctx context.Context, token string) (err error)
-    
-    // FindCtx same as Store.Find, excepts takes context.Context
-    FindCtx(ctx context.Context, token string) (b []byte, found bool, err error)
-    
-    // CommitCtx same as Store.Commit, excepts takes context.Context
-    CommitCtx(ctx context.Context, token string, b []byte, expiry time.Time) (err error)
+	Store
+
+	// DeleteCtx is the same as Store.Delete, except it takes a context.Context.
+	DeleteCtx(ctx context.Context, token string) (err error)
+
+	// FindCtx is the same as Store.Find, except it takes a context.Context.
+	FindCtx(ctx context.Context, token string) (b []byte, found bool, err error)
+
+	// CommitCtx is the same as Store.Commit, except it takes a context.Context.
+	CommitCtx(ctx context.Context, token string, b []byte, expiry time.Time) (err error)
+}
+
+type IterableCtxStore interface {
+	// AllCtx is the same as IterableStore.All, expect it takes a
+	// context.Context.
+	AllCtx(ctx context.Context) (map[string][]byte, error)
 }
 ````
 

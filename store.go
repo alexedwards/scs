@@ -42,7 +42,7 @@ type CtxStore interface {
 	// DeleteCtx is the same as Store.Delete, except it takes a context.Context.
 	DeleteCtx(ctx context.Context, token string) (err error)
 
-	// FindCtx is thesame as Store.Find, except it takes a context.Context.
+	// FindCtx is the same as Store.Find, except it takes a context.Context.
 	FindCtx(ctx context.Context, token string) (b []byte, found bool, err error)
 
 	// CommitCtx is the same as Store.Commit, except it takes a context.Context.

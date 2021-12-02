@@ -653,7 +653,7 @@ func (s *SessionManager) doStoreCommit(ctx context.Context, token string, b []by
 }
 
 func (s *SessionManager) doStoreAll(ctx context.Context) (map[string][]byte, error) {
-	cs, ok := s.Store.(CtxStore)
+	cs, ok := s.Store.(IterableCtxStore)
 	if ok {
 		return cs.AllCtx(ctx)
 	}

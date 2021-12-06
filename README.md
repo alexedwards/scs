@@ -251,7 +251,7 @@ To iterate throught all sessions, SCS offers to all data stores an `All()` funct
 Essentially, in your code, you pass the `Iterate()` method a closure with the signature `func(ctx context.Context) error` which contains the logic that you want to execute against each session. For example, if you want to revoke all sessions with contain a `userID` value equal to `4` you can do the following:
 
 ```go
-err := sessionManager.Iterate(func(ctx context.Context) error {
+err := sessionManager.Iterate(r.Context(), func(ctx context.Context) error {
 	userID := sessionManager.GetInt(ctx, "userID")
 
 	if userID == 4 {

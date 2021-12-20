@@ -152,6 +152,7 @@ The session stores currently included are shown in the table below. Please click
 | [buntdbstore](https://github.com/alexedwards/scs/tree/master/buntdbstore)  			| BuntDB based session store  		                                               		|
 | [firestore](https://github.com/alexedwards/scs/tree/master/firestore)       			| Google Cloud Firestore based session store                                       		|
 | [gormstore](https://github.com/alexedwards/scs/tree/master/gormstore)       			| GORM based session store        					                               		|
+| [leveldbstore](https://github.com/alexedwards/scs/tree/master/leveldbstore)       	| LevelDB based session store        					                               	|
 | [memstore](https://github.com/alexedwards/scs/tree/master/memstore)       			| In-memory session store (default)                                                		|
 | [mongodbstore](https://github.com/alexedwards/scs/tree/master/mongodbstore)       	| MongoDB based session store                                               	   		|
 | [mssqlstore](https://github.com/alexedwards/scs/tree/master/mssqlstore)       		| MSSQL based session store     	                                          	   		|

@@ -1,6 +1,6 @@
 # etcdstore
 
-A [ETCD](https://github.com/etcd-io/etcd) based session store for [SCS](https://github.com/alexedwards/scs).
+A [etcd](https://github.com/etcd-io/etcd) based session store for [SCS](https://github.com/alexedwards/scs).
 
 ## Setup
 
@@ -23,7 +23,7 @@ import (
 var sessionManager *scs.SessionManager
 
 func main() {
-	// Establish connection to ETCD.
+	// Establish connection to etcd.
 	cli, err := clientv3.New(clientv3.Config{
 		Endpoints:   []string{"host:2379"},
 		DialTimeout: 5 * time.Second,
@@ -56,7 +56,7 @@ func getHandler(w http.ResponseWriter, r *http.Request) {
 
 ## Expired Session Cleanup
 
-ETCD will [automatically remove](https://etcd.io/docs/v3.5/tutorials/how-to-create-lease/) expired session keys.
+Etcd will [automatically remove](https://etcd.io/docs/v3.5/tutorials/how-to-create-lease/) expired session keys.
 
 ## Key Collisions
 

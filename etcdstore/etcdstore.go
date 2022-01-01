@@ -14,13 +14,13 @@ type EtcdStore struct {
 }
 
 // New returns a new EtcdStore instance.
-// The client parameter should be a pointer to a ETCD client instance.
+// The client parameter should be a pointer to a etcd client instance.
 func New(client *clientv3.Client) *EtcdStore {
 	return NewWithPrefix(client, "scs:session:")
 }
 
 // NewWithPrefix returns a new EtcdStore instance. The client parameter should be a pointer
-// to a ETCD client instance. The prefix parameter controls the ETCD key
+// to a etcd client instance. The prefix parameter controls the etcd key
 // prefix, which can be used to avoid naming clashes if necessary.
 func NewWithPrefix(client *clientv3.Client, prefix string) *EtcdStore {
 	return &EtcdStore{

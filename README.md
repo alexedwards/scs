@@ -150,6 +150,7 @@ The session stores currently included are shown in the table below. Please click
 | [badgerstore](https://github.com/alexedwards/scs/tree/master/badgerstore)       		| Badger based session store  		                                           	   		|
 | [boltstore](https://github.com/alexedwards/scs/tree/master/boltstore)       			| Bolt based session store  		                                               		|
 | [buntdbstore](https://github.com/alexedwards/scs/tree/master/buntdbstore)  			| BuntDB based session store  		                                               		|
+| [consulstore](https://github.com/alexedwards/scs/tree/master/consulstore)  			| Consul based session store  		                                               		|
 | [etcdstore](https://github.com/alexedwards/scs/tree/master/etcdstore)  				| Etcd based session store  		                                               		|
 | [firestore](https://github.com/alexedwards/scs/tree/master/firestore)       			| Google Cloud Firestore based session store                                       		|
 | [gormstore](https://github.com/alexedwards/scs/tree/master/gormstore)       			| GORM based session store        					                               		|

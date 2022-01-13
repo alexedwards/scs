@@ -94,7 +94,7 @@ However, there may be occasions when your use of a session store instance is tra
 
 ```go
 func TestExample(t *testing.T) {
-	db, err := gorm.Open("postgres", "postgres://user:pass@localhost/db")
+	db, err := gorm.Open(postgres.Open("postgres://username:password@host/dbname", &gorm.Config{}))
 	if err != nil {
 	    t.Fatal(err)
 	}

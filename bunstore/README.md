@@ -1,6 +1,6 @@
-# gormstore
+# bunstore
 
-A [GORM](https://github.com/go-gorm/gorm) based session store for [SCS](https://github.com/alexedwards/scs).
+A [Bun](https://github.com/uptrace/bun) based session store for [SCS](https://github.com/alexedwards/scs).
 
 ## Setup
 
@@ -15,7 +15,7 @@ CREATE TABLE sessions (
 
 CREATE INDEX sessions_expiry_idx ON sessions (expiry);
 ```
-For other stores you can find the setup here: [MSSQL](https://github.com/alexedwards/scs/tree/master/mssqlstore), [MySQL](https://github.com/alexedwards/scs/tree/master/mysqlstore), [SQLite3](https://github.com/alexedwards/scs/tree/master/sqlite3store).
+For other stores you can find the setup here: [MySQL](https://github.com/alexedwards/scs/tree/master/mysqlstore), [SQLite3](https://github.com/alexedwards/scs/tree/master/sqlite3store).
 
 If no table is present, a new one will be automatically created.
 
@@ -32,28 +32,36 @@ import (
 	"log"
 	"net/http"
 
-	"github.com/alexedwards/scs/gormstore"
+	"github.com/alexedwards/scs/bunstore"
 	"github.com/alexedwards/scs/v2"
-	"gorm.io/driver/postgres"
-	"gorm.io/gorm"
+	"github.com/uptrace/bun"
+	"github.com/uptrace/bun/dialect/pgdialect"
+	_ "github.com/uptrace/bun/driver/pgdriver"
 )
 
 var sessionManager *scs.SessionManager
 
 func main() {
 	// Establish connection to your store.
-    db, err := gorm.Open(postgres.Open("postgres://username:password@host/dbname", &gorm.Config{})) // PostgreSQL
-    //db, err := gorm.Open(sqlserver.Open("sqlserver://username:password@host?database=dbname", &gorm.Config{})) // MSSQL
-    //db, err := gorm.Open(mysql.Open(username:password@tcp(host)/dbname?parseTime=true", &gorm.Config{})) // MySQL
-	//db, err := gorm.Open(sqlite.Open("sqlite3_database.db"), &gorm.Config{})) // SQLite3
+	sqldb, err := sql.Open("pg", "postgres://username:password@host/dbname") // PostgreSQL
+	//sqldb, err := sql.Open("mysql", "username:password@tcp(host)/dbname?parseTime=true") // MySQL
+	//sqldb, err := sql.Open(sqliteshim.ShimName, "sqlite3_database.db") // SQLite3
 	if err != nil {
 		log.Fatal(err)
 	}
+
+	db := bun.NewDB(sqldb, pgdialect.New()) // PostgreSQL
+	//db := bun.NewDB(sqldb, mysqldialect.New()) // MySQL
+	//db := bun.NewDB(sqldb, sqlitedialect.New()) // SQLite3
 	defer db.Close()
 
-	// Initialize a new session manager and configure it to use gormstore as the session store.
+	db.SetMaxOpenConns(1)
+	db.SetMaxIdleConns(1000)
+	db.SetConnMaxLifetime(0)
+
+	// Initialize a new session manager and configure it to use bunstore as the session store.
 	sessionManager = scs.New()
-	if sessionManager.Store, err = gormstore.New(db); err != nil {
+	if sessionManager.Store, err = bunstore.New(db); err != nil {
         log.Fatal(err)
     }
 
@@ -80,10 +88,10 @@ This package provides a background 'cleanup' goroutine to delete expired session
 
 ```go
 // Run a cleanup every 30 minutes.
-gormstore.NewWithCleanupInterval(db, 30*time.Minute)
+bunstore.NewWithCleanupInterval(db, 30*time.Minute)
 
 // Disable the cleanup goroutine by setting the cleanup interval to zero.
-gormstore.NewWithCleanupInterval(db, 0)
+bunstore.NewWithCleanupInterval(db, 0)
 ```
 
 ### Terminating the Cleanup Goroutine
@@ -94,13 +102,15 @@ However, there may be occasions when your use of a session store instance is tra
 
 ```go
 func TestExample(t *testing.T) {
-	db, err := gorm.Open(postgres.Open("postgres://username:password@host/dbname", &gorm.Config{}))
-	if err != nil {
-	    t.Fatal(err)
-	}
+	sqldb, err := sql.Open("pg", "postgres://username:password@host/dbname")
+	db := bun.NewDB(sqldb, pgdialect.New())
 	defer db.Close()
 
-    store, err := gormstore.New(db)
+	db.SetMaxOpenConns(1)
+	db.SetMaxIdleConns(1000)
+	db.SetConnMaxLifetime(0)
+
+    store, err := bunstore.New(db)
     if err != nil {
 	    t.Fatal(err)
     }

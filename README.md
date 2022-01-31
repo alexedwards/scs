@@ -149,9 +149,14 @@ The session stores currently included are shown in the table below. Please click
 |:------------------------------------------------------------------------------------- |---------------------------------------------------------------------------------------|
 | [badgerstore](https://github.com/alexedwards/scs/tree/master/badgerstore)       		| Badger based session store  		                                           	   		|
 | [boltstore](https://github.com/alexedwards/scs/tree/master/boltstore)       			| Bolt based session store  		                                               		|
+| [bunstore](https://github.com/alexedwards/scs/tree/master/bunstore)  					| Bun based session store  		                                               			|
 | [buntdbstore](https://github.com/alexedwards/scs/tree/master/buntdbstore)  			| BuntDB based session store  		                                               		|
+| [cockroachdbstore](https://github.com/alexedwards/scs/tree/master/cockroachdbstore)   | CockroachDB based session store  		                                               	|
+| [consulstore](https://github.com/alexedwards/scs/tree/master/consulstore)  			| Consul based session store  		                                               		|
+| [etcdstore](https://github.com/alexedwards/scs/tree/master/etcdstore)  				| Etcd based session store  		                                               		|
 | [firestore](https://github.com/alexedwards/scs/tree/master/firestore)       			| Google Cloud Firestore based session store                                       		|
 | [gormstore](https://github.com/alexedwards/scs/tree/master/gormstore)       			| GORM based session store        					                               		|
+| [leveldbstore](https://github.com/alexedwards/scs/tree/master/leveldbstore)       	| LevelDB based session store        					                               	|
 | [memstore](https://github.com/alexedwards/scs/tree/master/memstore)       			| In-memory session store (default)                                                		|
 | [mongodbstore](https://github.com/alexedwards/scs/tree/master/mongodbstore)       	| MongoDB based session store                                               	   		|
 | [mssqlstore](https://github.com/alexedwards/scs/tree/master/mssqlstore)       		| MSSQL based session store     	                                          	   		|
@@ -251,7 +256,7 @@ To iterate throught all sessions, SCS offers to all data stores an `All()` funct
 Essentially, in your code, you pass the `Iterate()` method a closure with the signature `func(ctx context.Context) error` which contains the logic that you want to execute against each session. For example, if you want to revoke all sessions with contain a `userID` value equal to `4` you can do the following:
 
 ```go
-err := sessionManager.Iterate(func(ctx context.Context) error {
+err := sessionManager.Iterate(r.Context(), func(ctx context.Context) error {
 	userID := sessionManager.GetInt(ctx, "userID")
 
 	if userID == 4 {

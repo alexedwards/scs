@@ -1,10 +1,10 @@
-# gormstore
+# cockroachdbstore
 
-A [GORM](https://github.com/go-gorm/gorm) based session store for [SCS](https://github.com/alexedwards/scs).
+A CockroachDB based session store for [SCS](https://github.com/alexedwards/scs) using the [pq](https://github.com/lib/pq) driver.
 
 ## Setup
 
-You should have a working database containing a `sessions` table with the definition (for PostgreSQL):
+You should have a working CockroachDB database containing a `sessions` table with the definition:
 
 ```sql
 CREATE TABLE sessions (
@@ -15,11 +15,8 @@ CREATE TABLE sessions (
 
 CREATE INDEX sessions_expiry_idx ON sessions (expiry);
 ```
-For other stores you can find the setup here: [MSSQL](https://github.com/alexedwards/scs/tree/master/mssqlstore), [MySQL](https://github.com/alexedwards/scs/tree/master/mysqlstore), [SQLite3](https://github.com/alexedwards/scs/tree/master/sqlite3store).
 
-If no table is present, a new one will be automatically created.
-
-The database user for your application must have `CREATE TABLE`, `SELECT`, `INSERT`, `UPDATE` and `DELETE` permissions on this table.
+The database user for your application must have `SELECT`, `INSERT`, `UPDATE` and `DELETE` permissions on this table.
 
 ## Example
 
@@ -32,30 +29,25 @@ import (
 	"log"
 	"net/http"
 
-	"github.com/alexedwards/scs/gormstore"
 	"github.com/alexedwards/scs/v2"
-	"gorm.io/driver/postgres"
-	"gorm.io/gorm"
+	"github.com/alexedwards/scs/cockroachdbstore"
+
+	_ "github.com/lib/pq"
 )
 
 var sessionManager *scs.SessionManager
 
 func main() {
-	// Establish connection to your store.
-    db, err := gorm.Open(postgres.Open("postgres://username:password@host/dbname", &gorm.Config{})) // PostgreSQL
-    //db, err := gorm.Open(sqlserver.Open("sqlserver://username:password@host?database=dbname", &gorm.Config{})) // MSSQL
-    //db, err := gorm.Open(mysql.Open(username:password@tcp(host)/dbname?parseTime=true", &gorm.Config{})) // MySQL
-	//db, err := gorm.Open(sqlite.Open("sqlite3_database.db"), &gorm.Config{})) // SQLite3
+	// Establish connection to CockroachDB.
+	db, err := sql.Open("postgres", "postgres://username:password@host/dbname")
 	if err != nil {
 		log.Fatal(err)
 	}
 	defer db.Close()
 
-	// Initialize a new session manager and configure it to use gormstore as the session store.
+	// Initialize a new session manager and configure it to use cockroachdbstore as the session store.
 	sessionManager = scs.New()
-	if sessionManager.Store, err = gormstore.New(db); err != nil {
-        log.Fatal(err)
-    }
+	sessionManager.Store = cockroachdbstore.New(db)
 
 	mux := http.NewServeMux()
 	mux.HandleFunc("/put", putHandler)
@@ -80,10 +72,10 @@ This package provides a background 'cleanup' goroutine to delete expired session
 
 ```go
 // Run a cleanup every 30 minutes.
-gormstore.NewWithCleanupInterval(db, 30*time.Minute)
+cockroachdbstore.NewWithCleanupInterval(db, 30*time.Minute)
 
 // Disable the cleanup goroutine by setting the cleanup interval to zero.
-gormstore.NewWithCleanupInterval(db, 0)
+cockroachdbstore.NewWithCleanupInterval(db, 0)
 ```
 
 ### Terminating the Cleanup Goroutine
@@ -94,16 +86,13 @@ However, there may be occasions when your use of a session store instance is tra
 
 ```go
 func TestExample(t *testing.T) {
-	db, err := gorm.Open(postgres.Open("postgres://username:password@host/dbname", &gorm.Config{}))
+	db, err := sql.Open("postgres", "postgres://user:pass@localhost/db")
 	if err != nil {
 	    t.Fatal(err)
 	}
 	defer db.Close()
 
-    store, err := gormstore.New(db)
-    if err != nil {
-	    t.Fatal(err)
-    }
+	store := cockroachdbstore.New(db)
 	defer store.StopCleanup()
 
 	sessionManager = scs.New()

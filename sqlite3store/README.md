@@ -70,10 +70,10 @@ This package provides a background 'cleanup' goroutine to delete expired session
 
 ```go
 // Run a cleanup every 30 minutes.
-SQLite3Store.NewWithCleanupInterval(db, 30*time.Minute)
+sqlite3store.NewWithCleanupInterval(db, 30*time.Minute)
 
 // Disable the cleanup goroutine by setting the cleanup interval to zero.
-SQLite3Store.NewWithCleanupInterval(db, 0)
+sqlite3store.NewWithCleanupInterval(db, 0)
 ```
 
 ### Terminating the Cleanup Goroutine
@@ -90,7 +90,7 @@ func TestExample(t *testing.T) {
 	}
 	defer db.Close()
 
-	store := SQLite3Store.New(db)
+	store := sqlite3store.New(db)
 	defer store.StopCleanup()
 
 	sessionManager = scs.New()

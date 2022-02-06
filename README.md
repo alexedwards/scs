@@ -8,7 +8,7 @@
 ## Features
 
 * Automatic loading and saving of session data via middleware.
-* Choice of 19 different server-side session stores including PostgreSQL, MySQL, MSSQL, SQLite, Redis and many others. Custom session stores are also supported.
+* Choice of 17 different server-side session stores including PostgreSQL, MySQL, MSSQL, SQLite, Redis and many others. Custom session stores are also supported.
 * Supports multiple sessions per request, 'flash' messages, session token regeneration, idle and absolute session timeouts, and 'remember me' functionality.
 * Easy to extend and customize. Communicate session tokens to/from clients in HTTP headers or request/response bodies.
 * Efficient design. Smaller, faster and uses less memory than [gorilla/sessions](https://github.com/gorilla/sessions).
@@ -25,7 +25,7 @@
 * [Preventing Session Fixation](#preventing-session-fixation)
 * [Multiple Sessions per Request](#multiple-sessions-per-request)
 * [Enumerate All Sessions](#enumerate-all-sessions)
-* [Compatibility](#compatibility)
+* [Compatibility with Other Routers and Web-Frameworks](#compatibility-with-other-routers-and-web-frameworks)
 
 ### Installation
 
@@ -270,6 +270,14 @@ if err != nil {
 }
 ```
 
-### Compatibility
+### Compatibility with Other Routers and Web-Frameworks
 
-You may have some problems using this package with Go frameworks that do not propagate the request context from standard-library compatible middleware, like [Echo](https://github.com/alexedwards/scs/issues/57) and [Fiber](https://github.com/alexedwards/scs/issues/106). If you are using Echo, please use the [echo-scs-session](https://github.com/spazzymoto/echo-scs-session) fork of this package instead.
+SCS offers support to several non-standard routers and web-frameworks:
+
+| Package                                                                               |                                                                                  		|
+|:------------------------------------------------------------------------------------- |---------------------------------------------------------------------------------------|
+| [echoadapter](https://github.com/alexedwards/scs/tree/master/echoadapter)       		| Echo framework adapter  		                  	                         	   		|
+| [fiberadapter](https://github.com/alexedwards/scs/tree/master/fiberadapter)       	| Fiber framework adapter  		                   	                            		|
+| [ginadapter](https://github.com/alexedwards/scs/tree/master/ginadapter)  				| Gin framework adapter  		                                               			|
+
+SCS should also works as-it-is with other routers and web frameworks like Chi or Goji, that implement the standard net/http handlers.

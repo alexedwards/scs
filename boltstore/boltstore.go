@@ -165,7 +165,10 @@ func (bs *BoltStore) deleteExpired() error {
 		return bs.db.Update(func(tx *bbolt.Tx) error {
 			for _, token := range expiredTokens {
 				bucket := tx.Bucket(bucketName)
-				return bucket.Delete([]byte(token))
+				err := bucket.Delete([]byte(token))
+				if err != nil {
+					return err
+				}
 			}
 			return nil
 		})

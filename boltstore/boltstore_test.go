@@ -164,3 +164,45 @@ func TestStopNilCleanup(t *testing.T) {
 	// A send to a nil channel will block forever
 	m.StopCleanup()
 }
+
+func TestDeleteExpired(t *testing.T) {
+	db, err := bbolt.Open("/tmp/testing.db", 0600, nil)
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer db.Close()
+
+	m := NewWithCleanupInterval(db, 0)
+
+	if err := m.Commit("session_token1", []byte("data"), time.Now().Add(10*time.Millisecond)); err != nil {
+		t.Fatal(err)
+	}
+
+	if err := m.Commit("session_token2", []byte("data"), time.Now().Add(10*time.Millisecond)); err != nil {
+		t.Fatal(err)
+	}
+
+	time.Sleep(100 * time.Millisecond)
+
+	if err := m.deleteExpired(); err != nil {
+		t.Fatalf("expected nil, got %v", err)
+	}
+
+	err = db.View(func(tx *bbolt.Tx) error {
+		bucket := tx.Bucket(bucketName)
+		data := bucket.Get([]byte("session_token1"))
+		if data != nil {
+			t.Fatalf("expected nil, got %v", data)
+		}
+
+		data = bucket.Get([]byte("session_token2"))
+		if data != nil {
+			t.Fatalf("expected nil, got %v", data)
+		}
+
+		return nil
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+}

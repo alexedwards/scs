@@ -8,7 +8,7 @@
 ## Features
 
 * Automatic loading and saving of session data via middleware.
-* Choice of 17 different server-side session stores including PostgreSQL, MySQL, MSSQL, SQLite, Redis and many others. Custom session stores are also supported.
+* Choice of 18 different server-side session stores including PostgreSQL, MySQL, MSSQL, SQLite, Redis and many others. Custom session stores are also supported.
 * Supports multiple sessions per request, 'flash' messages, session token regeneration, idle and absolute session timeouts, and 'remember me' functionality.
 * Easy to extend and customize. Communicate session tokens to/from clients in HTTP headers or request/response bodies.
 * Efficient design. Smaller, faster and uses less memory than [gorilla/sessions](https://github.com/gorilla/sessions).
@@ -164,6 +164,7 @@ The session stores currently included are shown in the table below. Please click
 | [pgxstore](https://github.com/alexedwards/scs/tree/master/pgxstore)         			| PostgreSQL based session store (using the [pgx](https://github.com/jackc/pgx) driver)	|
 | [postgresstore](https://github.com/alexedwards/scs/tree/master/postgresstore)         | PostgreSQL based session store (using the [pq](https://github.com/lib/pq) driver)		|
 | [redisstore](https://github.com/alexedwards/scs/tree/master/redisstore)       		| Redis based session store																|
+| [rqlitestore](https://github.com/alexedwards/scs/tree/master/rqlitestore)       		| Rqlite based session store															|
 | [sqlite3store](https://github.com/alexedwards/scs/tree/master/sqlite3store) 			| SQLite3 based session store															|
 
 Custom session stores are also supported. Please [see here](#using-custom-session-stores) for more information.

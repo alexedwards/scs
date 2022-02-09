@@ -85,7 +85,7 @@ However, there may be occasions when your use of a session store instance is tra
 
 ```go
 func TestExample(t *testing.T) {
-	pool, err := pgxpool.Connect(context.Background(), "postgres://user:pass@localhost/db")
+	pool, err := pgxpool.Connect(context.Background(), "postgres://username:password@host/dbname")
 	if err != nil {
 		 t.Fatal(err)
 	}

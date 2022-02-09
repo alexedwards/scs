@@ -1,22 +1,20 @@
-# postgresstore
+# rqlitestore
 
-A PostgreSQL based session store for [SCS](https://github.com/alexedwards/scs) using the [pq](https://github.com/lib/pq) driver.
+A [rqlite](https://github.com/rqlite/gorqlite) based session store for [SCS](https://github.com/alexedwards/scs).
 
 ## Setup
 
-You should have a working PostgreSQL database containing a `sessions` table with the definition:
+You should have a working rqlite (SQLite3) database file containing a `sessions` table with the definition:
 
 ```sql
 CREATE TABLE sessions (
 	token TEXT PRIMARY KEY,
-	data BYTEA NOT NULL,
-	expiry TIMESTAMPTZ NOT NULL
+	data BLOB NOT NULL,
+	expiry REAL NOT NULL
 );
 
-CREATE INDEX sessions_expiry_idx ON sessions (expiry);
+CREATE INDEX sessions_expiry_idx ON sessions(expiry);
 ```
-
-The database user for your application must have `SELECT`, `INSERT`, `UPDATE` and `DELETE` permissions on this table.
 
 ## Example
 
@@ -24,30 +22,28 @@ The database user for your application must have `SELECT`, `INSERT`, `UPDATE` an
 package main
 
 import (
-	"database/sql"
 	"io"
 	"log"
 	"net/http"
 
 	"github.com/alexedwards/scs/v2"
-	"github.com/alexedwards/scs/postgresstore"
-
-	_ "github.com/lib/pq"
+	"github.com/alexedwards/scs/rqlitestore"
+	"github.com/rqlite/gorqlite"
 )
 
 var sessionManager *scs.SessionManager
 
 func main() {
-	// Establish connection to PostgreSQL.
-	db, err := sql.Open("postgres", "postgres://username:password@host/dbname")
+	// Establish connection to rqlite.
+	conn, err := gorqlite.Open("http://host:4001/")
 	if err != nil {
 		log.Fatal(err)
 	}
-	defer db.Close()
+	defer conn.Close()
 
-	// Initialize a new session manager and configure it to use postgresstore as the session store.
+	// Initialize a new session manager and configure it to use rqlitestore as the session store.
 	sessionManager = scs.New()
-	sessionManager.Store = postgresstore.New(db)
+	sessionManager.Store = rqlitestore.New(conn)
 
 	mux := http.NewServeMux()
 	mux.HandleFunc("/put", putHandler)
@@ -72,10 +68,10 @@ This package provides a background 'cleanup' goroutine to delete expired session
 
 ```go
 // Run a cleanup every 30 minutes.
-postgresstore.NewWithCleanupInterval(db, 30*time.Minute)
+rqlitestore.NewWithCleanupInterval(conn, 30*time.Minute)
 
 // Disable the cleanup goroutine by setting the cleanup interval to zero.
-postgresstore.NewWithCleanupInterval(db, 0)
+rqlitestore.NewWithCleanupInterval(conn, 0)
 ```
 
 ### Terminating the Cleanup Goroutine
@@ -86,13 +82,13 @@ However, there may be occasions when your use of a session store instance is tra
 
 ```go
 func TestExample(t *testing.T) {
-	db, err := sql.Open("postgres", "postgres://username:password@host/dbname")
+	conn, err := gorqlite.Open("http://host:4001/")
 	if err != nil {
-	    t.Fatal(err)
+		log.Fatal(err)
 	}
-	defer db.Close()
+	defer conn.Close()
 
-	store := postgresstore.New(db)
+	store := rqlitestore.New(conn)
 	defer store.StopCleanup()
 
 	sessionManager = scs.New()

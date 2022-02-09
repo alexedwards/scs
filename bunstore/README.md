@@ -103,6 +103,10 @@ However, there may be occasions when your use of a session store instance is tra
 ```go
 func TestExample(t *testing.T) {
 	sqldb, err := sql.Open("pg", "postgres://username:password@host/dbname")
+	if err != nil {
+		log.Fatal(err)
+	}
+	
 	db := bun.NewDB(sqldb, pgdialect.New())
 	defer db.Close()
 

@@ -164,6 +164,7 @@ The session stores currently included are shown in the table below. Please click
 | [pgxstore](https://github.com/alexedwards/scs/tree/master/pgxstore)         			| PostgreSQL based session store (using the [pgx](https://github.com/jackc/pgx) driver)	|
 | [postgresstore](https://github.com/alexedwards/scs/tree/master/postgresstore)         | PostgreSQL based session store (using the [pq](https://github.com/lib/pq) driver)		|
 | [redisstore](https://github.com/alexedwards/scs/tree/master/redisstore)       		| Redis based session store																|
+| [rqlitestore](https://github.com/alexedwards/scs/tree/master/rqlitestore)       		| Rqlite based session store															|
 | [sqlite3store](https://github.com/alexedwards/scs/tree/master/sqlite3store) 			| SQLite3 based session store															|
 
 Custom session stores are also supported. Please [see here](#using-custom-session-stores) for more information.

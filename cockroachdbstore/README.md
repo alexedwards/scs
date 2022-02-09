@@ -86,7 +86,7 @@ However, there may be occasions when your use of a session store instance is tra
 
 ```go
 func TestExample(t *testing.T) {
-	db, err := sql.Open("postgres", "postgres://user:pass@localhost/db")
+	db, err := sql.Open("postgres", "postgres://username:password@host/dbname")
 	if err != nil {
 	    t.Fatal(err)
 	}

@@ -4,17 +4,20 @@ import (
 	"bytes"
 	"context"
 	"database/sql"
+	"fmt"
 	"os"
 	"reflect"
 	"testing"
 	"time"
 
 	"github.com/uptrace/bun"
+	"github.com/uptrace/bun/dialect/mssqldialect"
 	"github.com/uptrace/bun/dialect/mysqldialect"
 	"github.com/uptrace/bun/dialect/pgdialect"
 	"github.com/uptrace/bun/dialect/sqlitedialect"
 	"github.com/uptrace/bun/driver/sqliteshim"
 
+	_ "github.com/denisenkom/go-mssqldb"
 	_ "github.com/go-sql-driver/mysql"
 	_ "github.com/uptrace/bun/driver/pgdriver"
 )
@@ -25,9 +28,6 @@ func initWithCleanupInterval(t *testing.T, cleanupInterval time.Duration) *BunSt
 
 	dialect := os.Getenv("SCS_BUN_TEST_DIALECT")
 	switch dialect {
-	default:
-		dialect = "sqlite3"
-		fallthrough
 	case "postgres":
 		dsn := os.Getenv("SCS_POSTGRES_TEST_DSN")
 		sqldb, err := sql.Open("pg", dsn)
@@ -41,6 +41,19 @@ func initWithCleanupInterval(t *testing.T, cleanupInterval time.Duration) *BunSt
 		sqldb.Exec(`CREATE INDEX sessions_expiry_idx ON sessions (expiry);`)
 
 		db = bun.NewDB(sqldb, pgdialect.New())
+	case "mssql":
+		dsn := os.Getenv("SCS_MSSQL_TEST_DSN")
+		sqldb, err := sql.Open("sqlserver", dsn)
+		if err != nil {
+			sqldb.Close()
+			t.Fatal(err)
+		}
+
+		sqldb.Exec(`DROP TABLE IF EXISTS sessions`)
+		sqldb.Exec(`CREATE TABLE sessions (token VARCHAR(43) PRIMARY KEY, data VARBINARY(MAX) NOT NULL, expiry DATETIME2(6) NOT NULL);`)
+		sqldb.Exec(`CREATE INDEX sessions_expiry_idx ON sessions (expiry);`)
+
+		db = bun.NewDB(sqldb, mssqldialect.New())
 	case "mysql":
 		dsn := os.Getenv("SCS_MYSQL_TEST_DSN")
 		sqldb, err := sql.Open("mysql", dsn)
@@ -50,11 +63,11 @@ func initWithCleanupInterval(t *testing.T, cleanupInterval time.Duration) *BunSt
 		}
 
 		sqldb.Exec(`DROP TABLE IF EXISTS sessions`)
-		sqldb.Exec(`CREATE TABLE sessions (token CHAR(43) PRIMARY KEY,data BLOB NOT NULL,expiry TIMESTAMP(6) NOT NULL);`)
+		sqldb.Exec(`CREATE TABLE sessions (token VARCHAR(43) PRIMARY KEY,data BLOB NOT NULL,expiry TIMESTAMP(6) NOT NULL);`)
 		sqldb.Exec(`CREATE INDEX sessions_expiry_idx ON sessions (expiry);`)
 
 		db = bun.NewDB(sqldb, mysqldialect.New())
-	case "sqlite3":
+	default:
 		dsn := os.Getenv("./testSQL3lite.db")
 		sqldb, err := sql.Open(sqliteshim.ShimName, dsn)
 		if err != nil {
@@ -80,6 +93,13 @@ func initWithCleanupInterval(t *testing.T, cleanupInterval time.Duration) *BunSt
 	db.SetMaxOpenConns(1)
 	db.SetMaxIdleConns(1000)
 	db.SetConnMaxLifetime(0)
+
+	/*
+		db.AddQueryHook(bundebug.NewQueryHook(
+			bundebug.WithVerbose(true),
+			bundebug.FromEnv("BUNDEBUG"),
+		))
+	*/
 
 	b, err := NewWithCleanupInterval(db, cleanupInterval)
 	if err != nil {
@@ -212,6 +232,39 @@ func TestDelete(t *testing.T) {
 	}
 	if count != 0 {
 		t.Fatalf("got %d: expected %d", count, 0)
+	}
+}
+
+func TestAll(t *testing.T) {
+	b := initWithCleanupInterval(t, 0)
+	ctx := context.Background()
+
+	_, err := b.db.Exec("DELETE FROM sessions")
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	setSessions := make(map[string][]byte)
+	for i := 0; i < 5; i++ {
+		token := fmt.Sprintf("session_token_%v", i)
+		data := []byte(fmt.Sprintf("encoded_data_%v", i))
+		expiry := time.Now().Add(1 * time.Minute)
+
+		_, err := b.db.Exec("INSERT INTO sessions (token, data, expiry) VALUES(?, ?, ?)", token, data, expiry)
+		if err != nil {
+			t.Fatal(err)
+		}
+
+		setSessions[token] = data
+	}
+
+	gotSessions, err := b.AllCtx(ctx)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	if reflect.DeepEqual(setSessions, gotSessions) == false {
+		t.Fatalf("got %v: expected %v", gotSessions, setSessions)
 	}
 }
 

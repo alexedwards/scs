@@ -4,7 +4,6 @@ import (
 	"bytes"
 	"encoding/hex"
 	"fmt"
-	"log"
 	"os"
 	"reflect"
 	"testing"
@@ -46,7 +45,6 @@ func TestFind(t *testing.T) {
 	defer conn.Close()
 
 	_, err = conn.WriteOne("DELETE FROM sessions")
-	log.Println(err)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -79,7 +77,6 @@ func TestFindMissing(t *testing.T) {
 	defer conn.Close()
 
 	_, err = conn.WriteOne("DELETE FROM sessions")
-	log.Println(err)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -109,7 +106,6 @@ func TestSaveNew(t *testing.T) {
 	defer conn.Close()
 
 	_, err = conn.WriteOne("DELETE FROM sessions")
-	log.Println(err)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -155,7 +151,6 @@ func TestSaveUpdated(t *testing.T) {
 	defer conn.Close()
 
 	_, err = conn.WriteOne("DELETE FROM sessions")
-	log.Println(err)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -207,7 +202,6 @@ func TestExpiry(t *testing.T) {
 	defer conn.Close()
 
 	_, err = conn.WriteOne("DELETE FROM sessions")
-	log.Println(err)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -240,7 +234,6 @@ func TestDelete(t *testing.T) {
 	defer conn.Close()
 
 	_, err = conn.WriteOne("DELETE FROM sessions")
-	log.Println(err)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -285,7 +278,6 @@ func TestAll(t *testing.T) {
 	defer conn.Close()
 
 	_, err = conn.WriteOne("DELETE FROM sessions")
-	log.Println(err)
 	if err != nil {
 		t.Fatal(err)
 	}

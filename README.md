@@ -15,17 +15,20 @@
 
 ## Instructions
 
-* [Installation](#installation)
-* [Basic Use](#basic-use)
-* [Configuring Session Behavior](#configuring-session-behavior)
-* [Working with Session Data](#working-with-session-data)
-* [Loading and Saving Sessions](#loading-and-saving-sessions)
-* [Configuring the Session Store](#configuring-the-session-store)
-* [Using Custom Session Stores](#using-custom-session-stores)
-* [Preventing Session Fixation](#preventing-session-fixation)
-* [Multiple Sessions per Request](#multiple-sessions-per-request)
-* [Enumerate All Sessions](#enumerate-all-sessions)
-* [Compatibility](#compatibility)
+- [SCS: HTTP Session Management for Go](#scs-http-session-management-for-go)
+  - [Features](#features)
+  - [Instructions](#instructions)
+    - [Installation](#installation)
+    - [Basic Use](#basic-use)
+    - [Configuring Session Behavior](#configuring-session-behavior)
+    - [Working with Session Data](#working-with-session-data)
+    - [Loading and Saving Sessions](#loading-and-saving-sessions)
+    - [Configuring the Session Store](#configuring-the-session-store)
+    - [Using Custom Session Stores](#using-custom-session-stores)
+      - [Using Custom Session Stores (with context.Context)](#using-custom-session-stores-with-contextcontext)
+    - [Multiple Sessions per Request](#multiple-sessions-per-request)
+    - [Enumerate All Sessions](#enumerate-all-sessions)
+    - [Compatibility](#compatibility)
 
 ### Installation
 
@@ -164,7 +167,6 @@ The session stores currently included are shown in the table below. Please click
 | [pgxstore](https://github.com/alexedwards/scs/tree/master/pgxstore)         			| PostgreSQL based session store (using the [pgx](https://github.com/jackc/pgx) driver)	|
 | [postgresstore](https://github.com/alexedwards/scs/tree/master/postgresstore)         | PostgreSQL based session store (using the [pq](https://github.com/lib/pq) driver)		|
 | [redisstore](https://github.com/alexedwards/scs/tree/master/redisstore)       		| Redis based session store																|
-| [rqlitestore](https://github.com/alexedwards/scs/tree/master/rqlitestore)       		| Rqlite based session store															|
 | [sqlite3store](https://github.com/alexedwards/scs/tree/master/sqlite3store) 			| SQLite3 based session store															|
 
 Custom session stores are also supported. Please [see here](#using-custom-session-stores) for more information.

@@ -16,12 +16,12 @@ type GORMStore struct {
 
 type session struct {
 	Token  string    `gorm:"column:token;primaryKey;type:varchar(43)"`
-	Data   []byte.   `gorm:"column:data"`
+	Data   []byte    `gorm:"column:data"`
 	Expiry time.Time `gorm:"column:expiry;index"`
 }
 
 func (session) TableName() string {
-        return "sessions"
+	return "sessions"
 }
 
 // New returns a new GORMStore instance, with a background cleanup goroutine

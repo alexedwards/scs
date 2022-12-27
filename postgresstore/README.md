@@ -16,6 +16,18 @@ CREATE TABLE sessions (
 CREATE INDEX sessions_expiry_idx ON sessions (expiry);
 ```
 
+Alternatively, you can use unix milli timestamps for the expiry:
+
+```sql
+CREATE TABLE sessions (
+	token TEXT PRIMARY KEY,
+	data BYTEA NOT NULL,
+	expiry BIGINT NOT NULL
+);
+
+CREATE INDEX sessions_expiry_idx ON sessions (expiry);
+```
+
 The database user for your application must have `SELECT`, `INSERT`, `UPDATE` and `DELETE` permissions on this table.
 
 ## Example
@@ -46,8 +58,9 @@ func main() {
 	defer db.Close()
 
 	// Initialize a new session manager and configure it to use postgresstore as the session store.
+	// Pass false to use timestamptz, or true if using unix milli timestamps.
 	sessionManager = scs.New()
-	sessionManager.Store = postgresstore.New(db)
+	sessionManager.Store = postgresstore.New(db, false)
 
 	mux := http.NewServeMux()
 	mux.HandleFunc("/put", putHandler)
@@ -72,7 +85,7 @@ This package provides a background 'cleanup' goroutine to delete expired session
 
 ```go
 // Run a cleanup every 30 minutes.
-postgresstore.NewWithCleanupInterval(db, 30*time.Minute)
+postgresstore.NewWithCleanupInterval(db, 30*time.Minute, true)
 
 // Disable the cleanup goroutine by setting the cleanup interval to zero.
 postgresstore.NewWithCleanupInterval(db, 0)
@@ -92,7 +105,7 @@ func TestExample(t *testing.T) {
 	}
 	defer db.Close()
 
-	store := postgresstore.New(db)
+	store := postgresstore.New(db, true)
 	defer store.StopCleanup()
 
 	sessionManager = scs.New()

@@ -25,12 +25,13 @@ func TestFind(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	_, err = db.Exec("INSERT INTO sessions VALUES('session_token', 'encoded_data', current_timestamp + interval '1 minute')")
+	nowPlusMinute := time.Now().UnixMilli() + 60000
+	_, err = db.Exec("INSERT INTO sessions VALUES('session_token', 'encoded_data', $1)", nowPlusMinute)
 	if err != nil {
 		t.Fatal(err)
 	}
 
-	p := NewWithCleanupInterval(db, 0)
+	p := NewWithCleanupInterval(db, 0, true)
 
 	b, found, err := p.Find("session_token")
 	if err != nil {
@@ -59,7 +60,7 @@ func TestFindMissing(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	p := NewWithCleanupInterval(db, 0)
+	p := NewWithCleanupInterval(db, 0, true)
 
 	_, found, err := p.Find("missing_session_token")
 	if err != nil {
@@ -85,7 +86,7 @@ func TestSaveNew(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	p := NewWithCleanupInterval(db, 0)
+	p := NewWithCleanupInterval(db, 0, true)
 
 	err = p.Commit("session_token", []byte("encoded_data"), time.Now().Add(time.Minute))
 	if err != nil {
@@ -117,12 +118,13 @@ func TestSaveUpdated(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	_, err = db.Exec("INSERT INTO sessions VALUES('session_token', 'encoded_data', current_timestamp + interval '1 minute')")
+	nowPlusMinute := time.Now().UnixMilli() + 60000
+	_, err = db.Exec("INSERT INTO sessions VALUES('session_token', 'encoded_data', $1)", nowPlusMinute)
 	if err != nil {
 		t.Fatal(err)
 	}
 
-	p := NewWithCleanupInterval(db, 0)
+	p := NewWithCleanupInterval(db, 0, true)
 
 	err = p.Commit("session_token", []byte("new_encoded_data"), time.Now().Add(time.Minute))
 	if err != nil {
@@ -155,7 +157,7 @@ func TestExpiry(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	p := NewWithCleanupInterval(db, 0)
+	p := NewWithCleanupInterval(db, 0, true)
 
 	err = p.Commit("session_token", []byte("encoded_data"), time.Now().Add(100*time.Millisecond))
 	if err != nil {
@@ -188,12 +190,13 @@ func TestDelete(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	_, err = db.Exec("INSERT INTO sessions VALUES('session_token', 'encoded_data', current_timestamp + interval '1 minute')")
+	nowPlusMinute := time.Now().UnixMilli() + 60000
+	_, err = db.Exec("INSERT INTO sessions VALUES('session_token', 'encoded_data', $1)", nowPlusMinute)
 	if err != nil {
 		t.Fatal(err)
 	}
 
-	p := NewWithCleanupInterval(db, 0)
+	p := NewWithCleanupInterval(db, 0, true)
 
 	err = p.Delete("session_token")
 	if err != nil {
@@ -226,7 +229,7 @@ func TestCleanup(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	p := NewWithCleanupInterval(db, 200*time.Millisecond)
+	p := NewWithCleanupInterval(db, 200*time.Millisecond, true)
 	defer p.StopCleanup()
 
 	err = p.Commit("session_token", []byte("encoded_data"), time.Now().Add(100*time.Millisecond))
@@ -266,7 +269,7 @@ func TestStopNilCleanup(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	p := NewWithCleanupInterval(db, 0)
+	p := NewWithCleanupInterval(db, 0, true)
 	time.Sleep(100 * time.Millisecond)
 	// A send to a nil channel will block forever
 	p.StopCleanup()

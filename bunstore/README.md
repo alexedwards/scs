@@ -15,7 +15,7 @@ CREATE TABLE sessions (
 
 CREATE INDEX sessions_expiry_idx ON sessions (expiry);
 ```
-For other stores you can find the setup here: [MySQL](https://github.com/alexedwards/scs/tree/master/mysqlstore), [SQLite3](https://github.com/alexedwards/scs/tree/master/sqlite3store).
+For other stores you can find the setup here: [MSSQL](https://github.com/alexedwards/scs/tree/master/mssqlstore), [MySQL](https://github.com/alexedwards/scs/tree/master/mysqlstore), [SQLite3](https://github.com/alexedwards/scs/tree/master/sqlite3store).
 
 If no table is present, a new one will be automatically created.
 
@@ -44,6 +44,7 @@ var sessionManager *scs.SessionManager
 func main() {
 	// Establish connection to your store.
 	sqldb, err := sql.Open("pg", "postgres://username:password@host/dbname") // PostgreSQL
+	//sqldb, err := sql.Open("sqlserver", "sqlserver://username:password@host?database=dbname") // MSSQL
 	//sqldb, err := sql.Open("mysql", "username:password@tcp(host)/dbname?parseTime=true") // MySQL
 	//sqldb, err := sql.Open(sqliteshim.ShimName, "sqlite3_database.db") // SQLite3
 	if err != nil {
@@ -51,6 +52,7 @@ func main() {
 	}
 
 	db := bun.NewDB(sqldb, pgdialect.New()) // PostgreSQL
+	//db := bun.NewDB(sqldb, mssqldialect.New()) // MSSQL
 	//db := bun.NewDB(sqldb, mysqldialect.New()) // MySQL
 	//db := bun.NewDB(sqldb, sqlitedialect.New()) // SQLite3
 	defer db.Close()

@@ -74,6 +74,14 @@ func (b *BunStore) CommitCtx(ctx context.Context, token string, bb []byte, expir
 		if _, err := b.db.NewInsert().Model(s).On("CONFLICT (token) DO UPDATE").Set("data = EXCLUDED.data").Exec(ctx); err != nil {
 			return err
 		}
+	case dialect.MSSQL:
+		// we use db.Exec waiting for MERGE (https://github.com/uptrace/bun/issues/428) to be implemented
+		_, err := b.db.Exec(`MERGE INTO sessions WITH (HOLDLOCK) AS T USING (VALUES(?0)) AS S (token) ON (T.token = S.token)
+						 	 WHEN MATCHED THEN UPDATE SET data = ?1, expiry = ?2
+						 	 WHEN NOT MATCHED THEN INSERT (token, data, expiry) VALUES(?0, ?1, ?2);`, token, bb, expiry)
+		if err != nil {
+			return err
+		}
 	case dialect.MySQL:
 		if _, err := b.db.NewInsert().Model(s).On("DUPLICATE KEY UPDATE").Set("data = VALUES(data), expiry = VALUES(expiry)").Exec(ctx); err != nil {
 			return err

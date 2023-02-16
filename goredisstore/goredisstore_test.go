@@ -3,6 +3,7 @@ package goredisstore
 import (
 	"bytes"
 	"context"
+	"fmt"
 	"os"
 	"reflect"
 	"testing"
@@ -201,5 +202,48 @@ func TestDelete(t *testing.T) {
 	}
 	if data != nil {
 		t.Fatalf("got %v: expected %v", data, nil)
+	}
+}
+
+func TestAll(t *testing.T) {
+	opt, err := redis.ParseURL(os.Getenv("SCS_REDIS_TEST_DSN"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	client := redis.NewClient(opt)
+	defer client.Close()
+
+	ctx := context.Background()
+	r := New(client)
+
+	err = client.FlushDB(ctx).Err()
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	sessions := make(map[string][]byte)
+	for i := 0; i < 4; i++ {
+		key := fmt.Sprintf("token_%v", i)
+		val := []byte(key)
+		err = client.Set(ctx, r.prefix+key, key, 0).Err()
+		if err != nil {
+			t.Fatal(err)
+		}
+		sessions[key] = val
+	}
+
+	gotSessions, err := r.AllCtx(ctx)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	for k := range sessions {
+		err = r.DeleteCtx(ctx, k)
+		if err != nil {
+			t.Fatal(err)
+		}
+	}
+	if reflect.DeepEqual(sessions, gotSessions) == false {
+		t.Fatalf("got %v: expected %v", gotSessions, sessions)
 	}
 }

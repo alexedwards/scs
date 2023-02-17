@@ -89,3 +89,18 @@ func (r *RedisStore) AllCtx(ctx context.Context) (map[string][]byte, error) {
 	}
 	return sessions, nil
 }
+
+//
+// We have to add the plain Store methods here to be recognized a Store
+// by the go compiler. Not using a seperate type makes any errors caught
+// only at runtime instead of compile time. Oh well.
+
+func (r *RedisStore) Find(token string) ([]byte, bool, error) {
+	panic("missing context arg")
+}
+func (r *RedisStore) Commit(token string, b []byte, expiry time.Time) error {
+	panic("missing context arg")
+}
+func (r *RedisStore) Delete(token string) error {
+	panic("missing context arg")
+}

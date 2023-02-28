@@ -8,12 +8,12 @@ import (
 	"testing"
 	"time"
 
-	"github.com/jackc/pgx/v4/pgxpool"
+	"github.com/jackc/pgx/v5/pgxpool"
 )
 
 func TestFind(t *testing.T) {
 	dsn := os.Getenv("SCS_POSTGRES_TEST_DSN")
-	pool, err := pgxpool.Connect(context.Background(), dsn)
+	pool, err := pgxpool.New(context.Background(), dsn)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -44,7 +44,7 @@ func TestFind(t *testing.T) {
 
 func TestFindMissing(t *testing.T) {
 	dsn := os.Getenv("SCS_POSTGRES_TEST_DSN")
-	pool, err := pgxpool.Connect(context.Background(), dsn)
+	pool, err := pgxpool.New(context.Background(), dsn)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -68,7 +68,7 @@ func TestFindMissing(t *testing.T) {
 
 func TestSaveNew(t *testing.T) {
 	dsn := os.Getenv("SCS_POSTGRES_TEST_DSN")
-	pool, err := pgxpool.Connect(context.Background(), dsn)
+	pool, err := pgxpool.New(context.Background(), dsn)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -99,7 +99,7 @@ func TestSaveNew(t *testing.T) {
 
 func TestSaveUpdated(t *testing.T) {
 	dsn := os.Getenv("SCS_POSTGRES_TEST_DSN")
-	pool, err := pgxpool.Connect(context.Background(), dsn)
+	pool, err := pgxpool.New(context.Background(), dsn)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -134,7 +134,7 @@ func TestSaveUpdated(t *testing.T) {
 
 func TestExpiry(t *testing.T) {
 	dsn := os.Getenv("SCS_POSTGRES_TEST_DSN")
-	pool, err := pgxpool.Connect(context.Background(), dsn)
+	pool, err := pgxpool.New(context.Background(), dsn)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -166,7 +166,7 @@ func TestExpiry(t *testing.T) {
 
 func TestDelete(t *testing.T) {
 	dsn := os.Getenv("SCS_POSTGRES_TEST_DSN")
-	pool, err := pgxpool.Connect(context.Background(), dsn)
+	pool, err := pgxpool.New(context.Background(), dsn)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -201,7 +201,7 @@ func TestDelete(t *testing.T) {
 
 func TestCleanup(t *testing.T) {
 	dsn := os.Getenv("SCS_POSTGRES_TEST_DSN")
-	pool, err := pgxpool.Connect(context.Background(), dsn)
+	pool, err := pgxpool.New(context.Background(), dsn)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -243,7 +243,7 @@ func TestCleanup(t *testing.T) {
 
 func TestStopNilCleanup(t *testing.T) {
 	dsn := os.Getenv("SCS_POSTGRES_TEST_DSN")
-	pool, err := pgxpool.Connect(context.Background(), dsn)
+	pool, err := pgxpool.New(context.Background(), dsn)
 	if err != nil {
 		t.Fatal(err)
 	}

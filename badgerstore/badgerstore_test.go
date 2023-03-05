@@ -24,7 +24,6 @@ func TestMain(m *testing.M) {
 	db, err = badger.Open(badger.DefaultOptions("test.db"))
 	if err != nil {
 		log.Fatal(err)
-		result = 1
 	}
 
 	if err == nil {

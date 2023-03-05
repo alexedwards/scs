@@ -1,11 +1,8 @@
 package scs
 
 import (
-	"bufio"
-	"bytes"
 	"context"
 	"log"
-	"net"
 	"net/http"
 	"time"
 
@@ -131,6 +128,8 @@ func NewSession() *SessionManager {
 // the client in a cookie.
 func (s *SessionManager) LoadAndSave(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Add("Vary", "Cookie")
+
 		var token string
 		cookie, err := r.Cookie(s.Cookie.Name)
 		if err == nil {
@@ -144,33 +143,36 @@ func (s *SessionManager) LoadAndSave(next http.Handler) http.Handler {
 		}
 
 		sr := r.WithContext(ctx)
-		bw := &bufferedResponseWriter{ResponseWriter: w}
-		next.ServeHTTP(bw, sr)
 
-		if sr.MultipartForm != nil {
-			sr.MultipartForm.RemoveAll()
+		sw := &sessionResponseWriter{
+			ResponseWriter: w,
+			request:        sr,
+			sessionManager: s,
 		}
 
-		switch s.Status(ctx) {
-		case Modified:
-			token, expiry, err := s.Commit(ctx)
-			if err != nil {
-				s.ErrorFunc(w, r, err)
-				return
-			}
+		next.ServeHTTP(sw, sr)
 
-			s.WriteSessionCookie(ctx, w, token, expiry)
-		case Destroyed:
-			s.WriteSessionCookie(ctx, w, "", time.Time{})
+		if !sw.written {
+			s.commitAndWriteSessionCookie(w, sr)
 		}
-
-		w.Header().Add("Vary", "Cookie")
-
-		if bw.code != 0 {
-			w.WriteHeader(bw.code)
-		}
-		w.Write(bw.buf.Bytes())
 	})
+}
+
+func (s *SessionManager) commitAndWriteSessionCookie(w http.ResponseWriter, r *http.Request) {
+	ctx := r.Context()
+
+	switch s.Status(ctx) {
+	case Modified:
+		token, expiry, err := s.Commit(ctx)
+		if err != nil {
+			s.ErrorFunc(w, r, err)
+			return
+		}
+
+		s.WriteSessionCookie(ctx, w, token, expiry)
+	case Destroyed:
+		s.WriteSessionCookie(ctx, w, "", time.Time{})
+	}
 }
 
 // WriteSessionCookie writes a cookie to the HTTP response with the provided
@@ -211,32 +213,31 @@ func defaultErrorFunc(w http.ResponseWriter, r *http.Request, err error) {
 	http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
 }
 
-type bufferedResponseWriter struct {
+type sessionResponseWriter struct {
 	http.ResponseWriter
-	buf         bytes.Buffer
-	code        int
-	wroteHeader bool
+	request        *http.Request
+	sessionManager *SessionManager
+	written        bool
 }
 
-func (bw *bufferedResponseWriter) Write(b []byte) (int, error) {
-	return bw.buf.Write(b)
-}
-
-func (bw *bufferedResponseWriter) WriteHeader(code int) {
-	if !bw.wroteHeader {
-		bw.code = code
-		bw.wroteHeader = true
+func (sw *sessionResponseWriter) Write(b []byte) (int, error) {
+	if !sw.written {
+		sw.sessionManager.commitAndWriteSessionCookie(sw.ResponseWriter, sw.request)
+		sw.written = true
 	}
+
+	return sw.ResponseWriter.Write(b)
 }
 
-func (bw *bufferedResponseWriter) Hijack() (net.Conn, *bufio.ReadWriter, error) {
-	hj := bw.ResponseWriter.(http.Hijacker)
-	return hj.Hijack()
-}
-
-func (bw *bufferedResponseWriter) Push(target string, opts *http.PushOptions) error {
-	if pusher, ok := bw.ResponseWriter.(http.Pusher); ok {
-		return pusher.Push(target, opts)
+func (sw *sessionResponseWriter) WriteHeader(code int) {
+	if !sw.written {
+		sw.sessionManager.commitAndWriteSessionCookie(sw.ResponseWriter, sw.request)
+		sw.written = true
 	}
-	return http.ErrNotSupported
+
+	sw.ResponseWriter.WriteHeader(code)
+}
+
+func (sw *sessionResponseWriter) Unwrap() http.ResponseWriter {
+	return sw.ResponseWriter
 }

@@ -33,7 +33,7 @@ func main() {
 
 	// Initialize a new session manager and configure it to use goredisstore as the session store.
 	sessionManager = scs.New()
-	sessionManager.Store = redisstore.New(client)
+	sessionManager.Store = goredisstore.New(client)
 
 	mux := http.NewServeMux()
 	mux.HandleFunc("/put", putHandler)
@@ -64,7 +64,7 @@ By default keys are in the form `scs:session:<token>`. For example:
 "scs:session:ZnirGwi2FiLwXeVlP5nD77IpfJZMVr6un9oZu2qtJrg"
 ```
 
-Because the token is highly unique, key collisions are not a concern. But if you're configuring *multiple session managers*, both of which use `redisstore`, then you may want the keys to have a different prefix depending on which session manager wrote them. You can do this by using the `NewWithPrefix()` method like so:
+Because the token is highly unique, key collisions are not a concern. But if you're configuring *multiple session managers*, both of which use `goredisstore`, then you may want the keys to have a different prefix depending on which session manager wrote them. You can do this by using the `NewWithPrefix()` method like so:
 
 ```go
 opt, err := redis.ParseURL("redis://localhost:6379")
@@ -74,8 +74,8 @@ if err != nil {
 client := redis.NewClient(opt)
 
 sessionManagerOne = scs.New()
-sessionManagerOne.Store = redisstore.NewWithPrefix(client, "scs:session:1:")
+sessionManagerOne.Store = goredisstore.NewWithPrefix(client, "scs:session:1:")
 
 sessionManagerTwo = scs.New()
-sessionManagerTwo.Store = redisstore.NewWithPrefix(client, "scs:session:2:")
+sessionManagerTwo.Store = goredisstore.NewWithPrefix(client, "scs:session:2:")
 ```

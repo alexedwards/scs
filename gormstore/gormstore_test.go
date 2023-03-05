@@ -20,9 +20,6 @@ func initWithCleanupInterval(t *testing.T, cleanupInterval time.Duration) (*GORM
 
 	dialect := os.Getenv("SCS_GORM_TEST_DIALECT")
 	switch dialect {
-	default:
-		dialect = "sqlite3"
-		fallthrough
 	case "postgres":
 		dsn := os.Getenv("SCS_POSTGRES_TEST_DSN")
 		db, err = gorm.Open(postgres.Open(dsn), &gorm.Config{})
@@ -32,8 +29,8 @@ func initWithCleanupInterval(t *testing.T, cleanupInterval time.Duration) (*GORM
 	case "mysql":
 		dsn := os.Getenv("SCS_MYSQL_TEST_DSN")
 		db, err = gorm.Open(mysql.Open(dsn), &gorm.Config{})
-	case "sqlite3":
-		dsn := os.Getenv("./testSQL3lite.db")
+	default:
+		dsn := "./testSQL3lite.db"
 		db, err = gorm.Open(sqlite.Open(dsn), &gorm.Config{})
 	}
 	if err != nil {
@@ -45,7 +42,7 @@ func initWithCleanupInterval(t *testing.T, cleanupInterval time.Duration) (*GORM
 		sqlDB.Close()
 		t.Fatal(err)
 	}
-	if sqlDB.Ping(); err != nil {
+	if err = sqlDB.Ping(); err != nil {
 		sqlDB.Close()
 		t.Fatal(err)
 	}

@@ -38,7 +38,7 @@ var sessionManager *scs.SessionManager
 
 func main() {
 	// Establish connection pool to PostgreSQL.
-	pool, err := pgxpool.Connect(context.Background(), "postgres://username:password@host/dbname")
+	pool, err := pgxpool.New(context.Background(), "postgres://username:password@host/dbname")
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -85,7 +85,7 @@ However, there may be occasions when your use of a session store instance is tra
 
 ```go
 func TestExample(t *testing.T) {
-	pool, err := pgxpool.Connect(context.Background(), "postgres://username:password@host/dbname")
+	pool, err := pgxpool.New(context.Background(), "postgres://username:password@host/dbname")
 	if err != nil {
 		 t.Fatal(err)
 	}

@@ -29,6 +29,10 @@ type SessionManager struct {
 	// Store controls the session store where the session data is persisted.
 	Store Store
 
+	// CtxStore is like Store but context-based and controls the session store
+	// where the session data is persisted.
+	CtxStore CtxStore
+
 	// Cookie contains the configuration settings for session cookies.
 	Cookie SessionCookie
 

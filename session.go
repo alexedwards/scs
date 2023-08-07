@@ -52,7 +52,7 @@ type SessionManager struct {
 	// gobTypes slice containts all types registered for encoding/decoding via golang gob package
 	gobTypes []string
 
-	// AutoTypeRegistration flag defines either use automatic gob types registration or not
+	// AutoTypeRegistration flag defines either use automatic gob types registration or not; false by default
 	AutoTypeRegistration bool
 }
 
@@ -111,7 +111,7 @@ func New() *SessionManager {
 		ErrorFunc:            defaultErrorFunc,
 		contextKey:           generateContextKey(),
 		gobTypes:             make([]string, 0),
-		AutoTypeRegistration: true,
+		AutoTypeRegistration: false,
 		Cookie: SessionCookie{
 			Name:     "session",
 			Domain:   "",

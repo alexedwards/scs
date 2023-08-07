@@ -5,6 +5,7 @@ import (
 	"crypto/rand"
 	"encoding/base64"
 	"fmt"
+	"log"
 	"sort"
 	"sync"
 	"sync/atomic"
@@ -151,8 +152,16 @@ func (s *SessionManager) Destroy(ctx context.Context) error {
 // Put adds a key and corresponding value to the session data. Any existing
 // value for the key will be replaced. The session data status will be set to
 // Modified.
+// If data type to put in has not been registered yet - panics or registers that type, depending on AutoTypeResistration flag
 func (s *SessionManager) Put(ctx context.Context, key string, val interface{}) {
 	sd := s.getSessionDataFromContext(ctx)
+
+	if !s.checkRegisteredType(val) {
+		if s.AutoTypeRegistration {
+			s.registerType(val)
+		}
+		log.Panicf("scs: type %T is not registered\n", val)
+	}
 
 	sd.mu.Lock()
 	sd.values[key] = val

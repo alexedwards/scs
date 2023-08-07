@@ -159,8 +159,9 @@ func (s *SessionManager) Put(ctx context.Context, key string, val interface{}) {
 	if !s.checkRegisteredType(val) {
 		if s.AutoTypeRegistration {
 			s.registerType(val)
+		} else {
+			log.Panicf("scs: type %T is not registered\n", val)
 		}
-		log.Panicf("scs: type %T is not registered\n", val)
 	}
 
 	sd.mu.Lock()

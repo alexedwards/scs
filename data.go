@@ -151,8 +151,15 @@ func (s *SessionManager) Destroy(ctx context.Context) error {
 // Put adds a key and corresponding value to the session data. Any existing
 // value for the key will be replaced. The session data status will be set to
 // Modified.
+// if AutoTypeRegister is true, also checks whether type has been registered and takes appropriate actions
 func (s *SessionManager) Put(ctx context.Context, key string, val interface{}) {
 	sd := s.getSessionDataFromContext(ctx)
+
+	if s.AutoTypeRegister {
+		if !s.checkRegisteredType(val) {
+			s.registerType(val)
+		}
+	}
 
 	sd.mu.Lock()
 	sd.values[key] = val

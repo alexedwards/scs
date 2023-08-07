@@ -48,6 +48,12 @@ type SessionManager struct {
 	// contextKey is the key used to set and retrieve the session data from a
 	// context.Context. It's automatically generated to ensure uniqueness.
 	contextKey contextKey
+
+	// AutoTypeRegister is a flag that defines whether auto type registering or not
+	AutoTypeRegister bool
+
+	// gobTypes contains a list of automatically registered types for gob encoding/decoding; used only if AutoTypeRgistered is true
+	gobTypes []string
 }
 
 // SessionCookie contains the configuration settings for session cookies.
@@ -98,12 +104,14 @@ type SessionCookie struct {
 // concurrent use.
 func New() *SessionManager {
 	s := &SessionManager{
-		IdleTimeout: 0,
-		Lifetime:    24 * time.Hour,
-		Store:       memstore.New(),
-		Codec:       GobCodec{},
-		ErrorFunc:   defaultErrorFunc,
-		contextKey:  generateContextKey(),
+		IdleTimeout:      0,
+		Lifetime:         24 * time.Hour,
+		Store:            memstore.New(),
+		Codec:            GobCodec{},
+		ErrorFunc:        defaultErrorFunc,
+		contextKey:       generateContextKey(),
+		AutoTypeRegister: false,
+		gobTypes:         make([]string, 0),
 		Cookie: SessionCookie{
 			Name:     "session",
 			Domain:   "",

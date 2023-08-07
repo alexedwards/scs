@@ -3,6 +3,7 @@ package scs
 import (
 	"bytes"
 	"encoding/gob"
+	"reflect"
 	"time"
 )
 
@@ -48,4 +49,22 @@ func (GobCodec) Decode(b []byte) (time.Time, map[string]interface{}, error) {
 	}
 
 	return aux.Deadline, aux.Values, nil
+}
+
+// RegisterType registers a type to be available for encoding/decoding operations and adds it to gobTypes slice
+func (s *SessionManager) registerType(value interface{}) {
+	gob.Register(value)
+	rt := reflect.TypeOf(value).String()
+	s.gobTypes = append(s.gobTypes, rt)
+}
+
+// checkRegisteredType checks if type has been registered
+func (s *SessionManager) checkRegisteredType(value interface{}) bool {
+	rt := reflect.TypeOf(value).String()
+	for _, t := range s.gobTypes {
+		if rt == t {
+			return true
+		}
+	}
+	return false
 }

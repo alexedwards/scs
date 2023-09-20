@@ -26,6 +26,7 @@
     - [Configuring the Session Store](#configuring-the-session-store)
     - [Using Custom Session Stores](#using-custom-session-stores)
       - [Using Custom Session Stores (with context.Context)](#using-custom-session-stores-with-contextcontext)
+    - [Preventing Session Fixation](#preventing-session-fixation)
     - [Multiple Sessions per Request](#multiple-sessions-per-request)
     - [Enumerate All Sessions](#enumerate-all-sessions)
     - [Compatibility](#compatibility)
@@ -207,6 +208,8 @@ type IterableStore interface {
 #### Using Custom Session Stores (with context.Context)
 
 [`scs.CtxStore`](https://pkg.go.dev/github.com/alexedwards/scs/v2#CtxStore) defines the interface for custom session stores (with methods take context.Context parameter).
+
+By default, it uses a `sessions` table, it can be changed by using `scs.Store.SetSessionsTableName("custom_session_table_name")`.
 
 ```go
 type CtxStore interface {

@@ -255,7 +255,7 @@ It is possible for an application to support multiple sessions per request, with
 
 ### Enumerate All Sessions
 
-To iterate throught all sessions, SCS offers to all data stores an `All()` function where they can return their own sessions. 
+To iterate through all sessions, SCS offers to all data stores an `All()` function where they can return their own sessions. 
 Essentially, in your code, you pass the `Iterate()` method a closure with the signature `func(ctx context.Context) error` which contains the logic that you want to execute against each session. For example, if you want to revoke all sessions with contain a `userID` value equal to `4` you can do the following:
 
 ```go

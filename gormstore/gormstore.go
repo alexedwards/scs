@@ -50,7 +50,6 @@ func NewWithCleanupInterval(db *gorm.DB, cleanupInterval time.Duration) (*GORMSt
 func (g *GORMStore) Find(token string) (b []byte, exists bool, err error) {
 	s := &session{}
 	row := g.db.Where("token = ? AND expiry >= ?", token, time.Now()).Limit(1).Find(s)
-	log.Println("HIT")
 	if row.Error != nil {
 		return nil, false, row.Error
 	}

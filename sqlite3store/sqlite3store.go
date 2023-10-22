@@ -48,7 +48,7 @@ func (p *SQLite3Store) Find(token string) (b []byte, exists bool, err error) {
 // given expiry time. If the session token already exists, then the data and expiry
 // time are updated.
 func (p *SQLite3Store) Commit(token string, b []byte, expiry time.Time) error {
-	_, err := p.db.Exec("REPLACE INTO sessions (token, data, expiry) VALUES ($1, $2, julianday($3))", token, b, expiry)
+	_, err := p.db.Exec("REPLACE INTO sessions (token, data, expiry) VALUES ($1, $2, julianday($3))", token, b, expiry.UTC().Format("2006-01-02T15:04:05.999"))
 	if err != nil {
 		return err
 	}

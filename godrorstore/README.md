@@ -42,7 +42,7 @@ func main() {
     username := "username"
     password := "password"
     host := "example.com"
-    port := "port" // Normally 1521
+    port := "12345" // Normally 1521
     service := "service.world"
     connStr := fmt.Sprintf(`user="%s" password="%s" connectString="%s:%s/%s" timezone="+0000"`, username, password, host, port, service)
 

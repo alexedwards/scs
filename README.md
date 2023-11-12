@@ -28,7 +28,9 @@
       - [Using Custom Session Stores (with context.Context)](#using-custom-session-stores-with-contextcontext)
     - [Multiple Sessions per Request](#multiple-sessions-per-request)
     - [Enumerate All Sessions](#enumerate-all-sessions)
+    - [Flushing and Streaming Responses](#flushing-and-streaming-responses)
     - [Compatibility](#compatibility)
+    - [Contributing](#contributing)
 
 ### Installation
 
@@ -273,6 +275,38 @@ if err != nil {
 }
 ```
 
+### Flushing and Streaming Responses
+
+Flushing responses is supported via the `http.NewResponseController` type (available in Go >= 1.20).
+
+```go
+func flushingHandler(w http.ResponseWriter, r *http.Request) {
+	sessionManager.Put(r.Context(), "message", "Hello from a flushing handler!")
+
+	rc := http.NewResponseController(w)
+
+	for i := 0; i < 5; i++ {
+		fmt.Fprintf(w, "Write %d\n", i)
+
+		err := rc.Flush()
+		if err != nil {
+			log.Println(err)
+			return
+		}
+
+		time.Sleep(time.Second)
+	}
+}
+```
+
+For a complete working example, please see [this comment](https://github.com/alexedwards/scs/issues/141#issuecomment-1774050802).
+
+Note that the `http.ResponseWriter` passed on by the [`LoadAndSave()`](https://pkg.go.dev/github.com/alexedwards/scs/v2#SessionManager.LoadAndSave) middleware does not support the `http.Flusher` interface directly. This effectively means that flushing/streaming is only supported by SCS if you are using Go >= 1.20.
+
 ### Compatibility
 
 You may have some problems using this package with Go frameworks that do not propagate the request context from standard-library compatible middleware, like [Echo](https://github.com/alexedwards/scs/issues/57) and [Fiber](https://github.com/alexedwards/scs/issues/106). If you are using Echo, please use the [echo-scs-session](https://github.com/spazzymoto/echo-scs-session) fork of this package instead.
+
+### Contributing
+
+Bug fixes and documentation improvements are very welcome! For feature additions or behavioral changes, please open an issue to discuss the change before submitting a PR. For new stores, please also open an issue to establish whether there is wider demand for the store before submitting a PR.

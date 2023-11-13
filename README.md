@@ -33,9 +33,9 @@
 
 This package requires Go 1.12 or newer.
 
-\```sh
+```sh
 go get github.com/alexedwards/scs/v2
-\```
+```
 
 Note: If you're using the traditional `GOPATH` mechanism to manage dependencies, instead of modules, you'll need to `go get` and `import` `github.com/alexedwards/scs` without the `v2` suffix.
 

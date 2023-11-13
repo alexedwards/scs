@@ -26,7 +26,7 @@ func NewWithCleanupInterval(db *sql.DB, cleanupInterval time.Duration) *GodrorSt
 
 func (g *GodrorStore) Find(token string) (b []byte, exists bool, err error) {
 	fmt.Println("Find")
-	stmt := `SELECT data FROM sessions WHERE token = '` + token + `' AND current_timestamp < expiry`
+	stmt := fmt.Sprintf("SELECT data FROM sessions WHERE token = '%x' AND current_timestamp < expiry", token)
 	row := g.db.QueryRow(stmt)
 	err = row.Scan(&b)
 	if err == sql.ErrNoRows {
@@ -39,13 +39,13 @@ func (g *GodrorStore) Find(token string) (b []byte, exists bool, err error) {
 
 func (g *GodrorStore) Commit(token string, b []byte, expiry time.Time) error {
 	fmt.Println("Commit")
-	stmt := `SELECT data FROM sessions WHERE token = '` + token + `'`
+	stmt := fmt.Sprintf("SELECT data FROM sessions WHERE token = '%x'", token)
 	row := g.db.QueryRow(stmt)
 	err := row.Err()
 	if row.Scan() == sql.ErrNoRows {
 		fmt.Println("No Row Found")
-		stmt = `INSERT INTO sessions (token, data, expiry) VALUES ('` + token + `', '%x', to_timestamp('` + string(expiry.Format("2006-01-02 15:04:05.00")) + `', 'YYYY-MM-DD HH24:MI:SS.FF'))`
-		stmt = fmt.Sprintf(stmt, b)
+		stmt = `INSERT INTO sessions (token, data, expiry) VALUES ('%x', '%x', to_timestamp('` + string(expiry.Format("2006-01-02 15:04:05.00")) + `', 'YYYY-MM-DD HH24:MI:SS.FF'))`
+		stmt = fmt.Sprintf(stmt, token, b)
 		fmt.Println(stmt)
 		_, err := g.db.Exec(stmt)
 		if err != nil {
@@ -58,8 +58,8 @@ func (g *GodrorStore) Commit(token string, b []byte, expiry time.Time) error {
 	}
 
 	fmt.Println("Update session data")
-	stmt = `UPDATE sessions SET data = '%x', expiry = to_timestamp('` + string(expiry.Format("2006-01-02 15:04:05.00")) + `', 'YYYY-MM-DD HH24:MI:SS.FF') WHERE token = '` + token + `'`
-	stmt = fmt.Sprintf(stmt, b)
+	stmt = `UPDATE sessions SET data = '%x', expiry = to_timestamp('` + string(expiry.Format("2006-01-02 15:04:05.00")) + `', 'YYYY-MM-DD HH24:MI:SS.FF') WHERE token = '%x'`
+	stmt = fmt.Sprintf(stmt, b, token)
 	_, err = g.db.Exec(stmt)
 	if err != nil {
 		return err
@@ -70,7 +70,7 @@ func (g *GodrorStore) Commit(token string, b []byte, expiry time.Time) error {
 
 func (g *GodrorStore) Delete(token string) error {
 	fmt.Println("Delete")
-	stmt := `DELETE FROM session WHERE token = '` + token + `'`
+	stmt := fmt.Sprintf("DELETE FROM session WHERE token = '%x'", token)
 	_, err := g.db.Exec(stmt)
 	return err
 }

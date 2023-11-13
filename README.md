@@ -4,14 +4,13 @@
 [![Go report card](https://goreportcard.com/badge/github.com/alexedwards/scs)](https://goreportcard.com/report/github.com/alexedwards/scs)
 [![Test coverage](http://gocover.io/_badge/github.com/alexedwards/scs)](https://gocover.io/github.com/alexedwards/scs)
 
-
 ## Features
 
-* Automatic loading and saving of session data via middleware.
-* Choice of 19 different server-side session stores including PostgreSQL, MySQL, MSSQL, SQLite, Redis and many others. Custom session stores are also supported.
-* Supports multiple sessions per request, 'flash' messages, session token regeneration, idle and absolute session timeouts, and 'remember me' functionality.
-* Easy to extend and customize. Communicate session tokens to/from clients in HTTP headers or request/response bodies.
-* Efficient design. Smaller, faster and uses less memory than [gorilla/sessions](https://github.com/gorilla/sessions).
+- Automatic loading and saving of session data via middleware.
+- Choice of 19 different server-side session stores including PostgreSQL, MySQL, MSSQL, SQLite, Redis and many others. Custom session stores are also supported.
+- Supports multiple sessions per request, 'flash' messages, session token regeneration, idle and absolute session timeouts, and 'remember me' functionality.
+- Easy to extend and customize. Communicate session tokens to/from clients in HTTP headers or request/response bodies.
+- Efficient design. Smaller, faster and uses less memory than [gorilla/sessions](https://github.com/gorilla/sessions).
 
 ## Instructions
 
@@ -36,8 +35,8 @@
 
 This package requires Go 1.12 or newer.
 
-```
-$ go get github.com/alexedwards/scs/v2
+```sh
+go get github.com/alexedwards/scs/v2
 ```
 
 Note: If you're using the traditional `GOPATH` mechanism to manage dependencies, instead of modules, you'll need to `go get` and `import` `github.com/alexedwards/scs` without the `v2` suffix.
@@ -46,7 +45,7 @@ Please use [versioned releases](https://github.com/alexedwards/scs/releases). Co
 
 ### Basic Use
 
-SCS implements a session management pattern following the [OWASP security guidelines](https://github.com/OWASP/CheatSheetSeries/blob/master/cheatsheets/Session_Management_Cheat_Sheet.md). Session data is stored on the server, and a randomly-generated unique session token (or *session ID*) is communicated to and from the client in a session cookie.
+SCS implements a session management pattern following the [OWASP security guidelines](https://github.com/OWASP/CheatSheetSeries/blob/master/cheatsheets/Session_Management_Cheat_Sheet.md). Session data is stored on the server, and a randomly-generated unique session token (or _session ID_) is communicated to and from the client in a session cookie.
 
 ```go
 package main
@@ -150,26 +149,26 @@ By default SCS uses an in-memory store for session data. This is convenient (no 
 
 The session stores currently included are shown in the table below. Please click the links for usage instructions and examples.
 
-| Package                                                                               |                                                                                  		|
-|:------------------------------------------------------------------------------------- |---------------------------------------------------------------------------------------|
-| [badgerstore](https://github.com/alexedwards/scs/tree/master/badgerstore)       		| Badger based session store  		                                           	   		|
-| [boltstore](https://github.com/alexedwards/scs/tree/master/boltstore)       			| Bolt based session store  		                                               		|
-| [bunstore](https://github.com/alexedwards/scs/tree/master/bunstore)  					| Bun based session store  		                                               			|
-| [buntdbstore](https://github.com/alexedwards/scs/tree/master/buntdbstore)  			| BuntDB based session store  		                                               		|
-| [cockroachdbstore](https://github.com/alexedwards/scs/tree/master/cockroachdbstore)   | CockroachDB based session store  		                                               	|
-| [consulstore](https://github.com/alexedwards/scs/tree/master/consulstore)  			| Consul based session store  		                                               		|
-| [etcdstore](https://github.com/alexedwards/scs/tree/master/etcdstore)  				| Etcd based session store  		                                               		|
-| [firestore](https://github.com/alexedwards/scs/tree/master/firestore)       			| Google Cloud Firestore based session store                                       		|
-| [gormstore](https://github.com/alexedwards/scs/tree/master/gormstore)       			| GORM based session store        					                               		|
-| [leveldbstore](https://github.com/alexedwards/scs/tree/master/leveldbstore)       	| LevelDB based session store        					                               	|
-| [memstore](https://github.com/alexedwards/scs/tree/master/memstore)       			| In-memory session store (default)                                                		|
-| [mongodbstore](https://github.com/alexedwards/scs/tree/master/mongodbstore)       	| MongoDB based session store                                               	   		|
-| [mssqlstore](https://github.com/alexedwards/scs/tree/master/mssqlstore)       		| MSSQL based session store     	                                          	   		|
-| [mysqlstore](https://github.com/alexedwards/scs/tree/master/mysqlstore)   			| MySQL based session store                                                        		|
-| [pgxstore](https://github.com/alexedwards/scs/tree/master/pgxstore)         			| PostgreSQL based session store (using the [pgx](https://github.com/jackc/pgx) driver)	|
-| [postgresstore](https://github.com/alexedwards/scs/tree/master/postgresstore)         | PostgreSQL based session store (using the [pq](https://github.com/lib/pq) driver)		|
-| [redisstore](https://github.com/alexedwards/scs/tree/master/redisstore)       		| Redis based session store																|
-| [sqlite3store](https://github.com/alexedwards/scs/tree/master/sqlite3store) 			| SQLite3 based session store															|
+| Package                                                                             |                                                                                       |
+| :---------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------- |
+| [badgerstore](https://github.com/alexedwards/scs/tree/master/badgerstore)           | Badger based session store                                                            |
+| [boltstore](https://github.com/alexedwards/scs/tree/master/boltstore)               | Bolt based session store                                                              |
+| [bunstore](https://github.com/alexedwards/scs/tree/master/bunstore)                 | Bun based session store                                                               |
+| [buntdbstore](https://github.com/alexedwards/scs/tree/master/buntdbstore)           | BuntDB based session store                                                            |
+| [cockroachdbstore](https://github.com/alexedwards/scs/tree/master/cockroachdbstore) | CockroachDB based session store                                                       |
+| [consulstore](https://github.com/alexedwards/scs/tree/master/consulstore)           | Consul based session store                                                            |
+| [etcdstore](https://github.com/alexedwards/scs/tree/master/etcdstore)               | Etcd based session store                                                              |
+| [firestore](https://github.com/alexedwards/scs/tree/master/firestore)               | Google Cloud Firestore based session store                                            |
+| [gormstore](https://github.com/alexedwards/scs/tree/master/gormstore)               | GORM based session store                                                              |
+| [leveldbstore](https://github.com/alexedwards/scs/tree/master/leveldbstore)         | LevelDB based session store                                                           |
+| [memstore](https://github.com/alexedwards/scs/tree/master/memstore)                 | In-memory session store (default)                                                     |
+| [mongodbstore](https://github.com/alexedwards/scs/tree/master/mongodbstore)         | MongoDB based session store                                                           |
+| [mssqlstore](https://github.com/alexedwards/scs/tree/master/mssqlstore)             | MSSQL based session store                                                             |
+| [mysqlstore](https://github.com/alexedwards/scs/tree/master/mysqlstore)             | MySQL based session store                                                             |
+| [pgxstore](https://github.com/alexedwards/scs/tree/master/pgxstore)                 | PostgreSQL based session store (using the [pgx](https://github.com/jackc/pgx) driver) |
+| [postgresstore](https://github.com/alexedwards/scs/tree/master/postgresstore)       | PostgreSQL based session store (using the [pq](https://github.com/lib/pq) driver)     |
+| [redisstore](https://github.com/alexedwards/scs/tree/master/redisstore)             | Redis based session store                                                             |
+| [sqlite3store](https://github.com/alexedwards/scs/tree/master/sqlite3store)         | SQLite3 based session store                                                           |
 
 Custom session stores are also supported. Please [see here](#using-custom-session-stores) for more information.
 
@@ -229,7 +228,7 @@ type IterableCtxStore interface {
 	// context.Context.
 	AllCtx(ctx context.Context) (map[string][]byte, error)
 }
-````
+```
 
 ### Preventing Session Fixation
 
@@ -257,7 +256,9 @@ It is possible for an application to support multiple sessions per request, with
 
 ### Enumerate All Sessions
 
-To iterate through all sessions, SCS offers to all data stores an `All()` function where they can return their own sessions. 
+
+To iterate throught all sessions, SCS offers to all data stores an `All()` function where they can return their own sessions.
+
 Essentially, in your code, you pass the `Iterate()` method a closure with the signature `func(ctx context.Context) error` which contains the logic that you want to execute against each session. For example, if you want to revoke all sessions with contain a `userID` value equal to `4` you can do the following:
 
 ```go

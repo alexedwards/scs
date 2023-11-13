@@ -577,6 +577,19 @@ func (s *SessionManager) Deadline(ctx context.Context) time.Time {
 	return sd.deadline
 }
 
+// SetDeadline updates the 'absolute' expiry time for the session. Please note
+// that if you are using an idle timeout, it is possible that a session will
+// expire due to non-use before the set deadline.
+func (s *SessionManager) SetDeadline(ctx context.Context, expire time.Time) {
+	sd := s.getSessionDataFromContext(ctx)
+
+	sd.mu.Lock()
+	defer sd.mu.Unlock()
+
+	sd.deadline = expire
+	sd.status = Modified
+}
+
 // Token returns the session token. Please note that this will return the
 // empty string "" if it is called before the session has been committed to
 // the store.

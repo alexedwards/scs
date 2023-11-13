@@ -1,7 +1,6 @@
 package gormstore
 
 import (
-	"errors"
 	"log"
 	"time"
 
@@ -50,12 +49,15 @@ func NewWithCleanupInterval(db *gorm.DB, cleanupInterval time.Duration) (*GORMSt
 // be set to false.
 func (g *GORMStore) Find(token string) (b []byte, exists bool, err error) {
 	s := &session{}
-	row := g.db.First(s, "token = ? AND expiry >= ?", token, time.Now())
-	if errors.Is(row.Error, gorm.ErrRecordNotFound) {
-		return nil, false, nil
-	} else if row.Error != nil {
+	row := g.db.Where("token = ? AND expiry >= ?", token, time.Now()).Limit(1).Find(s)
+	if row.Error != nil {
 		return nil, false, row.Error
 	}
+
+	if row.RowsAffected == 0 {
+		return nil, false, nil
+	}
+
 	return s.Data, true, nil
 }
 

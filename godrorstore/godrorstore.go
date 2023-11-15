@@ -43,7 +43,6 @@ func (g *GodrorStore) Commit(token string, b []byte, expiry time.Time) error {
 	if row.Scan() == sql.ErrNoRows {
 		stmt = `INSERT INTO sessions (token, data, expiry) VALUES ('%x', '%x', to_timestamp('` + string(expiry.Format("2006-01-02 15:04:05.00")) + `', 'YYYY-MM-DD HH24:MI:SS.FF'))`
 		stmt = fmt.Sprintf(stmt, token, b)
-		fmt.Println(stmt)
 		_, err := g.db.Exec(stmt)
 		if err != nil {
 			return err

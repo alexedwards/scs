@@ -3,7 +3,6 @@ package scs
 import (
 	"bufio"
 	"context"
-	"errors"
 	"log"
 	"net"
 	"net/http"
@@ -245,10 +244,7 @@ func (sw *sessionResponseWriter) Unwrap() http.ResponseWriter {
 	return sw.ResponseWriter
 }
 
-func (w *sessionResponseWriter) Hijack() (net.Conn, *bufio.ReadWriter, error) {
-	h, ok := w.ResponseWriter.(http.Hijacker)
-	if !ok {
-		return nil, nil, errors.New("hijack not supported")
-	}
-	return h.Hijack()
+func (sw *sessionResponseWriter) Hijack() (net.Conn, *bufio.ReadWriter, error) {
+	hj := sw.ResponseWriter.(http.Hijacker)
+	return hj.Hijack()
 }

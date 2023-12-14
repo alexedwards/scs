@@ -66,6 +66,19 @@ func getHandler(w http.ResponseWriter, r *http.Request) {
 }
 ```
 
+## Custom table and column names
+
+In case you need custom names for the table or columns, you can use functional options:
+
+```go
+postgresstore.New(db,
+    postgresstore.WithSessionTableName("my_session_table"),
+    postgresstore.WithDataColumnName("my_data_column"),
+    postgresstore.WithTokenColumnName("my_token_column"),
+    postgresstore.WithExpiryColumnName("my_expiry_date_column"),
+)
+```
+
 ## Expired Session Cleanup
 
 This package provides a background 'cleanup' goroutine to delete expired session data. This stops the database table from holding on to invalid sessions indefinitely and growing unnecessarily large. By default the cleanup runs every 5 minutes. You can change this by using the `NewWithCleanupInterval()` function to initialize your session store. For example:

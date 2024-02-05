@@ -3,6 +3,7 @@ package scs
 import (
 	"context"
 	"crypto/rand"
+	"crypto/sha256"
 	"encoding/base64"
 	"fmt"
 	"sort"
@@ -623,6 +624,11 @@ func generateToken() (string, error) {
 	return base64.RawURLEncoding.EncodeToString(b), nil
 }
 
+func hashToken(token string) string {
+	hash := sha256.Sum256([]byte(token))
+	return base64.RawURLEncoding.EncodeToString(hash[:])
+}
+
 type contextKey string
 
 var (
@@ -638,6 +644,9 @@ func generateContextKey() contextKey {
 }
 
 func (s *SessionManager) doStoreDelete(ctx context.Context, token string) (err error) {
+	if s.HashTokenInStore {
+		token = hashToken(token)
+	}
 	c, ok := s.Store.(interface {
 		DeleteCtx(context.Context, string) error
 	})
@@ -648,6 +657,9 @@ func (s *SessionManager) doStoreDelete(ctx context.Context, token string) (err e
 }
 
 func (s *SessionManager) doStoreFind(ctx context.Context, token string) (b []byte, found bool, err error) {
+	if s.HashTokenInStore {
+		token = hashToken(token)
+	}
 	c, ok := s.Store.(interface {
 		FindCtx(context.Context, string) ([]byte, bool, error)
 	})
@@ -658,6 +670,9 @@ func (s *SessionManager) doStoreFind(ctx context.Context, token string) (b []byt
 }
 
 func (s *SessionManager) doStoreCommit(ctx context.Context, token string, b []byte, expiry time.Time) (err error) {
+	if s.HashTokenInStore {
+		token = hashToken(token)
+	}
 	c, ok := s.Store.(interface {
 		CommitCtx(context.Context, string, []byte, time.Time) error
 	})

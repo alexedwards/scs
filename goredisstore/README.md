@@ -79,3 +79,9 @@ sessionManagerOne.Store = goredisstore.NewWithPrefix(client, "scs:session:1:")
 sessionManagerTwo = scs.New()
 sessionManagerTwo.Store = goredisstore.NewWithPrefix(client, "scs:session:2:")
 ```
+## Iterating over all Sessions
+
+If you intend to use the sessionstore.Iterate() function to iterate over all
+sessions on a busy Redis server with many keys stored, be warned that this
+can take a long time and is therefore probably only interesting for debugging
+purposes.

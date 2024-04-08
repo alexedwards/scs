@@ -1,0 +1,103 @@
+name: Go
+
+on:
+  push:
+    branches: [ "master" ]
+  pull_request:
+    branches: [ "master" ]
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+
+    services:
+
+      mysql:
+        image: mysql
+        env:
+          MYSQL_ROOT_PASSWORD: root-password
+          MYSQL_DATABASE: dbname
+          MYSQL_USER: user
+          MYSQL_PASSWORD: password
+        options: >-
+          --health-cmd "mysqladmin ping --silent"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+        ports:
+          - 3306:3306
+
+      postgres:
+        image: postgres
+        env:
+          POSTGRES_DB: dbname
+          POSTGRES_USER: user
+          POSTGRES_PASSWORD: password
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+        ports:
+          - 5432:5432
+
+      redis:
+        image: redis
+        options: >-
+          --health-cmd "redis-cli ping"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+        ports:
+          - 6379:6379
+
+    steps:
+    - uses: actions/checkout@v4
+
+    - name: Set up Go
+      uses: actions/setup-go@v5
+      with:
+        go-version: '1.20'
+
+    - name: Test
+      run: go test -race -v ./...
+
+    - name: Run postgres migrations
+      run: psql -f pgxstore/testdata/schema.sql postgres://user:password@localhost:5432/dbname
+
+    - name: Run mysql migrations
+      run: mysql --protocol=TCP --host=localhost --port=3306 --user=user --password=password dbname < mysqlstore/testdata/schema.sql
+
+    - name: Test goredisstore
+      env:
+        SCS_REDIS_TEST_DSN: redis://localhost:6379
+      working-directory: goredisstore
+      run: go test -race -v ./...
+
+    - name: Test mysqlstore
+      env:
+        SCS_MYSQL_TEST_DSN: user:password@tcp(localhost:3306)/dbname
+      working-directory: mysqlstore
+      run: go test -race -v ./...
+
+    - name: Test pgxstore
+      env:
+        SCS_POSTGRES_TEST_DSN: postgres://user:password@localhost:5432/dbname
+      working-directory: pgxstore
+      run: go test -race -v ./...
+
+    - name: Test postgresstore
+      env:
+        SCS_POSTGRES_TEST_DSN: postgres://user:password@localhost:5432/dbname?sslmode=disable
+      working-directory: postgresstore
+      run: go test -race -v ./...
+
+    - name: Test redisstore
+      env:
+        SCS_REDIS_TEST_DSN: localhost:6379
+      working-directory: redisstore
+      run: go test -race -v ./...
+
+    - name: Test sqlite3store
+      working-directory: sqlite3store
+      run: go test -race -v ./...

@@ -32,6 +32,10 @@ type SessionManager struct {
 	// Cookie contains the configuration settings for session cookies.
 	Cookie SessionCookie
 
+	// CookieFunc allows you to set update attributes on the session cookie
+	// before it gets written to the http-response.
+	CookieFunc func(*http.Request, *http.Cookie)
+
 	// Codec controls the encoder/decoder used to transform session data to a
 	// byte slice for use by the session store. By default session data is
 	// encoded/decoded using encoding/gob.
@@ -107,6 +111,7 @@ func New() *SessionManager {
 		Codec:       GobCodec{},
 		ErrorFunc:   defaultErrorFunc,
 		contextKey:  generateContextKey(),
+		CookieFunc:  defaultCookieFunc,
 		Cookie: SessionCookie{
 			Name:     "session",
 			Domain:   "",
@@ -172,9 +177,9 @@ func (s *SessionManager) commitAndWriteSessionCookie(w http.ResponseWriter, r *h
 			return
 		}
 
-		s.WriteSessionCookie(ctx, w, token, expiry)
+		s.WriteSessionCookie(ctx, w, r, token, expiry)
 	case Destroyed:
-		s.WriteSessionCookie(ctx, w, "", time.Time{})
+		s.WriteSessionCookie(ctx, w, r, "", time.Time{})
 	}
 }
 
@@ -188,7 +193,7 @@ func (s *SessionManager) commitAndWriteSessionCookie(w http.ResponseWriter, r *h
 //
 // Most applications will use the LoadAndSave() middleware and will not need to
 // use this method.
-func (s *SessionManager) WriteSessionCookie(ctx context.Context, w http.ResponseWriter, token string, expiry time.Time) {
+func (s *SessionManager) WriteSessionCookie(ctx context.Context, w http.ResponseWriter, r *http.Request, token string, expiry time.Time) {
 	cookie := &http.Cookie{
 		Name:     s.Cookie.Name,
 		Value:    token,
@@ -198,6 +203,7 @@ func (s *SessionManager) WriteSessionCookie(ctx context.Context, w http.Response
 		HttpOnly: s.Cookie.HttpOnly,
 		SameSite: s.Cookie.SameSite,
 	}
+	s.CookieFunc(r, cookie)
 
 	if expiry.IsZero() {
 		cookie.Expires = time.Unix(1, 0)
@@ -214,6 +220,9 @@ func (s *SessionManager) WriteSessionCookie(ctx context.Context, w http.Response
 func defaultErrorFunc(w http.ResponseWriter, r *http.Request, err error) {
 	log.Output(2, err.Error())
 	http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
+}
+
+func defaultCookieFunc(r *http.Request, c *http.Cookie) {
 }
 
 type sessionResponseWriter struct {

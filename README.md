@@ -165,6 +165,7 @@ The session stores currently included are shown in the table below. Please click
 | [mongodbstore](https://github.com/alexedwards/scs/tree/master/mongodbstore)         | MongoDB based session store                                                           |
 | [mssqlstore](https://github.com/alexedwards/scs/tree/master/mssqlstore)             | MSSQL based session store                                                             |
 | [mysqlstore](https://github.com/alexedwards/scs/tree/master/mysqlstore)             | MySQL based session store                                                             |
+| [natsstore](https://github.com/alexedwards/scs/tree/master/natsstore)               | Nats Jetsream KV based session store                                                  |
 | [pgxstore](https://github.com/alexedwards/scs/tree/master/pgxstore)                 | PostgreSQL based session store (using the [pgx](https://github.com/jackc/pgx) driver) |
 | [postgresstore](https://github.com/alexedwards/scs/tree/master/postgresstore)       | PostgreSQL based session store (using the [pq](https://github.com/lib/pq) driver)     |
 | [redisstore](https://github.com/alexedwards/scs/tree/master/redisstore)             | Redis based session store                                                             |

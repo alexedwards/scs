@@ -330,7 +330,6 @@ func TestIterate(t *testing.T) {
 		results = append(results, i)
 		return nil
 	})
-
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -346,5 +345,47 @@ func TestIterate(t *testing.T) {
 	})
 	if err.Error() != "expected error" {
 		t.Fatal("didn't get expected error")
+	}
+}
+
+func TestFlushPop(t *testing.T) {
+	t.Parallel()
+
+	sessionManager := New()
+
+	mux := http.NewServeMux()
+	mux.HandleFunc("/put", http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		sessionManager.Put(r.Context(), "foo", "bar")
+	}))
+	mux.HandleFunc("/get", http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.Write([]byte(""))
+		s, _ := sessionManager.Pop(r.Context(), "foo").(string)
+		w.Write([]byte(s))
+	}))
+
+	ts := newTestServer(t, sessionManager.LoadAndSave(mux))
+	defer ts.Close()
+
+	header, _ := ts.execute(t, "/put")
+	token := extractTokenFromCookie(header.Get("Set-Cookie"))
+
+	header, body := ts.execute(t, "/get")
+	if body != "bar" {
+		t.Errorf("want %q; got %q", "bar", body)
+	}
+
+	cookie := header.Get("Set-Cookie")
+	if cookie == "" || extractTokenFromCookie(cookie) != token {
+		t.Errorf("want %q; got %q", token, cookie)
+	}
+
+	header, body = ts.execute(t, "/get")
+	if body != "" {
+		t.Errorf("want %q; got %q", "", body)
+	}
+
+	cookie = header.Get("Set-Cookie")
+	if cookie != "" {
+		t.Errorf("want %q; got %q", "", cookie)
 	}
 }

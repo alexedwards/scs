@@ -158,6 +158,9 @@ func (s *SessionManager) LoadAndSave(next http.Handler) http.Handler {
 		if !sw.written {
 			s.commitAndWriteSessionCookie(w, sr)
 		}
+
+		// session could be modified after some response is written
+		s.commitIfModified(sr)
 	})
 }
 
@@ -175,6 +178,15 @@ func (s *SessionManager) commitAndWriteSessionCookie(w http.ResponseWriter, r *h
 		s.WriteSessionCookie(ctx, w, token, expiry)
 	case Destroyed:
 		s.WriteSessionCookie(ctx, w, "", time.Time{})
+	}
+}
+
+func (s *SessionManager) commitIfModified(r *http.Request) {
+	ctx := r.Context()
+
+	if s.Status(ctx) == Modified {
+		// since the header is already written, it's not possible to write the cookie
+		_, _, _ = s.Commit(ctx)
 	}
 }
 

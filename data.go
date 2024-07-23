@@ -3,6 +3,7 @@ package scs
 import (
 	"context"
 	"crypto/rand"
+	"crypto/sha256"
 	"encoding/base64"
 	"fmt"
 	"sort"
@@ -577,6 +578,19 @@ func (s *SessionManager) Deadline(ctx context.Context) time.Time {
 	return sd.deadline
 }
 
+// SetDeadline updates the 'absolute' expiry time for the session. Please note
+// that if you are using an idle timeout, it is possible that a session will
+// expire due to non-use before the set deadline.
+func (s *SessionManager) SetDeadline(ctx context.Context, expire time.Time) {
+	sd := s.getSessionDataFromContext(ctx)
+
+	sd.mu.Lock()
+	defer sd.mu.Unlock()
+
+	sd.deadline = expire
+	sd.status = Modified
+}
+
 // Token returns the session token. Please note that this will return the
 // empty string "" if it is called before the session has been committed to
 // the store.
@@ -610,6 +624,11 @@ func generateToken() (string, error) {
 	return base64.RawURLEncoding.EncodeToString(b), nil
 }
 
+func hashToken(token string) string {
+	hash := sha256.Sum256([]byte(token))
+	return base64.RawURLEncoding.EncodeToString(hash[:])
+}
+
 type contextKey string
 
 var (
@@ -625,6 +644,9 @@ func generateContextKey() contextKey {
 }
 
 func (s *SessionManager) doStoreDelete(ctx context.Context, token string) (err error) {
+	if s.HashTokenInStore {
+		token = hashToken(token)
+	}
 	c, ok := s.Store.(interface {
 		DeleteCtx(context.Context, string) error
 	})
@@ -635,6 +657,9 @@ func (s *SessionManager) doStoreDelete(ctx context.Context, token string) (err e
 }
 
 func (s *SessionManager) doStoreFind(ctx context.Context, token string) (b []byte, found bool, err error) {
+	if s.HashTokenInStore {
+		token = hashToken(token)
+	}
 	c, ok := s.Store.(interface {
 		FindCtx(context.Context, string) ([]byte, bool, error)
 	})
@@ -645,6 +670,9 @@ func (s *SessionManager) doStoreFind(ctx context.Context, token string) (b []byt
 }
 
 func (s *SessionManager) doStoreCommit(ctx context.Context, token string, b []byte, expiry time.Time) (err error) {
+	if s.HashTokenInStore {
+		token = hashToken(token)
+	}
 	c, ok := s.Store.(interface {
 		CommitCtx(context.Context, string, []byte, time.Time) error
 	})

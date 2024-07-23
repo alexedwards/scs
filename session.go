@@ -45,6 +45,9 @@ type SessionManager struct {
 	// a function which logs the error and returns a customized HTML error page.
 	ErrorFunc func(http.ResponseWriter, *http.Request, error)
 
+	// HashTokenInStore controls whether or not to store the session token or a hashed version in the store.
+	HashTokenInStore bool
+
 	// contextKey is the key used to set and retrieve the session data from a
 	// context.Context. It's automatically generated to ensure uniqueness.
 	contextKey contextKey

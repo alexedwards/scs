@@ -198,6 +198,50 @@ func TestSessionManager_Load(T *testing.T) {
 			t.Error("returned context is unexpectedly nil")
 		}
 	})
+
+	T.Run("with token hashing", func(t *testing.T) {
+		s := New()
+		s.HashTokenInStore = true
+		s.IdleTimeout = time.Hour * 24
+
+		expectedToken := "example"
+		expectedExpiry := time.Now().Add(time.Hour)
+
+		initialCtx := context.WithValue(context.Background(), s.contextKey, &sessionData{
+			deadline: expectedExpiry,
+			token:    expectedToken,
+			values: map[string]interface{}{
+				"blah": "blah",
+			},
+			mu: sync.Mutex{},
+		})
+
+		actualToken, actualExpiry, err := s.Commit(initialCtx)
+		if expectedToken != actualToken {
+			t.Errorf("expected token to equal %q, but received %q", expectedToken, actualToken)
+		}
+		if expectedExpiry != actualExpiry {
+			t.Errorf("expected expiry to equal %v, but received %v", expectedExpiry, actualExpiry)
+		}
+		if err != nil {
+			t.Errorf("unexpected error returned: %v", err)
+		}
+
+		retrievedCtx, err := s.Load(context.Background(), expectedToken)
+		if err != nil {
+			t.Errorf("unexpected error returned: %v", err)
+		}
+		retrievedSessionData, ok := retrievedCtx.Value(s.contextKey).(*sessionData)
+		if !ok {
+			t.Errorf("unexpected data in retrieved context")
+		} else if retrievedSessionData.token != expectedToken {
+			t.Errorf("expected token in context's session data data to equal %v, but received %v", expectedToken, retrievedSessionData.token)
+		}
+
+		if err := s.Destroy(retrievedCtx); err != nil {
+			t.Errorf("unexpected error returned: %v", err)
+		}
+	})
 }
 
 func TestSessionManager_Commit(T *testing.T) {
@@ -318,6 +362,35 @@ func TestSessionManager_Commit(T *testing.T) {
 		}
 		if err == nil {
 			t.Error("expected error not returned")
+		}
+	})
+
+	T.Run("with token hashing", func(t *testing.T) {
+		s := New()
+		s.HashTokenInStore = true
+		s.IdleTimeout = time.Hour * 24
+
+		expectedToken := "example"
+		expectedExpiry := time.Now().Add(time.Hour)
+
+		ctx := context.WithValue(context.Background(), s.contextKey, &sessionData{
+			deadline: expectedExpiry,
+			token:    expectedToken,
+			values: map[string]interface{}{
+				"blah": "blah",
+			},
+			mu: sync.Mutex{},
+		})
+
+		actualToken, actualExpiry, err := s.Commit(ctx)
+		if expectedToken != actualToken {
+			t.Errorf("expected token to equal %q, but received %q", expectedToken, actualToken)
+		}
+		if expectedExpiry != actualExpiry {
+			t.Errorf("expected expiry to equal %v, but received %v", expectedExpiry, actualExpiry)
+		}
+		if err != nil {
+			t.Errorf("unexpected error returned: %v", err)
 		}
 	})
 }

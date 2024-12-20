@@ -25,6 +25,7 @@ func New(db *sql.DB) *SQLite3Store {
 func NewWithCleanupInterval(db *sql.DB, cleanupInterval time.Duration) *SQLite3Store {
 	p := &SQLite3Store{db: db}
 	if cleanupInterval > 0 {
+		p.stopCleanup = make(chan bool)
 		go p.startCleanup(cleanupInterval)
 	}
 	return p
@@ -96,7 +97,6 @@ func (p *SQLite3Store) All() (map[string][]byte, error) {
 }
 
 func (p *SQLite3Store) startCleanup(interval time.Duration) {
-	p.stopCleanup = make(chan bool)
 	ticker := time.NewTicker(interval)
 	for {
 		select {

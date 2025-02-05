@@ -5,6 +5,7 @@ import (
 	"context"
 	"os"
 	"reflect"
+	"strconv"
 	"testing"
 	"time"
 
@@ -238,6 +239,26 @@ func TestCleanup(t *testing.T) {
 	}
 	if count != 0 {
 		t.Fatalf("got %d: expected %d", count, 0)
+	}
+}
+
+func TestStopCleanup(t *testing.T) {
+	ctx := context.Background()
+
+	dsn := os.Getenv("SCS_POSTGRES_TEST_DSN")
+	pool, err := pgxpool.New(ctx, dsn)
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer pool.Close()
+
+	for i := 0; i < 100; i++ {
+		t.Run(strconv.Itoa(i), func(t *testing.T) {
+			t.Parallel()
+			p := New(pool)
+			time.Sleep(100 * time.Millisecond)
+			defer p.StopCleanup()
+		})
 	}
 }
 

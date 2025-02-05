@@ -28,6 +28,7 @@ func New(pool *pgxpool.Pool) *PostgresStore {
 func NewWithCleanupInterval(pool *pgxpool.Pool, cleanupInterval time.Duration) *PostgresStore {
 	p := &PostgresStore{pool: pool}
 	if cleanupInterval > 0 {
+		p.stopCleanup = make(chan bool)
 		go p.startCleanup(cleanupInterval)
 	}
 	return p
@@ -99,7 +100,6 @@ func (p *PostgresStore) All() (map[string][]byte, error) {
 }
 
 func (p *PostgresStore) startCleanup(interval time.Duration) {
-	p.stopCleanup = make(chan bool)
 	ticker := time.NewTicker(interval)
 	for {
 		select {

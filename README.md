@@ -310,4 +310,4 @@ You may have some problems using this package with Go frameworks that do not pro
 
 ### Contributing
 
-Bug fixes and documentation improvements are very welcome! For feature additions or behavioral changes, please open an issue to discuss the change before submitting a PR. For new stores, please also open an issue to establish whether there is wider demand for the store before submitting a PR.
+Bug fixes and documentation improvements are very welcome! For feature additions or behavioral changes, please open an issue to discuss the change before submitting a PR. Additional store implementations will not merged to this repository (unless there is very significant demand) --- but please feel free to host the store implementation yourself and open a PR to link to it from this README.

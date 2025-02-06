@@ -119,6 +119,7 @@ sessionManager.Cookie.Path = "/example/"
 sessionManager.Cookie.Persist = true
 sessionManager.Cookie.SameSite = http.SameSiteStrictMode
 sessionManager.Cookie.Secure = true
+sessionManager.Cookie.Partitioned = true
 ```
 
 Documentation for all available settings and their default values can be [found here](https://pkg.go.dev/github.com/alexedwards/scs/v2#SessionManager).

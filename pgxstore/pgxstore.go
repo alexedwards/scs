@@ -2,6 +2,7 @@ package pgxstore
 
 import (
 	"context"
+	"errors"
 	"log"
 	"time"
 
@@ -34,13 +35,13 @@ func NewWithCleanupInterval(pool *pgxpool.Pool, cleanupInterval time.Duration) *
 	return p
 }
 
-// Find returns the data for a given session token from the PostgresStore instance.
+// FindCtx returns the data for a given session token from the PostgresStore instance.
 // If the session token is not found or is expired, the returned exists flag will
 // be set to false.
-func (p *PostgresStore) Find(token string) (b []byte, exists bool, err error) {
-	row := p.pool.QueryRow(context.Background(), "SELECT data FROM sessions WHERE token = $1 AND current_timestamp < expiry", token)
+func (p *PostgresStore) FindCtx(ctx context.Context, token string) (b []byte, found bool, err error) {
+	row := p.pool.QueryRow(ctx, "SELECT data FROM sessions WHERE token = $1 AND current_timestamp < expiry", token)
 	err = row.Scan(&b)
-	if err == pgx.ErrNoRows {
+	if errors.Is(err, pgx.ErrNoRows) {
 		return nil, false, nil
 	} else if err != nil {
 		return nil, false, err
@@ -48,28 +49,28 @@ func (p *PostgresStore) Find(token string) (b []byte, exists bool, err error) {
 	return b, true, nil
 }
 
-// Commit adds a session token and data to the PostgresStore instance with the
+// CommitCtx adds a session token and data to the PostgresStore instance with the
 // given expiry time. If the session token already exists, then the data and expiry
 // time are updated.
-func (p *PostgresStore) Commit(token string, b []byte, expiry time.Time) error {
-	_, err := p.pool.Exec(context.Background(), "INSERT INTO sessions (token, data, expiry) VALUES ($1, $2, $3) ON CONFLICT (token) DO UPDATE SET data = EXCLUDED.data, expiry = EXCLUDED.expiry", token, b, expiry)
+func (p *PostgresStore) CommitCtx(ctx context.Context, token string, b []byte, expiry time.Time) (err error) {
+	_, err = p.pool.Exec(ctx, "INSERT INTO sessions (token, data, expiry) VALUES ($1, $2, $3) ON CONFLICT (token) DO UPDATE SET data = EXCLUDED.data, expiry = EXCLUDED.expiry", token, b, expiry)
 	if err != nil {
 		return err
 	}
 	return nil
 }
 
-// Delete removes a session token and corresponding data from the PostgresStore
+// DeleteCtx removes a session token and corresponding data from the PostgresStore
 // instance.
-func (p *PostgresStore) Delete(token string) error {
-	_, err := p.pool.Exec(context.Background(), "DELETE FROM sessions WHERE token = $1", token)
+func (p *PostgresStore) DeleteCtx(ctx context.Context, token string) (err error) {
+	_, err = p.pool.Exec(ctx, "DELETE FROM sessions WHERE token = $1", token)
 	return err
 }
 
-// All returns a map containing the token and data for all active (i.e.
+// AllCtx returns a map containing the token and data for all active (i.e.
 // not expired) sessions in the PostgresStore instance.
-func (p *PostgresStore) All() (map[string][]byte, error) {
-	rows, err := p.pool.Query(context.Background(), "SELECT token, data FROM sessions WHERE current_timestamp < expiry")
+func (p *PostgresStore) AllCtx(ctx context.Context) (map[string][]byte, error) {
+	rows, err := p.pool.Query(ctx, "SELECT token, data FROM sessions WHERE current_timestamp < expiry")
 	if err != nil {
 		return nil, err
 	}
@@ -134,4 +135,24 @@ func (p *PostgresStore) StopCleanup() {
 func (p *PostgresStore) deleteExpired() error {
 	_, err := p.pool.Exec(context.Background(), "DELETE FROM sessions WHERE expiry < current_timestamp")
 	return err
+}
+
+// We have to add the plain Store methods here to be recognized a Store
+// by the go compiler. Not using a separate type makes any errors caught
+// only at runtime instead of compile time.
+
+func (p *PostgresStore) Find(token string) (b []byte, exists bool, err error) {
+	panic("missing context arg")
+}
+
+func (p *PostgresStore) Commit(token string, b []byte, expiry time.Time) error {
+	panic("missing context arg")
+}
+
+func (p *PostgresStore) Delete(token string) error {
+	panic("missing context arg")
+}
+
+func (p *PostgresStore) All() (map[string][]byte, error) {
+	panic("missing context arg")
 }

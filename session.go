@@ -75,16 +75,6 @@ type SessionCookie struct {
 	// path that the cookie was issued from.
 	Path string
 
-	// Persist sets whether the session cookie should be persistent or not
-	// (i.e. whether it should be retained after a user closes their browser).
-	// The default value is true, which means that the session cookie will not
-	// be destroyed when the user closes their browser and the appropriate
-	// 'Expires' and 'MaxAge' values will be added to the session cookie. If you
-	// want to only persist some sessions (rather than all of them), then set this
-	// to false and call the RememberMe() method for the specific sessions that you
-	// want to persist.
-	Persist bool
-
 	// SameSite controls the value of the 'SameSite' attribute on the session
 	// cookie. By default this is set to 'SameSite=Lax'. If you want no SameSite
 	// attribute or value in the session cookie then you should set this to 0.
@@ -95,6 +85,20 @@ type SessionCookie struct {
 	// requests over HTTPS in production environments.
 	// See https://github.com/OWASP/CheatSheetSeries/blob/master/cheatsheets/Session_Management_Cheat_Sheet.md#transport-layer-security.
 	Secure bool
+
+	// Secure sets the 'Partitioned' attribute on the session cookie. The
+	// default value is false.
+	Partitioned bool
+
+	// Persist sets whether the session cookie should be persistent or not
+	// (i.e. whether it should be retained after a user closes their browser).
+	// The default value is true, which means that the session cookie will not
+	// be destroyed when the user closes their browser and the appropriate
+	// 'Expires' and 'MaxAge' values will be added to the session cookie. If you
+	// want to only persist some sessions (rather than all of them), then set this
+	// to false and call the RememberMe() method for the specific sessions that you
+	// want to persist.
+	Persist bool
 }
 
 // New returns a new session manager with the default options. It is safe for
@@ -108,13 +112,14 @@ func New() *SessionManager {
 		ErrorFunc:   defaultErrorFunc,
 		contextKey:  generateContextKey(),
 		Cookie: SessionCookie{
-			Name:     "session",
-			Domain:   "",
-			HttpOnly: true,
-			Path:     "/",
-			Persist:  true,
-			Secure:   false,
-			SameSite: http.SameSiteLaxMode,
+			Name:        "session",
+			Domain:      "",
+			HttpOnly:    true,
+			Path:        "/",
+			SameSite:    http.SameSiteLaxMode,
+			Secure:      false,
+			Partitioned: false,
+			Persist:     true,
 		},
 	}
 	return s
@@ -190,13 +195,14 @@ func (s *SessionManager) commitAndWriteSessionCookie(w http.ResponseWriter, r *h
 // use this method.
 func (s *SessionManager) WriteSessionCookie(ctx context.Context, w http.ResponseWriter, token string, expiry time.Time) {
 	cookie := &http.Cookie{
-		Name:     s.Cookie.Name,
-		Value:    token,
-		Path:     s.Cookie.Path,
-		Domain:   s.Cookie.Domain,
-		Secure:   s.Cookie.Secure,
-		HttpOnly: s.Cookie.HttpOnly,
-		SameSite: s.Cookie.SameSite,
+		Value:       token,
+		Name:        s.Cookie.Name,
+		Domain:      s.Cookie.Domain,
+		HttpOnly:    s.Cookie.HttpOnly,
+		Path:        s.Cookie.Path,
+		SameSite:    s.Cookie.SameSite,
+		Secure:      s.Cookie.Secure,
+		Partitioned: s.Cookie.Partitioned,
 	}
 
 	if expiry.IsZero() {

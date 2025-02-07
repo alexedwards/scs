@@ -111,15 +111,21 @@ func TestDelete(t *testing.T) {
 func TestCleanupInterval(t *testing.T) {
 	m := NewWithCleanupInterval(100 * time.Millisecond)
 	defer m.StopCleanup()
+	m.mu.Lock()
 	m.items["session_token"] = item{object: []byte("encoded_data"), expiration: time.Now().Add(500 * time.Millisecond).UnixNano()}
+	m.mu.Unlock()
 
+	m.mu.Lock()
 	_, ok := m.items["session_token"]
+	m.mu.Unlock()
 	if !ok {
 		t.Fatalf("got %v: expected %v", ok, true)
 	}
 
 	time.Sleep(time.Second)
+	m.mu.Lock()
 	_, ok = m.items["session_token"]
+	m.mu.Unlock()
 	if ok {
 		t.Fatalf("got %v: expected %v", ok, false)
 	}

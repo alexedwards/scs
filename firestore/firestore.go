@@ -40,6 +40,7 @@ func NewWithCleanupInterval(client *firestore.Client, cleanupInterval time.Durat
 	}
 
 	if cleanupInterval > 0 {
+		m.stopCleanup = make(chan bool)
 		go m.startCleanup(cleanupInterval)
 	}
 
@@ -112,7 +113,6 @@ func (m *FireStore) AllCtx(ctx context.Context) (map[string][]byte, error) {
 }
 
 func (m *FireStore) startCleanup(interval time.Duration) {
-	m.stopCleanup = make(chan bool)
 	ticker := time.NewTicker(interval)
 	for {
 		select {

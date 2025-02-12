@@ -269,7 +269,6 @@ func TestCleanup(t *testing.T) {
 	}
 
 	p := NewWithCleanupInterval(db, 200*time.Millisecond)
-	defer p.StopCleanup()
 
 	err = p.Commit("session_token", []byte("encoded_data"), time.Now().Add(100*time.Millisecond))
 	if err != nil {
@@ -287,6 +286,8 @@ func TestCleanup(t *testing.T) {
 	}
 
 	time.Sleep(300 * time.Millisecond)
+	p.StopCleanup()
+
 	row = db.QueryRow("SELECT COUNT(*) FROM sessions WHERE token = 'session_token'")
 	err = row.Scan(&count)
 	if err != nil {

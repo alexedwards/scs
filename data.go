@@ -34,7 +34,7 @@ type sessionData struct {
 	status   Status
 	token    string
 	values   map[string]interface{}
-	mu       sync.Mutex
+	mu       sync.RWMutex
 }
 
 func newSessionData(lifetime time.Duration) *sessionData {
@@ -93,8 +93,8 @@ func (s *SessionManager) Load(ctx context.Context, token string) (context.Contex
 func (s *SessionManager) Commit(ctx context.Context) (string, time.Time, error) {
 	sd := s.getSessionDataFromContext(ctx)
 
-	sd.mu.Lock()
-	defer sd.mu.Unlock()
+	sd.mu.RLock()
+	defer sd.mu.RUnlock()
 
 	if sd.token == "" {
 		var err error
@@ -175,8 +175,8 @@ func (s *SessionManager) Put(ctx context.Context, key string, val interface{}) {
 func (s *SessionManager) Get(ctx context.Context, key string) interface{} {
 	sd := s.getSessionDataFromContext(ctx)
 
-	sd.mu.Lock()
-	defer sd.mu.Unlock()
+	sd.mu.RLock()
+	defer sd.mu.RUnlock()
 
 	return sd.values[key]
 }
@@ -243,9 +243,9 @@ func (s *SessionManager) Clear(ctx context.Context) error {
 func (s *SessionManager) Exists(ctx context.Context, key string) bool {
 	sd := s.getSessionDataFromContext(ctx)
 
-	sd.mu.Lock()
+	sd.mu.RLock()
 	_, exists := sd.values[key]
-	sd.mu.Unlock()
+	sd.mu.RUnlock()
 
 	return exists
 }
@@ -256,14 +256,14 @@ func (s *SessionManager) Exists(ctx context.Context, key string) bool {
 func (s *SessionManager) Keys(ctx context.Context) []string {
 	sd := s.getSessionDataFromContext(ctx)
 
-	sd.mu.Lock()
+	sd.mu.RLock()
 	keys := make([]string, len(sd.values))
 	i := 0
 	for key := range sd.values {
 		keys[i] = key
 		i++
 	}
-	sd.mu.Unlock()
+	sd.mu.RUnlock()
 
 	sort.Strings(keys)
 	return keys
@@ -346,8 +346,8 @@ func (s *SessionManager) MergeSession(ctx context.Context, token string) error {
 func (s *SessionManager) Status(ctx context.Context) Status {
 	sd := s.getSessionDataFromContext(ctx)
 
-	sd.mu.Lock()
-	defer sd.mu.Unlock()
+	sd.mu.RLock()
+	defer sd.mu.RUnlock()
 
 	return sd.status
 }
@@ -572,8 +572,8 @@ func (s *SessionManager) Iterate(ctx context.Context, fn func(context.Context) e
 func (s *SessionManager) Deadline(ctx context.Context) time.Time {
 	sd := s.getSessionDataFromContext(ctx)
 
-	sd.mu.Lock()
-	defer sd.mu.Unlock()
+	sd.mu.RLock()
+	defer sd.mu.RUnlock()
 
 	return sd.deadline
 }
@@ -597,8 +597,8 @@ func (s *SessionManager) SetDeadline(ctx context.Context, expire time.Time) {
 func (s *SessionManager) Token(ctx context.Context) string {
 	sd := s.getSessionDataFromContext(ctx)
 
-	sd.mu.Lock()
-	defer sd.mu.Unlock()
+	sd.mu.RLock()
+	defer sd.mu.RUnlock()
 
 	return sd.token
 }

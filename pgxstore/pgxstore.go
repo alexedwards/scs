@@ -3,6 +3,7 @@ package pgxstore
 import (
 	"context"
 	"errors"
+	"fmt"
 	"log"
 	"time"
 
@@ -14,12 +15,25 @@ import (
 type PostgresStore struct {
 	pool        *pgxpool.Pool
 	stopCleanup chan bool
+	tableName   string
+}
+
+type Config struct {
+	// CleanUpInterval is the interval between each cleanup operation.
+	// If set to 0, the cleanup operation is disabled.
+	CleanUpInterval time.Duration
+
+	// TableName is the name of the table where the session data will be stored.
+	// If not set, it will default to "sessions".
+	TableName string
 }
 
 // New returns a new PostgresStore instance, with a background cleanup goroutine
 // that runs every 5 minutes to remove expired session data.
 func New(pool *pgxpool.Pool) *PostgresStore {
-	return NewWithCleanupInterval(pool, 5*time.Minute)
+	return NewWithConfig(pool, Config{
+		CleanUpInterval: 5 * time.Minute,
+	})
 }
 
 // NewWithCleanupInterval returns a new PostgresStore instance. The cleanupInterval
@@ -27,10 +41,23 @@ func New(pool *pgxpool.Pool) *PostgresStore {
 // background cleanup goroutine. Setting it to 0 prevents the cleanup goroutine
 // from running (i.e. expired sessions will not be removed).
 func NewWithCleanupInterval(pool *pgxpool.Pool, cleanupInterval time.Duration) *PostgresStore {
-	p := &PostgresStore{pool: pool}
-	if cleanupInterval > 0 {
+	return NewWithConfig(pool, Config{
+		CleanUpInterval: cleanupInterval,
+	})
+}
+
+// NewWithConfig returns a new PostgresStore instance with the given configuration.
+// If the TableName field is empty, it will be set to "sessions".
+// If the CleanUpInterval field is 0, the cleanup goroutine will not be started.
+func NewWithConfig(pool *pgxpool.Pool, config Config) *PostgresStore {
+	if config.TableName == "" {
+		config.TableName = "sessions"
+	}
+
+	p := &PostgresStore{pool: pool, tableName: config.TableName}
+	if config.CleanUpInterval > 0 {
 		p.stopCleanup = make(chan bool)
-		go p.startCleanup(cleanupInterval)
+		go p.startCleanup(config.CleanUpInterval)
 	}
 	return p
 }
@@ -39,7 +66,8 @@ func NewWithCleanupInterval(pool *pgxpool.Pool, cleanupInterval time.Duration) *
 // If the session token is not found or is expired, the returned exists flag will
 // be set to false.
 func (p *PostgresStore) FindCtx(ctx context.Context, token string) (b []byte, found bool, err error) {
-	row := p.pool.QueryRow(ctx, "SELECT data FROM sessions WHERE token = $1 AND current_timestamp < expiry", token)
+	stmt := fmt.Sprintf("SELECT data FROM %s WHERE token = $1 AND current_timestamp < expiry", p.tableName)
+	row := p.pool.QueryRow(ctx, stmt, token)
 	err = row.Scan(&b)
 	if errors.Is(err, pgx.ErrNoRows) {
 		return nil, false, nil
@@ -53,24 +81,24 @@ func (p *PostgresStore) FindCtx(ctx context.Context, token string) (b []byte, fo
 // given expiry time. If the session token already exists, then the data and expiry
 // time are updated.
 func (p *PostgresStore) CommitCtx(ctx context.Context, token string, b []byte, expiry time.Time) (err error) {
-	_, err = p.pool.Exec(ctx, "INSERT INTO sessions (token, data, expiry) VALUES ($1, $2, $3) ON CONFLICT (token) DO UPDATE SET data = EXCLUDED.data, expiry = EXCLUDED.expiry", token, b, expiry)
-	if err != nil {
-		return err
-	}
-	return nil
+	stmt := fmt.Sprintf("INSERT INTO %s (token, data, expiry) VALUES ($1, $2, $3) ON CONFLICT (token) DO UPDATE SET data = EXCLUDED.data, expiry = EXCLUDED.expiry", p.tableName)
+	_, err = p.pool.Exec(ctx, stmt, token, b, expiry)
+	return err
 }
 
 // DeleteCtx removes a session token and corresponding data from the PostgresStore
 // instance.
 func (p *PostgresStore) DeleteCtx(ctx context.Context, token string) (err error) {
-	_, err = p.pool.Exec(ctx, "DELETE FROM sessions WHERE token = $1", token)
+	stmt := fmt.Sprintf("DELETE FROM %s WHERE token = $1", p.tableName)
+	_, err = p.pool.Exec(ctx, stmt, token)
 	return err
 }
 
 // AllCtx returns a map containing the token and data for all active (i.e.
 // not expired) sessions in the PostgresStore instance.
 func (p *PostgresStore) AllCtx(ctx context.Context) (map[string][]byte, error) {
-	rows, err := p.pool.Query(ctx, "SELECT token, data FROM sessions WHERE current_timestamp < expiry")
+	stmt := fmt.Sprintf("SELECT token, data FROM %s WHERE current_timestamp < expiry", p.tableName)
+	rows, err := p.pool.Query(ctx, stmt)
 	if err != nil {
 		return nil, err
 	}
@@ -133,7 +161,8 @@ func (p *PostgresStore) StopCleanup() {
 }
 
 func (p *PostgresStore) deleteExpired() error {
-	_, err := p.pool.Exec(context.Background(), "DELETE FROM sessions WHERE expiry < current_timestamp")
+	stmt := fmt.Sprintf("DELETE FROM %s WHERE expiry < current_timestamp", p.tableName)
+	_, err := p.pool.Exec(context.Background(), stmt)
 	return err
 }
 

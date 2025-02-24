@@ -2,6 +2,7 @@ package mssqlstore
 
 import (
 	"database/sql"
+	"fmt"
 	"log"
 	"time"
 )
@@ -10,12 +11,25 @@ import (
 type MSSQLStore struct {
 	db          *sql.DB
 	stopCleanup chan bool
+	tableName   string
+}
+
+type Config struct {
+	// CleanUpInterval is the interval between each cleanup operation.
+	// If set to 0, the cleanup operation is disabled.
+	CleanUpInterval time.Duration
+
+	// TableName is the name of the table where the session data will be stored.
+	// If not set, it will default to "sessions".
+	TableName string
 }
 
 // New returns a new MSSQLStore instance, with a background cleanup goroutine
 // that runs every 5 minutes to remove expired session data.
 func New(db *sql.DB) *MSSQLStore {
-	return NewWithCleanupInterval(db, 5*time.Minute)
+	return NewWithConfig(db, Config{
+		CleanUpInterval: 5 * time.Minute,
+	})
 }
 
 // NewWithCleanupInterval returns a new MSSQLStore instance. The cleanupInterval
@@ -23,10 +37,24 @@ func New(db *sql.DB) *MSSQLStore {
 // background cleanup goroutine. Setting it to 0 prevents the cleanup goroutine
 // from running (i.e. expired sessions will not be removed).
 func NewWithCleanupInterval(db *sql.DB, cleanupInterval time.Duration) *MSSQLStore {
-	m := &MSSQLStore{db: db}
-	if cleanupInterval > 0 {
-		go m.startCleanup(cleanupInterval)
+	return NewWithConfig(db, Config{
+		CleanUpInterval: cleanupInterval,
+	})
+}
+
+// NewWithConfig returns a new MSSQLStore instance with the given configuration.
+// If the TableName field is empty, it will be set to "sessions".
+// If the CleanUpInterval field is 0, the cleanup goroutine will not be started.
+func NewWithConfig(db *sql.DB, config Config) *MSSQLStore {
+	if config.TableName == "" {
+		config.TableName = "sessions"
 	}
+
+	m := &MSSQLStore{db: db, tableName: config.TableName}
+	if config.CleanUpInterval > 0 {
+		go m.startCleanup(config.CleanUpInterval)
+	}
+
 	return m
 }
 
@@ -34,7 +62,8 @@ func NewWithCleanupInterval(db *sql.DB, cleanupInterval time.Duration) *MSSQLSto
 // If the session token is not found or is expired, the returned exists flag will
 // be set to false.
 func (m *MSSQLStore) Find(token string) (b []byte, exists bool, err error) {
-	row := m.db.QueryRow("SELECT data FROM sessions WHERE token = @p1 AND GETUTCDATE() < expiry", token)
+	query := fmt.Sprintf("SELECT data FROM %s WHERE token = @p1 AND GETUTCDATE() < expiry", m.tableName)
+	row := m.db.QueryRow(query, token)
 	err = row.Scan(&b)
 	if err == sql.ErrNoRows {
 		return nil, false, nil
@@ -48,26 +77,26 @@ func (m *MSSQLStore) Find(token string) (b []byte, exists bool, err error) {
 // given expiry time. If the session token already exists, then the data and expiry
 // time are updated.
 func (m *MSSQLStore) Commit(token string, b []byte, expiry time.Time) error {
-	_, err := m.db.Exec(`MERGE INTO sessions WITH (HOLDLOCK) AS T USING (VALUES(@p1)) AS S (token) ON (T.token = S.token)
-						 WHEN MATCHED THEN UPDATE SET data = @p2, expiry = @p3
-						 WHEN NOT MATCHED THEN INSERT (token, data, expiry) VALUES(@p1, @p2, @p3);`, token, b, expiry.UTC())
-	if err != nil {
-		return err
-	}
-	return nil
+	query := fmt.Sprintf(`MERGE INTO %s WITH (HOLDLOCK) AS T USING (VALUES(@p1)) AS S (token) ON (T.token = S.token)
+		WHEN MATCHED THEN UPDATE SET data = @p2, expiry = @p3
+		WHEN NOT MATCHED THEN INSERT (token, data, expiry) VALUES(@p1, @p2, @p3);`, m.tableName)
+	_, err := m.db.Exec(query, token, b, expiry.UTC())
+	return err
 }
 
 // Delete removes a session token and corresponding data from the MSSQLStore
 // instance.
 func (m *MSSQLStore) Delete(token string) error {
-	_, err := m.db.Exec("DELETE FROM sessions WHERE token = @p1", token)
+	query := fmt.Sprintf("DELETE FROM %s WHERE token = @p1", m.tableName)
+	_, err := m.db.Exec(query, token)
 	return err
 }
 
 // All returns a map containing the token and data for all active (i.e.
 // not expired) sessions in the MSSQLStore instance.
 func (m *MSSQLStore) All() (map[string][]byte, error) {
-	rows, err := m.db.Query("SELECT token, data FROM sessions WHERE GETUTCDATE() < expiry")
+	query := fmt.Sprintf("SELECT token, data FROM %s WHERE GETUTCDATE() < expiry", m.tableName)
+	rows, err := m.db.Query(query)
 	if err != nil {
 		return nil, err
 	}
@@ -115,7 +144,7 @@ func (m *MSSQLStore) startCleanup(interval time.Duration) {
 }
 
 // StopCleanup terminates the background cleanup goroutine for the MSSQLStore
-// instance. It's rare to terminate this; generally MSSQLStore instances and
+// instance. It's rare to terminate this; generally MSSQLStore instances and	// instance.
 // their cleanup goroutines are intended to be long-lived and run for the lifetime
 // of your application.
 //
@@ -131,6 +160,7 @@ func (m *MSSQLStore) StopCleanup() {
 }
 
 func (m *MSSQLStore) deleteExpired() error {
-	_, err := m.db.Exec("DELETE FROM sessions WHERE expiry < GETUTCDATE()")
+	query := fmt.Sprintf("DELETE FROM %s WHERE expiry < GETUTCDATE()", m.tableName)
+	_, err := m.db.Exec(query)
 	return err
 }

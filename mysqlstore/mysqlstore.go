@@ -2,6 +2,7 @@ package mysqlstore
 
 import (
 	"database/sql"
+	"fmt"
 	"log"
 	"strconv"
 	"strings"
@@ -13,12 +14,25 @@ type MySQLStore struct {
 	*sql.DB
 	version     string
 	stopCleanup chan bool
+	tableName   string
+}
+
+type Config struct {
+	// CleanUpInterval is the interval between each cleanup operation.
+	// If set to 0, the cleanup operation is disabled.
+	CleanUpInterval time.Duration
+
+	// TableName is the name of the table where the session data will be stored.
+	// If not set, it will default to "sessions".
+	TableName string
 }
 
 // New returns a new MySQLStore instance, with a background cleanup goroutine
 // that runs every 5 minutes to remove expired session data.
 func New(db *sql.DB) *MySQLStore {
-	return NewWithCleanupInterval(db, 5*time.Minute)
+	return NewWithConfig(db, Config{
+		CleanUpInterval: 5 * time.Minute,
+	})
 }
 
 // NewWithCleanupInterval returns a new MySQLStore instance. The cleanupInterval
@@ -26,13 +40,27 @@ func New(db *sql.DB) *MySQLStore {
 // background cleanup goroutine. Setting it to 0 prevents the cleanup goroutine
 // from running (i.e. expired sessions will not be removed).
 func NewWithCleanupInterval(db *sql.DB, cleanupInterval time.Duration) *MySQLStore {
-	m := &MySQLStore{
-		DB:      db,
-		version: getVersion(db),
+	return NewWithConfig(db, Config{
+		CleanUpInterval: cleanupInterval,
+	})
+}
+
+// NewWithConfig returns a new MySQLStore instance with the given configuration.
+// If the TableName field is empty, it will be set to "sessions".
+// If the CleanUpInterval field is 0, the cleanup goroutine will not be started.
+func NewWithConfig(db *sql.DB, config Config) *MySQLStore {
+	if config.TableName == "" {
+		config.TableName = "sessions"
 	}
 
-	if cleanupInterval > 0 {
-		go m.startCleanup(cleanupInterval)
+	m := &MySQLStore{
+		DB:        db,
+		version:   getVersion(db),
+		tableName: config.TableName,
+	}
+
+	if config.CleanUpInterval > 0 {
+		go m.startCleanup(config.CleanUpInterval)
 	}
 
 	return m
@@ -46,9 +74,9 @@ func (m *MySQLStore) Find(token string) ([]byte, bool, error) {
 	var stmt string
 
 	if compareVersion("5.6.4", m.version) >= 0 {
-		stmt = "SELECT data FROM sessions WHERE token = ? AND UTC_TIMESTAMP(6) < expiry"
+		stmt = fmt.Sprintf("SELECT data FROM %s WHERE token = ? AND UTC_TIMESTAMP(6) < expiry", m.tableName)
 	} else {
-		stmt = "SELECT data FROM sessions WHERE token = ? AND UTC_TIMESTAMP < expiry"
+		stmt = fmt.Sprintf("SELECT data FROM %s WHERE token = ? AND UTC_TIMESTAMP < expiry", m.tableName)
 	}
 
 	row := m.DB.QueryRow(stmt, token)
@@ -65,17 +93,16 @@ func (m *MySQLStore) Find(token string) ([]byte, bool, error) {
 // expiry time. If the session token already exists, then the data and expiry
 // time are updated.
 func (m *MySQLStore) Commit(token string, b []byte, expiry time.Time) error {
-	_, err := m.DB.Exec("INSERT INTO sessions (token, data, expiry) VALUES (?, ?, ?) ON DUPLICATE KEY UPDATE data = VALUES(data), expiry = VALUES(expiry)", token, b, expiry.UTC())
-	if err != nil {
-		return err
-	}
-	return nil
+	stmt := fmt.Sprintf("INSERT INTO %s (token, data, expiry) VALUES (?, ?, ?) ON DUPLICATE KEY UPDATE data = VALUES(data), expiry = VALUES(expiry)", m.tableName)
+	_, err := m.DB.Exec(stmt, token, b, expiry.UTC())
+	return err
 }
 
 // Delete removes a session token and corresponding data from the MySQLStore
 // instance.
 func (m *MySQLStore) Delete(token string) error {
-	_, err := m.DB.Exec("DELETE FROM sessions WHERE token = ?", token)
+	stmt := fmt.Sprintf("DELETE FROM %s WHERE token = ?", m.tableName)
+	_, err := m.DB.Exec(stmt, token)
 	return err
 }
 
@@ -85,9 +112,9 @@ func (m *MySQLStore) All() (map[string][]byte, error) {
 	var stmt string
 
 	if compareVersion("5.6.4", m.version) >= 0 {
-		stmt = "SELECT token, data FROM sessions WHERE UTC_TIMESTAMP(6) < expiry"
+		stmt = fmt.Sprintf("SELECT token, data FROM %s WHERE UTC_TIMESTAMP(6) < expiry", m.tableName)
 	} else {
-		stmt = "SELECT token, data FROM sessions WHERE UTC_TIMESTAMP < expiry"
+		stmt = fmt.Sprintf("SELECT token, data FROM %s WHERE UTC_TIMESTAMP < expiry", m.tableName)
 	}
 
 	rows, err := m.DB.Query(stmt)
@@ -157,9 +184,9 @@ func (m *MySQLStore) deleteExpired() error {
 	var stmt string
 
 	if compareVersion("5.6.4", m.version) >= 0 {
-		stmt = "DELETE FROM sessions WHERE expiry < UTC_TIMESTAMP(6)"
+		stmt = fmt.Sprintf("DELETE FROM %s WHERE expiry < UTC_TIMESTAMP(6)", m.tableName)
 	} else {
-		stmt = "DELETE FROM sessions WHERE expiry < UTC_TIMESTAMP"
+		stmt = fmt.Sprintf("DELETE FROM %s WHERE expiry < UTC_TIMESTAMP", m.tableName)
 	}
 
 	_, err := m.DB.Exec(stmt)

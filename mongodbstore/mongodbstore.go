@@ -22,10 +22,22 @@ type MongoDBStore struct {
 	stopCleanup chan bool
 }
 
+type Config struct {
+	// CleanUpInterval is the interval between each cleanup operation.
+	// If set to 0, the cleanup operation is disabled.
+	CleanupInterval time.Duration
+
+	// CollectionName is the name of the collection where the session data will be stored.
+	// If not set, it will default to "sessions".
+	CollectionName string
+}
+
 // New returns a new MongoDBStore instance, with a background cleanup goroutine that
 // runs every minute to remove expired session data.
 func New(db *mongo.Database) *MongoDBStore {
-	return NewWithCleanupInterval(db, time.Minute)
+	return NewWithConfig(db, Config{
+		CleanupInterval: time.Minute,
+	})
 }
 
 // NewWithCleanupInterval returns a new MongoDBStore instance. The cleanupInterval
@@ -33,14 +45,26 @@ func New(db *mongo.Database) *MongoDBStore {
 // background cleanup goroutine. Setting it to 0 prevents the cleanup goroutine
 // from running (i.e. expired sessions will not be removed).
 func NewWithCleanupInterval(db *mongo.Database, cleanupInterval time.Duration) *MongoDBStore {
-	collection := db.Collection("sessions")
+	return NewWithConfig(db, Config{
+		CleanupInterval: cleanupInterval,
+	})
+}
+
+// NewWithConfig returns a new MongoDBStore instance with the given configuration.
+// If the CollectionName field is empty, it will be set to "sessions".
+// If the CleanupInterval field is 0, the cleanup goroutine will not be started.
+func NewWithConfig(db *mongo.Database, config Config) *MongoDBStore {
+	if config.CollectionName == "" {
+		config.CollectionName = "sessions"
+	}
+	collection := db.Collection(config.CollectionName)
 
 	m := &MongoDBStore{
 		collection: collection,
 	}
 
-	if cleanupInterval > 0 {
-		go m.startCleanup(cleanupInterval)
+	if config.CleanupInterval > 0 {
+		go m.startCleanup(config.CleanupInterval)
 	}
 
 	return m

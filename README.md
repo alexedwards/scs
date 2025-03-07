@@ -170,6 +170,7 @@ The session stores currently included are shown in the table below. Please click
 | [postgresstore](https://github.com/alexedwards/scs/tree/master/postgresstore)       | [PostgreSQL](https://www.postgresql.org/) (using the [pq](https://github.com/lib/pq) driver)     | N | N | Y |
 | [redisstore](https://github.com/alexedwards/scs/tree/master/redisstore)             | [Redis](https://redis.io/)                                                      | N | Y | Y |
 | [sqlite3store](https://github.com/alexedwards/scs/tree/master/sqlite3store)         | [SQLite3](https://sqlite.org/) (using the [mattn/go-sqlite3](https://github.com/mattn/go-sqlite3) CGO-based driver) | Y | N | Y |
+| [rueidisstore](https://github.com/fnoopv/rueidisstore)         | [Redis](https://redis.io/) (using the [rueidis](https://github.com/redis/rueidis)) | N | N | Y |
 
 Custom session stores are also supported. Please [see here](#using-custom-session-stores) for more information.
 

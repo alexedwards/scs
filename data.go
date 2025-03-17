@@ -64,7 +64,9 @@ func (s *SessionManager) Load(ctx context.Context, token string) (context.Contex
 	if err != nil {
 		return nil, err
 	} else if !found {
-		return s.addSessionDataToContext(ctx, newSessionData(s.Lifetime)), nil
+		sd := newSessionData(s.Lifetime)
+		sd.token = token
+		return s.addSessionDataToContext(ctx, sd), nil
 	}
 
 	sd := &sessionData{

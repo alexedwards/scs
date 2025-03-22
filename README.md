@@ -168,7 +168,8 @@ The session stores currently included are shown in the table below. Please click
 | [mysqlstore](https://github.com/alexedwards/scs/tree/master/mysqlstore)             | [MySQL](https://www.mysql.com/)                                                 | N | N | Y |
 | [pgxstore](https://github.com/alexedwards/scs/tree/master/pgxstore)                 | [PostgreSQL](https://www.postgresql.org/) (using the [pgx](https://github.com/jackc/pgx) driver) | N | N | Y |
 | [postgresstore](https://github.com/alexedwards/scs/tree/master/postgresstore)       | [PostgreSQL](https://www.postgresql.org/) (using the [pq](https://github.com/lib/pq) driver)     | N | N | Y |
-| [redisstore](https://github.com/alexedwards/scs/tree/master/redisstore)             | [Redis](https://redis.io/)                                                      | N | Y | Y |
+| [goredisstore](https://github.com/alexedwards/scs/tree/master/goredisstore)         | [Redis](https://redis.io/) (using [go-redis](https://github.com/redis/go-redis))                 | N | Y | Y |
+| [redisstore](https://github.com/alexedwards/scs/tree/master/redisstore)             | [Redis](https://redis.io/) (using [redigo](https://github.com/gomodule/redigo))                  | N | Y | Y |
 | [sqlite3store](https://github.com/alexedwards/scs/tree/master/sqlite3store)         | [SQLite3](https://sqlite.org/) (using the [mattn/go-sqlite3](https://github.com/mattn/go-sqlite3) CGO-based driver) | Y | N | Y |
 
 Custom session stores are also supported. Please [see here](#using-custom-session-stores) for more information.

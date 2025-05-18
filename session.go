@@ -214,7 +214,7 @@ func (s *SessionManager) WriteSessionCookie(ctx context.Context, w http.Response
 	}
 
 	w.Header().Add("Set-Cookie", cookie.String())
-	w.Header().Add("Cache-Control", `no-cache="Set-Cookie"`)
+	w.Header().Add("Cache-control", "no-cache, no-store")
 }
 
 func defaultErrorFunc(w http.ResponseWriter, r *http.Request, err error) {

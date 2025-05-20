@@ -119,6 +119,7 @@ sessionManager.Cookie.Path = "/example/"
 sessionManager.Cookie.Persist = true
 sessionManager.Cookie.SameSite = http.SameSiteStrictMode
 sessionManager.Cookie.Secure = true
+sessionManager.Cookie.Partitioned = true
 ```
 
 Documentation for all available settings and their default values can be [found here](https://pkg.go.dev/github.com/alexedwards/scs/v2#SessionManager).
@@ -149,26 +150,26 @@ By default SCS uses an in-memory store for session data. This is convenient (no 
 
 The session stores currently included are shown in the table below. Please click the links for usage instructions and examples.
 
-| Package                                                                             |                                                                                       |
-| :---------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------- |
-| [badgerstore](https://github.com/alexedwards/scs/tree/master/badgerstore)           | Badger based session store                                                            |
-| [boltstore](https://github.com/alexedwards/scs/tree/master/boltstore)               | Bolt based session store                                                              |
-| [bunstore](https://github.com/alexedwards/scs/tree/master/bunstore)                 | Bun based session store                                                               |
-| [buntdbstore](https://github.com/alexedwards/scs/tree/master/buntdbstore)           | BuntDB based session store                                                            |
-| [cockroachdbstore](https://github.com/alexedwards/scs/tree/master/cockroachdbstore) | CockroachDB based session store                                                       |
-| [consulstore](https://github.com/alexedwards/scs/tree/master/consulstore)           | Consul based session store                                                            |
-| [etcdstore](https://github.com/alexedwards/scs/tree/master/etcdstore)               | Etcd based session store                                                              |
-| [firestore](https://github.com/alexedwards/scs/tree/master/firestore)               | Google Cloud Firestore based session store                                            |
-| [gormstore](https://github.com/alexedwards/scs/tree/master/gormstore)               | GORM based session store                                                              |
-| [leveldbstore](https://github.com/alexedwards/scs/tree/master/leveldbstore)         | LevelDB based session store                                                           |
-| [memstore](https://github.com/alexedwards/scs/tree/master/memstore)                 | In-memory session store (default)                                                     |
-| [mongodbstore](https://github.com/alexedwards/scs/tree/master/mongodbstore)         | MongoDB based session store                                                           |
-| [mssqlstore](https://github.com/alexedwards/scs/tree/master/mssqlstore)             | MSSQL based session store                                                             |
-| [mysqlstore](https://github.com/alexedwards/scs/tree/master/mysqlstore)             | MySQL based session store                                                             |
-| [pgxstore](https://github.com/alexedwards/scs/tree/master/pgxstore)                 | PostgreSQL based session store (using the [pgx](https://github.com/jackc/pgx) driver) |
-| [postgresstore](https://github.com/alexedwards/scs/tree/master/postgresstore)       | PostgreSQL based session store (using the [pq](https://github.com/lib/pq) driver)     |
-| [redisstore](https://github.com/alexedwards/scs/tree/master/redisstore)             | Redis based session store                                                             |
-| [sqlite3store](https://github.com/alexedwards/scs/tree/master/sqlite3store)         | SQLite3 based session store                                                           |
+| Package                                                                             | Backend                                                                         | Embedded | In-Memory | Multi-Process |
+| :---------------------------------------------------------------------------------- | --------------------------------------------------------------------------------|----------|-----------|---------------| 
+| [badgerstore](https://github.com/alexedwards/scs/tree/master/badgerstore)           | [BadgerDB](https://dgraph.io/docs/badger/)                                      | Y | N | N |
+| [boltstore](https://github.com/alexedwards/scs/tree/master/boltstore)               | [BBolt](https://go.etcd.io/bbolt)                                               | Y | N | N |
+| [bunstore](https://github.com/alexedwards/scs/tree/master/bunstore)                 | [Bun](https://bun.uptrace.dev/) ORM for PostgreSQL/MySQL/MSSQL/SQLite           | N | N | Y | 
+| [buntdbstore](https://github.com/alexedwards/scs/tree/master/buntdbstore)           | [BuntDB](https://github.com/tidwall/buntdb)                                     | Y | Y | N |
+| [cockroachdbstore](https://github.com/alexedwards/scs/tree/master/cockroachdbstore) | [CockroachDB](https://www.cockroachlabs.com/)                                   | N | N | Y |
+| [consulstore](https://github.com/alexedwards/scs/tree/master/consulstore)           | [Consul](https://www.consul.io/)                                                | N | Y | Y |
+| [etcdstore](https://github.com/alexedwards/scs/tree/master/etcdstore)               | [Etcd](https://etcd.io/)                                                        | N | N | Y |
+| [firestore](https://github.com/alexedwards/scs/tree/master/firestore)               | [Google Cloud Firestore](https://cloud.google.com/firestore)                    | N | ? | Y |
+| [gormstore](https://github.com/alexedwards/scs/tree/master/gormstore)               | [GORM](https://gorm.io/index.html) ORM for PostgreSQL/MySQL/SQLite/MSSQL/TiDB   | N | N | Y |
+| [leveldbstore](https://github.com/alexedwards/scs/tree/master/leveldbstore)         | [LevelDB](https://github.com/syndtr/goleveldb)                                  | Y | N | N |
+| [memstore](https://github.com/alexedwards/scs/tree/master/memstore)                 | In-memory (default)                                                             | Y | Y | N |
+| [mongodbstore](https://github.com/alexedwards/scs/tree/master/mongodbstore)         | [MongoDB](https://www.mongodb.com/)                                             | N | N | Y |
+| [mssqlstore](https://github.com/alexedwards/scs/tree/master/mssqlstore)             | [Microsoft SQL Server](https://www.microsoft.com/en-us/sql-server)              | N | N | Y | 
+| [mysqlstore](https://github.com/alexedwards/scs/tree/master/mysqlstore)             | [MySQL](https://www.mysql.com/)                                                 | N | N | Y |
+| [pgxstore](https://github.com/alexedwards/scs/tree/master/pgxstore)                 | [PostgreSQL](https://www.postgresql.org/) (using the [pgx](https://github.com/jackc/pgx) driver) | N | N | Y |
+| [postgresstore](https://github.com/alexedwards/scs/tree/master/postgresstore)       | [PostgreSQL](https://www.postgresql.org/) (using the [pq](https://github.com/lib/pq) driver)     | N | N | Y |
+| [redisstore](https://github.com/alexedwards/scs/tree/master/redisstore)             | [Redis](https://redis.io/)                                                      | N | Y | Y |
+| [sqlite3store](https://github.com/alexedwards/scs/tree/master/sqlite3store)         | [SQLite3](https://sqlite.org/) (using the [mattn/go-sqlite3](https://github.com/mattn/go-sqlite3) CGO-based driver) | Y | N | Y |
 
 Custom session stores are also supported. Please [see here](#using-custom-session-stores) for more information.
 
@@ -306,8 +307,8 @@ Note that the `http.ResponseWriter` passed on by the [`LoadAndSave()`](https://p
 
 ### Compatibility
 
-You may have some problems using this package with Go frameworks that do not propagate the request context from standard-library compatible middleware, like [Echo](https://github.com/alexedwards/scs/issues/57) and [Fiber](https://github.com/alexedwards/scs/issues/106). If you are using Echo, please use the [echo-scs-session](https://github.com/spazzymoto/echo-scs-session) fork of this package instead.
+You may have some problems using this package with Go frameworks that do not propagate the request context from standard-library compatible middleware, like [Echo](https://github.com/alexedwards/scs/issues/57) and [Fiber](https://github.com/alexedwards/scs/issues/106). If you are using Echo, you may wish to evaluate using the [echo-scs-session](https://github.com/canidam/echo-scs-session) package for session management.
 
 ### Contributing
 
-Bug fixes and documentation improvements are very welcome! For feature additions or behavioral changes, please open an issue to discuss the change before submitting a PR. For new stores, please also open an issue to establish whether there is wider demand for the store before submitting a PR.
+Bug fixes and documentation improvements are very welcome! For feature additions or behavioral changes, please open an issue to discuss the change before submitting a PR. Additional store implementations will not merged to this repository (unless there is very significant demand) --- but please feel free to host the store implementation yourself and open a PR to link to it from this README.

@@ -5,7 +5,6 @@ import (
 	"context"
 	"errors"
 	"reflect"
-	"sync"
 	"testing"
 	"time"
 
@@ -214,7 +213,6 @@ func TestSessionManager_Load(T *testing.T) {
 			values: map[string]interface{}{
 				"blah": "blah",
 			},
-			mu: sync.Mutex{},
 		})
 
 		actualToken, actualExpiry, err := s.Commit(initialCtx)
@@ -262,7 +260,6 @@ func TestSessionManager_Commit(T *testing.T) {
 			values: map[string]interface{}{
 				"blah": "blah",
 			},
-			mu: sync.Mutex{},
 		})
 
 		actualToken, actualExpiry, err := s.Commit(ctx)
@@ -291,7 +288,6 @@ func TestSessionManager_Commit(T *testing.T) {
 			values: map[string]interface{}{
 				"blah": "blah",
 			},
-			mu: sync.Mutex{},
 		})
 
 		actualToken, actualExpiry, err := s.Commit(ctx)
@@ -319,7 +315,6 @@ func TestSessionManager_Commit(T *testing.T) {
 			values: map[string]interface{}{
 				"blah": "blah",
 			},
-			mu: sync.Mutex{},
 		})
 
 		actualToken, actualExpiry, err := s.Commit(ctx)
@@ -349,7 +344,6 @@ func TestSessionManager_Commit(T *testing.T) {
 			values: map[string]interface{}{
 				"blah": "blah",
 			},
-			mu: sync.Mutex{},
 		}
 		expectedBytes, err := s.Codec.Encode(sd.deadline, sd.values)
 		if err != nil {
@@ -385,7 +379,6 @@ func TestSessionManager_Commit(T *testing.T) {
 			values: map[string]interface{}{
 				"blah": "blah",
 			},
-			mu: sync.Mutex{},
 		})
 
 		actualToken, actualExpiry, err := s.Commit(ctx)

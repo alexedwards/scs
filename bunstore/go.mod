@@ -1,6 +1,6 @@
 module github.com/alexedwards/scs/bunstore
 
-go 1.23.0
+go 1.24.0
 
 require (
 	github.com/go-sql-driver/mysql v1.7.0
@@ -26,9 +26,9 @@ require (
 	github.com/vmihailenco/tagparser/v2 v2.0.0 // indirect
 	go.opentelemetry.io/otel v1.37.0 // indirect
 	go.opentelemetry.io/otel/trace v1.37.0 // indirect
-	golang.org/x/crypto v0.40.0 // indirect
+	golang.org/x/crypto v0.45.0 // indirect
 	golang.org/x/mod v0.8.0 // indirect
-	golang.org/x/sys v0.34.0 // indirect
+	golang.org/x/sys v0.38.0 // indirect
 	golang.org/x/tools v0.6.0 // indirect
 	lukechampine.com/uint128 v1.2.0 // indirect
 	mellium.im/sasl v0.3.2 // indirect

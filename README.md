@@ -157,6 +157,7 @@ The session stores currently included are shown in the table below. Please click
 | Package                                                                             | Backend                                                                         | Embedded | In-Memory | Multi-Process |
 | :---------------------------------------------------------------------------------- | --------------------------------------------------------------------------------|----------|-----------|---------------| 
 | [badgerstore](https://github.com/alexedwards/scs/tree/master/badgerstore)           | [BadgerDB](https://dgraph.io/docs/badger/)                                      | Y | N | N |
+| [badgerstore](https://github.com/alexedwards/scs/tree/master/badgerstore/v4) (v4)   | [BadgerDB](https://dgraph.io/docs/badger/) (v4)                                 | Y | Y | N |
 | [boltstore](https://github.com/alexedwards/scs/tree/master/boltstore)               | [BBolt](https://go.etcd.io/bbolt)                                               | Y | N | N |
 | [bunstore](https://github.com/alexedwards/scs/tree/master/bunstore)                 | [Bun](https://bun.uptrace.dev/) (ORM for PostgreSQL/MySQL/MSSQL/SQLite)           | N | N | Y | 
 | [buntdbstore](https://github.com/alexedwards/scs/tree/master/buntdbstore)           | [BuntDB](https://github.com/tidwall/buntdb)                                     | Y | Y | N |

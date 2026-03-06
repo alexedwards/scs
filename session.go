@@ -227,7 +227,9 @@ func (s *SessionManager) AddSessionCookie(ctx context.Context, w http.ResponseWr
 	if expiry.IsZero() {
 		cookie.Expires = time.Unix(1, 0)
 		cookie.MaxAge = -1
-	} else if s.Cookie.Persist || s.GetBool(ctx, "__rememberMe") {
+	} else if s.Cookie.Persist ||
+		s.GetBool(ctx, "__rememberMe") ||
+		s.GetInt64(ctx, "__idleTimeout") > 0 {
 		cookie.Expires = time.Unix(expiry.Unix()+1, 0)        // Round up to the nearest second.
 		cookie.MaxAge = int(time.Until(expiry).Seconds() + 1) // Round up to the nearest second.
 	}

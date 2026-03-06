@@ -56,6 +56,17 @@ func extractTokenFromCookie(c string) string {
 	return strings.SplitN(parts[0], "=", 2)[1]
 }
 
+func extractMaxAge(cookie string) int {
+	for _, part := range strings.Split(cookie, ";") {
+		part = strings.TrimSpace(part)
+		if strings.HasPrefix(part, "Max-Age=") {
+			v, _ := strconv.Atoi(strings.TrimPrefix(part, "Max-Age="))
+			return v
+		}
+	}
+	return -1
+}
+
 func TestEnable(t *testing.T) {
 	t.Parallel()
 
@@ -304,6 +315,121 @@ func TestRememberMe(t *testing.T) {
 	if strings.Contains(header.Get("Set-Cookie"), "Max-Age=") || strings.Contains(header.Get("Set-Cookie"), "Expires=") {
 		t.Errorf("want no Max-Age or Expires attributes; got %q", header.Get("Set-Cookie"))
 	}
+}
+
+func TestSetIdleTimeout(t *testing.T) {
+	t.Parallel()
+
+	t.Run("overrides global idle timeout", func(t *testing.T) {
+		t.Parallel()
+
+		sessionManager := New()
+		sessionManager.IdleTimeout = 1 * time.Hour
+		sessionManager.Cookie.Persist = false
+
+		mux := http.NewServeMux()
+		mux.HandleFunc("/put", http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			sessionManager.Put(r.Context(), "foo", "bar")
+			sessionManager.SetIdleTimeout(r.Context(), 200*time.Millisecond)
+		}))
+		mux.HandleFunc("/get", func(w http.ResponseWriter, r *http.Request) {
+			v := sessionManager.Get(r.Context(), "foo")
+			if v == nil {
+				fmt.Fprintf(w, "foo does not exist in session")
+				return
+			}
+			fmt.Fprint(w, v.(string))
+		})
+
+		ts := newTestServer(t, sessionManager.LoadAndSave(mux))
+		defer ts.Close()
+
+		header, _ := ts.execute(t, "/put")
+		if !strings.Contains(header.Get("Set-Cookie"), "Max-Age=") || !strings.Contains(header.Get("Set-Cookie"), "Expires=") {
+			t.Errorf("want Max-Age and Expires attributes; got %q", header.Get("Set-Cookie"))
+		}
+
+		header, _ = ts.execute(t, "/put")
+		maxAge := extractMaxAge(header.Get("Set-Cookie"))
+		if maxAge > 1 {
+			t.Errorf("want Max-Age <= 1 (per-session bounds cookie, not global 1h); got %d", maxAge)
+		}
+
+		time.Sleep(250 * time.Millisecond)
+		_, body := ts.execute(t, "/get")
+		if body != "foo does not exist in session" {
+			t.Errorf("want %q; got %q", "foo does not exist in session", body)
+		}
+	})
+
+	t.Run("zero disables idle timeout for session", func(t *testing.T) {
+		t.Parallel()
+
+		sessionManager := New()
+		sessionManager.IdleTimeout = 100 * time.Millisecond
+
+		mux := http.NewServeMux()
+		mux.HandleFunc("/put", http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			sessionManager.Put(r.Context(), "foo", "bar")
+			sessionManager.SetIdleTimeout(r.Context(), 0)
+		}))
+		mux.HandleFunc("/get", func(w http.ResponseWriter, r *http.Request) {
+			v := sessionManager.Get(r.Context(), "foo")
+			if v == nil {
+				fmt.Fprintf(w, "foo does not exist in session")
+				return
+			}
+			fmt.Fprint(w, v.(string))
+		})
+
+		ts := newTestServer(t, sessionManager.LoadAndSave(mux))
+		defer ts.Close()
+
+		ts.execute(t, "/put")
+
+		time.Sleep(150 * time.Millisecond)
+		_, body := ts.execute(t, "/get")
+		if body != "bar" {
+			t.Errorf("want session alive (idle timeout disabled); got %q", body)
+		}
+	})
+
+	t.Run("remove reverts to global idle timeout", func(t *testing.T) {
+		t.Parallel()
+
+		sessionManager := New()
+		sessionManager.IdleTimeout = 200 * time.Millisecond
+
+		mux := http.NewServeMux()
+		mux.HandleFunc("/put", http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			sessionManager.Put(r.Context(), "foo", "bar")
+			sessionManager.SetIdleTimeout(r.Context(), 1*time.Hour)
+		}))
+		mux.HandleFunc("/remove-idle-timeout", func(w http.ResponseWriter, r *http.Request) {
+			sessionManager.Remove(r.Context(), "__idleTimeout")
+		})
+		mux.HandleFunc("/get", func(w http.ResponseWriter, r *http.Request) {
+			v := sessionManager.Get(r.Context(), "foo")
+			if v == nil {
+				fmt.Fprintf(w, "foo does not exist in session")
+				return
+			}
+			fmt.Fprint(w, v.(string))
+		})
+
+		ts := newTestServer(t, sessionManager.LoadAndSave(mux))
+		defer ts.Close()
+
+		ts.execute(t, "/put")
+		ts.execute(t, "/remove-idle-timeout")
+
+		// Global idle timeout (200ms) now applies; session should expire after 250ms.
+		time.Sleep(250 * time.Millisecond)
+		_, body := ts.execute(t, "/get")
+		if body != "foo does not exist in session" {
+			t.Errorf("want session expired (reverted to global 200ms); got %q", body)
+		}
+	})
 }
 
 func TestIterate(t *testing.T) {

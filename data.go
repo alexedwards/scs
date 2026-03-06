@@ -103,12 +103,20 @@ func (s *SessionManager) Load(ctx context.Context, token string) (context.Contex
 	// By default, set the expiry time to the deadline.
 	sd.expiry = sd.deadline
 
+	// A per-session idleTimeout can be set using [SessionManager.SetIdleTimeout].
+	// A value of 0 disables the idle timeout for this session regardless of
+	// the global setting.
+	idleTimeout := s.IdleTimeout
+	if timeout, ok := sd.values["__idleTimeout"].(int64); ok {
+		idleTimeout = time.Duration(timeout)
+	}
+
 	// If an idle timeout is being used, set the expiry to whichever comes first
 	// between the session deadline and idleTimeout expiry. We also set the status
 	// to Modified, which will force the session data to be re-committed to the
 	// session store with the updated new expiry time.
-	if s.IdleTimeout > 0 {
-		idleExpiry := time.Now().Add(s.IdleTimeout).UTC()
+	if idleTimeout > 0 {
+		idleExpiry := time.Now().Add(idleTimeout).UTC()
 
 		sd.expiry = minTime(sd.deadline, idleExpiry)
 		sd.status = Modified
@@ -138,6 +146,18 @@ func (s *SessionManager) Commit(ctx context.Context) (string, time.Time, error) 
 	b, err := s.Codec.Encode(sd.deadline, sd.values)
 	if err != nil {
 		return "", time.Time{}, err
+	}
+
+	idleTimeout := s.IdleTimeout
+	if timeout, ok := sd.values["__idleTimeout"].(int64); ok {
+		idleTimeout = time.Duration(timeout)
+	}
+
+	if idleTimeout > 0 {
+		idleExpiry := time.Now().Add(idleTimeout).UTC()
+		sd.expiry = minTime(sd.deadline, idleExpiry)
+	} else {
+		sd.expiry = sd.deadline
 	}
 
 	if err := s.doStoreCommit(ctx, sd.token, b, sd.expiry); err != nil {
@@ -565,6 +585,13 @@ func (s *SessionManager) PopTime(ctx context.Context, key string) time.Time {
 // you are using the standard LoadAndSave() middleware.
 func (s *SessionManager) RememberMe(ctx context.Context, val bool) {
 	s.Put(ctx, "__rememberMe", val)
+}
+
+// SetIdleTimeout sets the idle timeout for this specific session, overriding
+// the global IdleTimeout setting. A value of 0 disables the idle timeout for
+// this session regardless of the global setting.
+func (s *SessionManager) SetIdleTimeout(ctx context.Context, t time.Duration) {
+	s.Put(ctx, "__idleTimeout", int64(t))
 }
 
 // Iterate retrieves all active (i.e. not expired) sessions from the store and

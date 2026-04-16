@@ -1,6 +1,7 @@
 package sqlite3store
 
 import (
+	"context"
 	"database/sql"
 	"fmt"
 	"log"
@@ -64,66 +65,26 @@ func NewWithConfig(db *sql.DB, config Config) *SQLite3Store {
 // If the session token is not found or is expired, the returned exists flag will
 // be set to false.
 func (s *SQLite3Store) Find(token string) (b []byte, exists bool, err error) {
-	stmt := fmt.Sprintf("SELECT data FROM %s WHERE token = $1 AND julianday('now') < expiry", s.tableName)
-	row := s.db.QueryRow(stmt, token)
-	err = row.Scan(&b)
-	if err == sql.ErrNoRows {
-		return nil, false, nil
-	} else if err != nil {
-		return nil, false, err
-	}
-	return b, true, nil
+	return s.FindCtx(context.Background(), token)
 }
 
 // Commit adds a session token and data to the SQLite3Store instance with the
 // given expiry time. If the session token already exists, then the data and expiry
 // time are updated.
 func (s *SQLite3Store) Commit(token string, b []byte, expiry time.Time) error {
-	stmt := fmt.Sprintf("REPLACE INTO %s (token, data, expiry) VALUES ($1, $2, julianday($3))", s.tableName)
-	_, err := s.db.Exec(stmt, token, b, expiry.UTC().Format("2006-01-02T15:04:05.999"))
-	return err
+	return s.CommitCtx(context.Background(), token, b, expiry)
 }
 
 // Delete removes a session token and corresponding data from the SQLite3Store
 // instance.
 func (s *SQLite3Store) Delete(token string) error {
-	stmt := fmt.Sprintf("DELETE FROM %s WHERE token = $1", s.tableName)
-	_, err := s.db.Exec(stmt, token)
-	return err
+	return s.DeleteCtx(context.Background(), token)
 }
 
 // All returns a map containing the token and data for all active (i.e.
 // not expired) sessions in the SQLite3Store instance.
 func (s *SQLite3Store) All() (map[string][]byte, error) {
-	stmt := fmt.Sprintf("SELECT token, data FROM %s WHERE julianday('now') < expiry", s.tableName)
-	rows, err := s.db.Query(stmt)
-	if err != nil {
-		return nil, err
-	}
-	defer rows.Close()
-
-	sessions := make(map[string][]byte)
-
-	for rows.Next() {
-		var (
-			token string
-			data  []byte
-		)
-
-		err = rows.Scan(&token, &data)
-		if err != nil {
-			return nil, err
-		}
-
-		sessions[token] = data
-	}
-
-	err = rows.Err()
-	if err != nil {
-		return nil, err
-	}
-
-	return sessions, nil
+	return s.AllCtx(context.Background())
 }
 
 func (s *SQLite3Store) startCleanup(interval time.Duration) {
@@ -162,4 +123,70 @@ func (s *SQLite3Store) deleteExpired() error {
 	stmt := fmt.Sprintf("DELETE FROM %s WHERE expiry < julianday('now')", s.tableName)
 	_, err := s.db.Exec(stmt)
 	return err
+}
+
+// AllCtx returns a map containing the token and data for all active
+// (i.e. not expired) sessions in the SQLite3Store instance.
+func (s *SQLite3Store) AllCtx(ctx context.Context) (map[string][]byte, error) {
+	stmt := fmt.Sprintf("SELECT token, data FROM %s WHERE julianday('now') < expiry", s.tableName)
+	rows, err := s.db.QueryContext(ctx, stmt)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	sessions := make(map[string][]byte)
+
+	for rows.Next() {
+		var (
+			token string
+			data  []byte
+		)
+
+		err = rows.Scan(&token, &data)
+		if err != nil {
+			return nil, err
+		}
+
+		sessions[token] = data
+	}
+
+	err = rows.Err()
+	if err != nil {
+		return nil, err
+	}
+
+	return sessions, nil
+}
+
+// CommitCtx adds a session token and data to the SQLite3Store instance with the
+// given expiry time. If the session token already exists, then the data and expiry
+// time are updated.
+func (s *SQLite3Store) CommitCtx(ctx context.Context, token string, b []byte, expiry time.Time) error {
+	stmt := fmt.Sprintf("REPLACE INTO %s (token, data, expiry) VALUES ($1, $2, julianday($3))", s.tableName)
+	_, err := s.db.ExecContext(ctx, stmt, token, b, expiry.UTC().Format("2006-01-02T15:04:05.999"))
+	return err
+}
+
+// DeleteCtx removes a session token and corresponding data from the SQLite3Store
+// instance.
+func (s *SQLite3Store) DeleteCtx(ctx context.Context, token string) error {
+	stmt := fmt.Sprintf("DELETE FROM %s WHERE token = $1", s.tableName)
+	_, err := s.db.ExecContext(ctx, stmt, token)
+	return err
+}
+
+// FindCtx returns the data for a given session token from the SQLite3Store instance.
+// If the session token is not found or is expired, the returned exists flag will
+// be set to false.
+func (s *SQLite3Store) FindCtx(ctx context.Context, token string) (b []byte, found bool, err error) {
+	stmt := fmt.Sprintf("SELECT data FROM %s WHERE token = $1 AND julianday('now') < expiry", s.tableName)
+	row := s.db.QueryRowContext(ctx, stmt, token)
+	err = row.Scan(&b)
+	if err == sql.ErrNoRows {
+		return nil, false, nil
+	} else if err != nil {
+		return nil, false, err
+	}
+	return b, true, nil
 }

@@ -3,6 +3,7 @@ package goredisstore
 import (
 	"context"
 	"errors"
+	"sync"
 	"time"
 
 	"github.com/redis/go-redis/v9"
@@ -63,6 +64,7 @@ func (r *RedisStore) DeleteCtx(ctx context.Context, token string) error {
 // In Redis Cluster mode, all master nodes are scanned automatically.
 func (r *RedisStore) AllCtx(ctx context.Context) (map[string][]byte, error) {
 	sessions := make(map[string][]byte)
+	var mu sync.Mutex
 
 	scanNode := func(ctx context.Context, c redis.UniversalClient) error {
 		var cursor uint64
@@ -81,7 +83,9 @@ func (r *RedisStore) AllCtx(ctx context.Context) (map[string][]byte, error) {
 					return err
 				}
 				if exists {
+					mu.Lock()
 					sessions[token] = data
+					mu.Unlock()
 				}
 			}
 			cursor = nextCursor

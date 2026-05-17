@@ -13,15 +13,22 @@ type GORMStore struct {
 	stopCleanup chan bool
 }
 
-type session struct {
+// Session is the GORM model that GORMStore persists session records as.
+// It's exported so callers can plug it into their own migration tooling
+// (e.g. atlas, goose, plain SQL generators) instead of relying on
+// AutoMigrate. The field tags drive the same schema either way.
+type Session struct {
 	Token  string    `gorm:"column:token;primaryKey;type:varchar(43)"`
 	Data   []byte    `gorm:"column:data"`
 	Expiry time.Time `gorm:"column:expiry;index"`
 }
 
-func (session) TableName() string {
+func (Session) TableName() string {
 	return "sessions"
 }
+
+// session keeps existing internal call sites compiling without churn.
+type session = Session
 
 // New returns a new GORMStore instance, with a background cleanup goroutine
 // that runs every 5 minutes to remove expired session data.

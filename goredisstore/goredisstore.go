@@ -2,6 +2,7 @@ package goredisstore
 
 import (
 	"context"
+	"errors"
 	"time"
 
 	"github.com/redis/go-redis/v9"
@@ -9,20 +10,21 @@ import (
 
 // RedisStore represents the session store.
 type RedisStore struct {
-	client *redis.Client
+	client redis.UniversalClient
 	prefix string
 }
 
-// New returns a new RedisStore instance. The client parameter should be a pointer
-// to a go-redis connection.
-func New(client *redis.Client) *RedisStore {
+// New returns a new RedisStore instance. The client parameter should be a
+// redis.UniversalClient — this includes *redis.Client (single-node / sentinel)
+// and *redis.ClusterClient (Redis Cluster).
+func New(client redis.UniversalClient) *RedisStore {
 	return NewWithPrefix(client, "scs:session:")
 }
 
-// NewWithPrefix returns a new RedisStore instance. The pool parameter should be a pointer
-// to a redigo connection pool. The prefix parameter controls the Redis key
-// prefix, which can be used to avoid naming clashes if necessary.
-func NewWithPrefix(client *redis.Client, prefix string) *RedisStore {
+// NewWithPrefix returns a new RedisStore instance. The prefix parameter
+// controls the Redis key prefix, which can be used to avoid naming clashes
+// if necessary.
+func NewWithPrefix(client redis.UniversalClient, prefix string) *RedisStore {
 	return &RedisStore{
 		client: client,
 		prefix: prefix,
@@ -34,7 +36,7 @@ func NewWithPrefix(client *redis.Client, prefix string) *RedisStore {
 // will be set to false.
 func (r *RedisStore) FindCtx(ctx context.Context, token string) (b []byte, exists bool, err error) {
 	b, err = r.client.Get(ctx, r.prefix+token).Bytes()
-	if err == redis.Nil {
+	if errors.Is(err, redis.Nil) {
 		return nil, false, nil
 	} else if err != nil {
 		return nil, false, err
@@ -58,36 +60,47 @@ func (r *RedisStore) DeleteCtx(ctx context.Context, token string) error {
 
 // AllCtx returns a map containing the token and data for all active (i.e.
 // not expired) sessions in the RedisStore instance.
+// In Redis Cluster mode, all master nodes are scanned automatically.
 func (r *RedisStore) AllCtx(ctx context.Context) (map[string][]byte, error) {
-	var cursor uint64
 	sessions := make(map[string][]byte)
 
-	for {
-		var keys []string
-		var err error
-		keys, cursor, err = r.client.Scan(ctx, cursor, r.prefix+"*", 0).Result()
-		if err != nil {
-			if err == redis.Nil {
-				return nil, nil
-			} else {
-				return nil, err
-			}
-		}
-		for _, key := range keys {
-			token := key[len(r.prefix):]
-			data, exists, err := r.FindCtx(ctx, token)
+	scanNode := func(ctx context.Context, c redis.UniversalClient) error {
+		var cursor uint64
+		for {
+			keys, nextCursor, err := c.Scan(ctx, cursor, r.prefix+"*", 0).Result()
 			if err != nil {
-				return nil, err
+				if errors.Is(err, redis.Nil) {
+					return nil
+				}
+				return err
 			}
-			if exists {
-				sessions[token] = data
+			for _, key := range keys {
+				token := key[len(r.prefix):]
+				data, exists, err := r.FindCtx(ctx, token)
+				if err != nil {
+					return err
+				}
+				if exists {
+					sessions[token] = data
+				}
+			}
+			cursor = nextCursor
+			if cursor == 0 {
+				break
 			}
 		}
-		if cursor == 0 {
-			break
-		}
+		return nil
 	}
-	return sessions, nil
+
+	// *redis.ClusterClient requires scanning each master node individually.
+	if cc, ok := r.client.(*redis.ClusterClient); ok {
+		err := cc.ForEachMaster(ctx, func(ctx context.Context, c *redis.Client) error {
+			return scanNode(ctx, c)
+		})
+		return sessions, err
+	}
+
+	return sessions, scanNode(ctx, r.client)
 }
 
 //

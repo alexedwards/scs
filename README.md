@@ -181,6 +181,7 @@ The following session stores supported by third-parties are also available:
 | Package                                                                             | Backend                                                                         | Embedded | In-Memory | Multi-Process |
 | :---------------------------------------------------------------------------------- | --------------------------------------------------------------------------------|----------|-----------|---------------| 
 | [rueidisstore](https://github.com/fnoopv/rueidisstore)         | [Redis](https://redis.io/) (using the [rueidis](https://github.com/redis/rueidis) driver) | N | N | Y |
+| [valkeystore](https://github.com/AiEmStylix/valkeystore)         | [Valkey](https://valkey.io/) (using the [valkey-go](https://github.com/valkey-io/valkey-go) driver) | N | N | Y |
 
 Custom session stores are also supported. Please see below for more information.
 

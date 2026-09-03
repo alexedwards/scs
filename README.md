@@ -140,6 +140,17 @@ Individual data items can be deleted from the session using the [`Remove()`](htt
 
 Behind the scenes SCS uses gob encoding to store session data, so if you want to store custom types in the session data they must be [registered](https://golang.org/pkg/encoding/gob/#Register) with the encoding/gob package first. Struct fields of custom types must also be exported so that they are visible to the encoding/gob package. Please [see here](https://gist.github.com/alexedwards/d6eca7136f98ec12ad606e774d3abad3) for a working example.
 
+By default, SCS returns an error if stored session data cannot be decoded. Because the client continues to send the same session token, the error will recur on every request until the session expires or the client removes its cookie. You can optionally recover from incompatible sessions by setting `DecodeErrorFunc`. Returning nil from the callback opts in to recovery: SCS deletes the invalid session and continues the request with an empty session. The callback also provides an opportunity to log the otherwise hidden decode error or record it in your application's telemetry:
+
+```go
+sessionManager.DecodeErrorFunc = func(ctx context.Context, err error) error {
+	log.Printf("discarding undecodable session: %v", err)
+	return nil
+}
+```
+
+When using the `LoadAndSave()` middleware, the invalid cookie will be removed. If the session is subsequently modified, a fresh token will be committed. Returning an error from `DecodeErrorFunc` aborts recovery and causes `Load()` to return that error, allowing the original decode error to be wrapped or replaced. Data from an incompatible session cannot be recovered, so users may need to authenticate again if authentication state was stored in it.
+
 ### Loading and Saving Sessions
 
 Most applications will use the [`LoadAndSave()`](https://pkg.go.dev/github.com/alexedwards/scs/v2#SessionManager.LoadAndSave) middleware. This middleware takes care of loading and committing session data to the session store, and communicating the session token to/from the client in a cookie as necessary.

@@ -48,6 +48,13 @@ type SessionManager struct {
 	// a function which logs the error and returns a customized HTML error page.
 	ErrorFunc func(http.ResponseWriter, *http.Request, error)
 
+	// DecodeErrorFunc controls recovery when session data cannot be decoded during
+	// Load. If nil, the decode error is returned. Returning nil deletes the invalid
+	// session and continues with an empty session. Returning an error aborts loading
+	// and returns that error, allowing the decode error to be wrapped or replaced.
+	// The function may also be used for logging or telemetry.
+	DecodeErrorFunc func(context.Context, error) error
+
 	// HashTokenInStore controls whether or not to store the session token or a hashed version in the store.
 	HashTokenInStore bool
 

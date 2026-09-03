@@ -97,7 +97,24 @@ func (s *SessionManager) Load(ctx context.Context, token string) (context.Contex
 
 	sd.deadline, sd.values, err = s.Codec.Decode(b)
 	if err != nil {
-		return nil, err
+		if s.DecodeErrorFunc == nil {
+			return nil, err
+		}
+
+		if callbackErr := s.DecodeErrorFunc(ctx, err); callbackErr != nil {
+			return nil, callbackErr
+		}
+
+		if err := s.doStoreDelete(ctx, token); err != nil {
+			return nil, err
+		}
+
+		// Mark the replacement session as destroyed so LoadAndSave removes the
+		// invalid cookie. If the session is modified later in the request, Put will
+		// mark it as modified and Commit will generate a new token instead.
+		sd = newSessionData(s.Lifetime, s.IdleTimeout)
+		sd.status = Destroyed
+		return s.addSessionDataToContext(ctx, sd), nil
 	}
 
 	// By default, set the expiry time to the deadline.

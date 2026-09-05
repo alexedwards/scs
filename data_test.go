@@ -197,6 +197,110 @@ func TestSessionManager_Load(T *testing.T) {
 		if newCtx != nil {
 			t.Error("returned context is unexpectedly nil")
 		}
+		if _, found, err := s.Store.Find(expected); err != nil {
+			t.Errorf("error finding undecodable session: %v", err)
+		} else if !found {
+			t.Error("undecodable session was unexpectedly deleted from the store")
+		}
+	})
+
+	T.Run("with decode error callback", func(t *testing.T) {
+		s := New()
+		s.Lifetime = time.Hour
+		s.IdleTimeout = 10 * time.Minute
+
+		ctx := context.Background()
+		token := "example"
+		exampleDeadline := time.Now().Add(time.Hour)
+		var decodeErr error
+
+		if err := s.Store.Commit(token, []byte(""), exampleDeadline); err != nil {
+			t.Errorf("error committing to session store: %v", err)
+		}
+
+		s.DecodeErrorFunc = func(ctx context.Context, err error) error {
+			decodeErr = err
+			return nil
+		}
+
+		before := time.Now()
+		newCtx, err := s.Load(ctx, token)
+		after := time.Now()
+		if err != nil {
+			t.Errorf("unexpected error loading from session manager: %v", err)
+		}
+		if newCtx == nil {
+			t.Fatal("returned context is unexpectedly nil")
+		}
+		if decodeErr == nil {
+			t.Error("decode error was not passed to callback")
+		}
+		if status := s.Status(newCtx); status != Destroyed {
+			t.Errorf("expected session status %v; got %v", Destroyed, status)
+		}
+		if actualToken := s.Token(newCtx); actualToken != "" {
+			t.Errorf("expected empty replacement token; got %q", actualToken)
+		}
+		deadline := s.Deadline(newCtx)
+		if deadline.Before(before.Add(s.Lifetime)) || deadline.After(after.Add(s.Lifetime)) {
+			t.Errorf("replacement deadline %v was not set using lifetime %v", deadline, s.Lifetime)
+		}
+		expiry := s.Expiry(newCtx)
+		if expiry.Before(before.Add(s.IdleTimeout)) || expiry.After(after.Add(s.IdleTimeout)) {
+			t.Errorf("replacement expiry %v was not set using idle timeout %v", expiry, s.IdleTimeout)
+		}
+		if _, found, err := s.Store.Find(token); err != nil {
+			t.Errorf("error finding invalid session: %v", err)
+		} else if found {
+			t.Error("invalid session was not deleted from the store")
+		}
+	})
+
+	T.Run("with error deleting after decode error callback", func(t *testing.T) {
+		s := New()
+		store := &mockstore.MockStore{}
+
+		ctx := context.Background()
+		token := "example"
+		expectedErr := errors.New("arbitrary")
+
+		store.ExpectFind(token, []byte(""), true, nil)
+		store.ExpectDelete(token, expectedErr)
+		s.Store = store
+		s.DecodeErrorFunc = func(context.Context, error) error {
+			return nil
+		}
+
+		newCtx, err := s.Load(ctx, token)
+		if err != expectedErr {
+			t.Errorf("expected error %v; got %v", expectedErr, err)
+		}
+		if newCtx != nil {
+			t.Error("returned context is unexpectedly not nil")
+		}
+	})
+
+	T.Run("with error returned by decode error callback", func(t *testing.T) {
+		s := New()
+		store := &mockstore.MockStore{}
+
+		ctx := context.Background()
+		token := "example"
+		expectedErr := errors.New("arbitrary")
+
+		store.ExpectFind(token, []byte(""), true, nil)
+		s.Store = store
+		s.DecodeErrorFunc = func(context.Context, error) error {
+			return expectedErr
+		}
+
+		newCtx, err := s.Load(ctx, token)
+		if err != expectedErr {
+			t.Errorf("expected error %v; got %v", expectedErr, err)
+		}
+		if newCtx != nil {
+			t.Error("returned context is unexpectedly not nil")
+		}
 	})
 
 	T.Run("with token hashing", func(t *testing.T) {

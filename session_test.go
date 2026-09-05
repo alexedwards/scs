@@ -91,6 +91,42 @@ func TestEnable(t *testing.T) {
 	}
 }
 
+func TestLoadAndSaveRecoversUndecodableSession(t *testing.T) {
+	t.Parallel()
+
+	sessionManager := New()
+	sessionManager.DecodeErrorFunc = func(ctx context.Context, err error) error {
+		return nil
+	}
+	oldToken := "undecodable-session"
+	expiry := time.Now().Add(time.Hour)
+
+	if err := sessionManager.Store.Commit(oldToken, []byte(""), expiry); err != nil {
+		t.Fatal(err)
+	}
+
+	handler := sessionManager.LoadAndSave(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.WriteHeader(http.StatusNoContent)
+	}))
+
+	req := httptest.NewRequest(http.MethodGet, "/", nil)
+	req.AddCookie(&http.Cookie{Name: sessionManager.Cookie.Name, Value: oldToken})
+	rr := httptest.NewRecorder()
+	handler.ServeHTTP(rr, req)
+
+	if rr.Code != http.StatusNoContent {
+		t.Errorf("expected status %d; got %d", http.StatusNoContent, rr.Code)
+	}
+
+	cookies := rr.Result().Cookies()
+	if len(cookies) != 1 {
+		t.Fatalf("expected one expired session cookie; got %d", len(cookies))
+	}
+	if cookies[0].Value != "" || cookies[0].MaxAge >= 0 {
+		t.Errorf("expected the invalid session cookie to be removed; got %q", cookies[0].String())
+	}
+}
+
 func TestLifetime(t *testing.T) {
 	t.Parallel()
 

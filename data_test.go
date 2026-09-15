@@ -878,3 +878,25 @@ func TestDeadlineAndExpiry(t *testing.T) {
 		t.Errorf("got %v: expected before %v", expiry, deadline)
 	}
 }
+
+func TestCustomContextKey(t *testing.T) {
+	t.Parallel()
+
+	s := New()
+	s.ContextKey = ContextKey("app.session")
+
+	ctx, err := s.Load(context.Background(), "")
+	if err != nil {
+		t.Fatal(err)
+	}
+	s.Put(ctx, "foo", "bar")
+	if got := s.GetString(ctx, "foo"); got != "bar" {
+		t.Errorf("got %q: expected %q", got, "bar")
+	}
+	if ctx.Value(ContextKey("app.session")) == nil {
+		t.Fatal("expected session data under the custom ContextKey")
+	}
+	if ctx.Value(ContextKey("session.1")) != nil {
+		t.Fatal("did not expect session data under the default ContextKey")
+	}
+}

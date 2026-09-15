@@ -686,18 +686,20 @@ func hashToken(token string) string {
 	return base64.RawURLEncoding.EncodeToString(hash[:])
 }
 
-type contextKey string
+// ContextKey is the type of the key used to store session data in a
+// context.Context. Each SessionManager is given a unique value by default.
+type ContextKey string
 
 var (
 	contextKeyID      uint64
 	contextKeyIDMutex = &sync.Mutex{}
 )
 
-func generateContextKey() contextKey {
+func generateContextKey() ContextKey {
 	contextKeyIDMutex.Lock()
 	defer contextKeyIDMutex.Unlock()
 	atomic.AddUint64(&contextKeyID, 1)
-	return contextKey(fmt.Sprintf("session.%d", contextKeyID))
+	return ContextKey(fmt.Sprintf("session.%d", contextKeyID))
 }
 
 func (s *SessionManager) doStoreDelete(ctx context.Context, token string) (err error) {

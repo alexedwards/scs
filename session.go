@@ -53,8 +53,8 @@ type SessionManager struct {
 
 	// ContextKey is the key used to set and retrieve the session data from a
 	// context.Context. If you are setting this manually, please make sure it is
-	// a unique value for each SessionManager instance
-	ContextKey contextKey
+	// a unique value for each SessionManager instance.
+	ContextKey ContextKey
 }
 
 // SessionCookie contains the configuration settings for session cookies.

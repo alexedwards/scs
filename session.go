@@ -53,7 +53,8 @@ type SessionManager struct {
 
 	// ContextKey is the key used to set and retrieve the session data from a
 	// context.Context. If you are setting this manually, please make sure it is
-	// a unique value for each SessionManager instance
+	// a unique value for each SessionManager instance. You can assign an untyped
+	// string constant directly, for example: sm.ContextKey = "myapp.session".
 	ContextKey contextKey
 }
 

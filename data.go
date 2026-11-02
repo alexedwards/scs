@@ -100,6 +100,13 @@ func (s *SessionManager) Load(ctx context.Context, token string) (context.Contex
 		return nil, err
 	}
 
+	// If the deadline has already passed, do not restore the session. Returning
+	// a fresh session here prevents an expired absolute deadline from being
+	// accepted when the store still has the row.
+	if !sd.deadline.After(time.Now()) {
+		return s.addSessionDataToContext(ctx, newSessionData(s.Lifetime, s.IdleTimeout)), nil
+	}
+
 	// By default, set the expiry time to the deadline.
 	sd.expiry = sd.deadline
 
@@ -620,6 +627,11 @@ func (s *SessionManager) SetDeadline(ctx context.Context, expire time.Time) {
 	defer sd.mu.Unlock()
 
 	sd.deadline = expire
+	if s.IdleTimeout > 0 {
+		sd.expiry = minTime(expire, time.Now().Add(s.IdleTimeout).UTC())
+	} else {
+		sd.expiry = expire
+	}
 	sd.status = Modified
 }
 

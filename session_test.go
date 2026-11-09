@@ -349,6 +349,45 @@ func TestIterate(t *testing.T) {
 	}
 }
 
+func TestIterateCommit(t *testing.T) {
+	t.Parallel()
+
+	sessionManager := New()
+
+	mux := http.NewServeMux()
+	mux.HandleFunc("/put", http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		sessionManager.Put(r.Context(), "foo", "bar")
+	}))
+	mux.HandleFunc("/get", http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.Write([]byte(sessionManager.GetString(r.Context(), "foo") + sessionManager.GetString(r.Context(), "baz")))
+	}))
+
+	ts := newTestServer(t, sessionManager.LoadAndSave(mux))
+	defer ts.Close()
+
+	ts.execute(t, "/put")
+
+	err := sessionManager.Iterate(context.Background(), func(ctx context.Context) error {
+		sessionManager.Put(ctx, "baz", "qux")
+		_, expiry, err := sessionManager.Commit(ctx)
+		if err != nil {
+			return err
+		}
+		if !expiry.Equal(sessionManager.Deadline(ctx)) {
+			t.Errorf("got expiry %v: expected %v", expiry, sessionManager.Deadline(ctx))
+		}
+		return nil
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	_, body := ts.execute(t, "/get")
+	if body != "barqux" {
+		t.Errorf("want %q; got %q", "barqux", body)
+	}
+}
+
 func TestSetToken(t *testing.T) {
 	t.Parallel()
 

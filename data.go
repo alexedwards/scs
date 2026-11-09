@@ -587,6 +587,13 @@ func (s *SessionManager) Iterate(ctx context.Context, fn func(context.Context) e
 			return err
 		}
 
+		// Set the expiry time in the same way as Load, so that the session
+		// keeps a valid expiry time if it is committed by fn.
+		sd.expiry = sd.deadline
+		if s.IdleTimeout > 0 {
+			sd.expiry = minTime(sd.deadline, time.Now().Add(s.IdleTimeout).UTC())
+		}
+
 		ctx = s.addSessionDataToContext(ctx, sd)
 
 		err = fn(ctx)

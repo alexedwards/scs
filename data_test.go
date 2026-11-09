@@ -878,3 +878,43 @@ func TestDeadlineAndExpiry(t *testing.T) {
 		t.Errorf("got %v: expected before %v", expiry, deadline)
 	}
 }
+
+func TestRenewTokenResetsExpiry(t *testing.T) {
+	t.Parallel()
+
+	s := New()
+	s.Lifetime = time.Hour
+	ctx := s.addSessionDataToContext(context.Background(), newSessionData(time.Minute, 0))
+
+	if err := s.RenewToken(ctx); err != nil {
+		t.Fatal(err)
+	}
+
+	if expiry, deadline := s.Expiry(ctx), s.Deadline(ctx); !expiry.Equal(deadline) {
+		t.Errorf("got expiry %v: expected %v", expiry, deadline)
+	}
+
+	_, expiry, err := s.Commit(ctx)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if want := time.Now().Add(30 * time.Minute).UTC(); expiry.Before(want) {
+		t.Errorf("got committed expiry %v: expected after %v", expiry, want)
+	}
+}
+
+func TestDestroyResetsExpiry(t *testing.T) {
+	t.Parallel()
+
+	s := New()
+	s.Lifetime = time.Hour
+	ctx := s.addSessionDataToContext(context.Background(), newSessionData(time.Minute, 0))
+
+	if err := s.Destroy(ctx); err != nil {
+		t.Fatal(err)
+	}
+
+	if expiry, deadline := s.Expiry(ctx), s.Deadline(ctx); !expiry.Equal(deadline) {
+		t.Errorf("got expiry %v: expected %v", expiry, deadline)
+	}
+}

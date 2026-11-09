@@ -61,6 +61,15 @@ func newSessionData(lifetime, idleTimeout time.Duration) *sessionData {
 	return &sd
 }
 
+// expiryFor returns the expiry time for a session with the given deadline,
+// taking the idle timeout into account if one is being used.
+func (s *SessionManager) expiryFor(deadline time.Time) time.Time {
+	if s.IdleTimeout > 0 {
+		return minTime(deadline, time.Now().Add(s.IdleTimeout).UTC())
+	}
+	return deadline
+}
+
 func minTime(a, b time.Time) time.Time {
 	if a.Before(b) {
 		return a
@@ -171,6 +180,7 @@ func (s *SessionManager) Destroy(ctx context.Context) error {
 	// Reset everything else to defaults.
 	sd.token = ""
 	sd.deadline = time.Now().Add(s.Lifetime).UTC()
+	sd.expiry = s.expiryFor(sd.deadline)
 	for key := range sd.values {
 		delete(sd.values, key)
 	}
@@ -331,6 +341,7 @@ func (s *SessionManager) RenewToken(ctx context.Context) error {
 
 	sd.token = newToken
 	sd.deadline = time.Now().Add(s.Lifetime).UTC()
+	sd.expiry = s.expiryFor(sd.deadline)
 	sd.status = Modified
 
 	return nil

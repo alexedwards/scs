@@ -12,9 +12,10 @@ type item struct {
 
 // MemStore represents the session store.
 type MemStore struct {
-	items       map[string]item
-	mu          sync.RWMutex
-	stopCleanup chan bool
+	items           map[string]item
+	mu              sync.RWMutex
+	stopCleanup     chan bool
+	stopCleanupOnce sync.Once
 }
 
 // New returns a new MemStore instance, with a background cleanup goroutine that
@@ -123,9 +124,10 @@ func (m *MemStore) startCleanup(interval time.Duration) {
 // scenario, the cleanup goroutine (which will run forever) will prevent the
 // MemStore object from being garbage collected even after the test function
 // has finished. You can prevent this by manually calling StopCleanup.
+// Repeated and concurrent calls to StopCleanup are safe.
 func (m *MemStore) StopCleanup() {
 	if m.stopCleanup != nil {
-		m.stopCleanup <- true
+		m.stopCleanupOnce.Do(func() { m.stopCleanup <- true })
 	}
 }
 

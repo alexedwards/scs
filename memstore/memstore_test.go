@@ -3,6 +3,7 @@ package memstore
 import (
 	"bytes"
 	"reflect"
+	"sync"
 	"testing"
 	"time"
 )
@@ -128,5 +129,42 @@ func TestCleanupInterval(t *testing.T) {
 	m.mu.Unlock()
 	if ok {
 		t.Fatalf("got %v: expected %v", ok, false)
+	}
+}
+
+func TestStopCleanupRepeated(t *testing.T) {
+	m := NewWithCleanupInterval(time.Hour)
+	done := make(chan struct{})
+	go func() {
+		m.StopCleanup()
+		m.StopCleanup()
+		close(done)
+	}()
+	select {
+	case <-done:
+	case <-time.After(time.Second):
+		t.Fatal("repeated StopCleanup blocked")
+	}
+}
+
+func TestStopCleanupConcurrent(t *testing.T) {
+	m := NewWithCleanupInterval(time.Hour)
+	var callers sync.WaitGroup
+	for i := 0; i < 8; i++ {
+		callers.Add(1)
+		go func() {
+			defer callers.Done()
+			m.StopCleanup()
+		}()
+	}
+	done := make(chan struct{})
+	go func() {
+		callers.Wait()
+		close(done)
+	}()
+	select {
+	case <-done:
+	case <-time.After(time.Second):
+		t.Fatal("concurrent StopCleanup blocked")
 	}
 }

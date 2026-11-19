@@ -878,3 +878,73 @@ func TestDeadlineAndExpiry(t *testing.T) {
 		t.Errorf("got %v: expected before %v", expiry, deadline)
 	}
 }
+
+func TestSetDeadlineUpdatesExpiry(t *testing.T) {
+	t.Parallel()
+
+	s := New()
+	s.Lifetime = 24 * time.Hour
+	ctx := s.addSessionDataToContext(context.Background(), newSessionData(s.Lifetime, 0))
+	s.Put(ctx, "userID", "42")
+
+	deadline := time.Now().Add(15 * time.Minute).UTC()
+	s.SetDeadline(ctx, deadline)
+
+	if got := s.Expiry(ctx); !got.Equal(deadline) {
+		t.Fatalf("Expiry() = %v; want %v", got, deadline)
+	}
+
+	token, expiry, err := s.Commit(ctx)
+	if err != nil {
+		t.Fatalf("Commit() error: %v", err)
+	}
+	if !expiry.Equal(deadline) {
+		t.Fatalf("Commit() expiry = %v; want %v", expiry, deadline)
+	}
+
+	loaded, err := s.Load(context.Background(), token)
+	if err != nil {
+		t.Fatalf("Load() error: %v", err)
+	}
+	if got := s.GetString(loaded, "userID"); got != "42" {
+		t.Fatalf("GetString() = %q; want %q", got, "42")
+	}
+}
+
+func TestLoadRejectsExpiredDeadline(t *testing.T) {
+	t.Parallel()
+
+	s := New()
+	s.Lifetime = 24 * time.Hour
+	ctx := s.addSessionDataToContext(context.Background(), newSessionData(s.Lifetime, 0))
+	s.Put(ctx, "userID", "42")
+	s.SetDeadline(ctx, time.Now().Add(-time.Hour))
+
+	token, _, err := s.Commit(ctx)
+	if err != nil {
+		t.Fatalf("Commit() error: %v", err)
+	}
+
+	loaded, err := s.Load(context.Background(), token)
+	if err != nil {
+		t.Fatalf("Load() error: %v", err)
+	}
+	if got := s.GetString(loaded, "userID"); got != "" {
+		t.Fatalf("expired session was restored with userID %q", got)
+	}
+}
+
+func TestSetDeadlineHonoursIdleTimeout(t *testing.T) {
+	t.Parallel()
+
+	s := New()
+	s.IdleTimeout = time.Minute
+	ctx := s.addSessionDataToContext(context.Background(), newSessionData(time.Hour, s.IdleTimeout))
+
+	deadline := time.Now().Add(time.Hour).UTC()
+	s.SetDeadline(ctx, deadline)
+
+	if got := s.Expiry(ctx); !got.Before(deadline) {
+		t.Fatalf("Expiry() = %v; want before %v", got, deadline)
+	}
+}
